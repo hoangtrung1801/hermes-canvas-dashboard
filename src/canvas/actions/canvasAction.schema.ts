@@ -5,6 +5,15 @@ const basePosition = {
   y: z.number()
 }
 
+const todoTaskInputSchema = z.union([
+  z.string().min(1),
+  z.object({
+    id: z.string().min(1).optional(),
+    text: z.string().min(1),
+    done: z.boolean().optional()
+  })
+])
+
 export const canvasActionSchema = z.discriminatedUnion('type', [
   z.object({
     type: z.literal('create_text'),
@@ -24,6 +33,13 @@ export const canvasActionSchema = z.discriminatedUnion('type', [
     type: z.literal('create_note'),
     text: z.string().min(1),
     name: z.string().optional(),
+    ...basePosition
+  }),
+  z.object({
+    type: z.literal('create_todo_block'),
+    name: z.string().min(1),
+    tasks: z.array(todoTaskInputSchema).optional(),
+    props: z.record(z.unknown()).optional(),
     ...basePosition
   }),
   z.object({
@@ -50,6 +66,23 @@ export const canvasActionSchema = z.discriminatedUnion('type', [
     type: z.literal('update_text'),
     blockId: z.string().min(1),
     text: z.string().min(1)
+  }),
+  z.object({
+    type: z.literal('append_todo_task'),
+    blockId: z.string().min(1),
+    text: z.string().min(1),
+    taskId: z.string().min(1).optional()
+  }),
+  z.object({
+    type: z.literal('set_todo_task_done'),
+    blockId: z.string().min(1),
+    taskId: z.string().min(1),
+    done: z.boolean()
+  }),
+  z.object({
+    type: z.literal('remove_todo_task'),
+    blockId: z.string().min(1),
+    taskId: z.string().min(1)
   }),
   z.object({
     type: z.literal('move_block'),

@@ -7,6 +7,9 @@ export type ActionExecutionResult = {
   updatedBlockIds?: string[]
   deletedBlockIds?: string[]
   createdShapeIds?: string[]
+  createdTaskIds?: string[]
+  updatedTaskIds?: string[]
+  deletedTaskIds?: string[]
   matchedBlockIds?: string[]
   error?: string
 }
@@ -40,6 +43,24 @@ export class ActionExecutor {
           createdShapeIds: created.shapeIds
         }
       }
+      case 'create_todo_block': {
+        const created = this.adapter.createTodoBlock(action)
+        const tasks = created.block.props?.tasks
+        return {
+          actionType: action.type,
+          createdBlockIds: [created.block.id],
+          createdShapeIds: created.shapeIds,
+          createdTaskIds: Array.isArray(tasks)
+            ? tasks
+                .map((task) =>
+                  task && typeof task === 'object'
+                    ? (task as Record<string, unknown>).id
+                    : undefined
+                )
+                .filter((taskId): taskId is string => typeof taskId === 'string')
+            : undefined
+        }
+      }
       case 'create_task_card': {
         const created = this.adapter.createTaskCard(action)
         return {
@@ -69,6 +90,39 @@ export class ActionExecutor {
         return updated
           ? { actionType: action.type, updatedBlockIds: [updated.id] }
           : { actionType: action.type, error: `Unknown block ${action.blockId}` }
+      }
+      case 'append_todo_task': {
+        const appended = this.adapter.appendTodoTask(action)
+        return appended
+          ? {
+              actionType: action.type,
+              updatedBlockIds: [appended.block.id],
+              createdTaskIds: [appended.task.id]
+            }
+          : {
+              actionType: action.type,
+              error: `Unknown todo block ${action.blockId} or duplicate task id ${action.taskId ?? '(generated)'}`
+            }
+      }
+      case 'set_todo_task_done': {
+        const updated = this.adapter.setTodoTaskDone(action)
+        return updated
+          ? {
+              actionType: action.type,
+              updatedBlockIds: [updated.id],
+              updatedTaskIds: [action.taskId]
+            }
+          : { actionType: action.type, error: `Unknown todo block or task ${action.taskId}` }
+      }
+      case 'remove_todo_task': {
+        const updated = this.adapter.removeTodoTask(action)
+        return updated
+          ? {
+              actionType: action.type,
+              updatedBlockIds: [updated.id],
+              deletedTaskIds: [action.taskId]
+            }
+          : { actionType: action.type, error: `Unknown todo block or task ${action.taskId}` }
       }
       case 'move_block': {
         const updated = this.adapter.moveBlock(action)

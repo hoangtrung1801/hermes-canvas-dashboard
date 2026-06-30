@@ -1,3 +1,5 @@
+import type { TodoTaskInput } from '../blocks/block.types'
+
 export type CreateTextAction = {
   type: 'create_text'
   text: string
@@ -22,6 +24,15 @@ export type CreateNoteAction = {
   y: number
   text: string
   name?: string
+}
+
+export type CreateTodoBlockAction = {
+  type: 'create_todo_block'
+  x: number
+  y: number
+  name: string
+  tasks?: TodoTaskInput[]
+  props?: Record<string, unknown>
 }
 
 export type CreateTaskCardAction = {
@@ -55,6 +66,26 @@ export type UpdateTextAction = {
   text: string
 }
 
+export type AppendTodoTaskAction = {
+  type: 'append_todo_task'
+  blockId: string
+  text: string
+  taskId?: string
+}
+
+export type SetTodoTaskDoneAction = {
+  type: 'set_todo_task_done'
+  blockId: string
+  taskId: string
+  done: boolean
+}
+
+export type RemoveTodoTaskAction = {
+  type: 'remove_todo_task'
+  blockId: string
+  taskId: string
+}
+
 export type MoveBlockAction = {
   type: 'move_block'
   blockId: string
@@ -84,10 +115,14 @@ export type CanvasAction =
   | CreateTextAction
   | CreateBoxAction
   | CreateNoteAction
+  | CreateTodoBlockAction
   | CreateTaskCardAction
   | CreateLinkCardAction
   | CreateArrowAction
   | UpdateTextAction
+  | AppendTodoTaskAction
+  | SetTodoTaskDoneAction
+  | RemoveTodoTaskAction
   | MoveBlockAction
   | DeleteBlockAction
   | ReadCanvasAction

@@ -47,6 +47,26 @@ function createFakeAdapter(): CanvasAdapter {
       blocks.set(block.id, block)
       return { block, shapeIds: block.shapeIds }
     },
+    createTodoBlock(input) {
+      blockCounter += 1
+      const tasks = (input.tasks ?? []).map((task, index) =>
+        typeof task === 'string'
+          ? { id: `task_${index + 1}`, text: task, done: false }
+          : { id: task.id ?? `task_${index + 1}`, text: task.text, done: task.done ?? false }
+      )
+      const block: CanvasBlock = {
+        id: `block_${blockCounter}`,
+        type: 'todo_block',
+        name: input.name,
+        x: input.x,
+        y: input.y,
+        text: input.name,
+        props: { tasks },
+        shapeIds: [`shape_${blockCounter}`]
+      }
+      blocks.set(block.id, block)
+      return { block, shapeIds: block.shapeIds }
+    },
     createTaskCard(input) {
       blockCounter += 1
       const block: CanvasBlock = {
@@ -93,6 +113,53 @@ function createFakeAdapter(): CanvasAdapter {
       blocks.set(blockId, next)
       return next
     },
+    appendTodoTask({ blockId, text, taskId }) {
+      const block = blocks.get(blockId)
+      if (!block || block.type !== 'todo_block') return null
+
+      const task = { id: taskId ?? `task_${block.props.tasks.length + 1}`, text, done: false }
+      const next = {
+        ...block,
+        props: { ...block.props, tasks: [...block.props.tasks, task] }
+      }
+      blocks.set(blockId, next)
+
+      return { block: next, task }
+    },
+    setTodoTaskDone({ blockId, taskId, done }) {
+      const block = blocks.get(blockId)
+      if (!block || block.type !== 'todo_block') return null
+      if (!block.props.tasks.some((task: { id: string }) => task.id === taskId)) return null
+
+      const next = {
+        ...block,
+        props: {
+          ...block.props,
+          tasks: block.props.tasks.map((task: { id: string }) =>
+            task.id === taskId ? { ...task, done } : task
+          )
+        }
+      }
+      blocks.set(blockId, next)
+
+      return next
+    },
+    removeTodoTask({ blockId, taskId }) {
+      const block = blocks.get(blockId)
+      if (!block || block.type !== 'todo_block') return null
+      if (!block.props.tasks.some((task: { id: string }) => task.id === taskId)) return null
+
+      const next = {
+        ...block,
+        props: {
+          ...block.props,
+          tasks: block.props.tasks.filter((task: { id: string }) => task.id !== taskId)
+        }
+      }
+      blocks.set(blockId, next)
+
+      return next
+    },
     moveBlock({ blockId, x, y }) {
       const block = blocks.get(blockId)
       if (!block) return null
@@ -120,7 +187,8 @@ function createFakeAdapter(): CanvasAdapter {
         blocks: [...blocks.values()]
       }
     },
-    zoomToFit() {}
+    zoomToFit() {},
+    zoomToBlock() {}
   }
 }
 
@@ -167,5 +235,54 @@ describe('CanvasBridge', () => {
 
     expect(response.result.results[0].matchedBlockIds).toHaveLength(1)
     expect(response.observation.state.blocks[0].name).toBe('Import Book Modal')
+  })
+
+  it('executes todo block task mutations', () => {
+    const bridge = new CanvasBridge(createFakeAdapter())
+
+    const createResponse = bridge.handleActionEnvelope({
+      type: 'canvas.action',
+      requestId: 'req_todo_create',
+      canvasId: 'canvas_001',
+      actions: [
+        {
+          type: 'create_todo_block',
+          name: 'Launch checklist',
+          x: 100,
+          y: 160,
+          tasks: [{ id: 'task_docs', text: 'Write docs' }]
+        }
+      ]
+    })
+
+    if ('error' in createResponse) {
+      throw new Error('expected bridge response, received error')
+    }
+
+    const blockId = createResponse.result.results[0].createdBlockIds?.[0]
+    expect(blockId).toBeDefined()
+
+    const updateResponse = bridge.handleActionEnvelope({
+      type: 'canvas.action',
+      requestId: 'req_todo_update',
+      canvasId: 'canvas_001',
+      actions: [
+        { type: 'append_todo_task', blockId: blockId!, taskId: 'task_ship', text: 'Ship feature' },
+        { type: 'set_todo_task_done', blockId: blockId!, taskId: 'task_docs', done: true },
+        { type: 'remove_todo_task', blockId: blockId!, taskId: 'task_ship' }
+      ]
+    })
+
+    if ('error' in updateResponse) {
+      throw new Error('expected bridge response, received error')
+    }
+
+    expect(updateResponse.result.ok).toBe(true)
+    expect(updateResponse.result.results[0].createdTaskIds).toEqual(['task_ship'])
+    expect(updateResponse.result.results[1].updatedTaskIds).toEqual(['task_docs'])
+    expect(updateResponse.result.results[2].deletedTaskIds).toEqual(['task_ship'])
+    expect(updateResponse.observation.state.blocks[0].props?.tasks).toEqual([
+      { id: 'task_docs', text: 'Write docs', done: true }
+    ])
   })
 })

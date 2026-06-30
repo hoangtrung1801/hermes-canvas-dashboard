@@ -19,6 +19,11 @@ export const blockRegistry: Record<CanvasBlockType, BlockDefinition> = {
     label: 'Note',
     defaultSize: { w: 240, h: 180 }
   },
+  todo_block: {
+    label: 'Todo Block',
+    defaultSize: { w: 320, h: 220 },
+    defaultProps: { tasks: [] }
+  },
   task_card: {
     label: 'Task Card',
     defaultSize: { w: 280, h: 160 },

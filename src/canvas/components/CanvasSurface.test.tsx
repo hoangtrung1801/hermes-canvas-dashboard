@@ -3,10 +3,15 @@ import { useEffect } from 'react'
 import { describe, expect, it, vi } from 'vitest'
 import App from '../../App'
 
+const socketSpies = vi.hoisted(() => ({
+  connect: vi.fn(),
+  send: vi.fn()
+}))
+
 vi.mock('../bridge/websocketClient', () => ({
   BridgeWebSocketClient: class {
-    connect() {}
-    send() {}
+    connect = socketSpies.connect
+    send = socketSpies.send
   }
 }))
 
@@ -40,5 +45,11 @@ describe('CanvasSurface', () => {
 
     expect(screen.getByTestId('tldraw-root')).toBeInTheDocument()
     expect(screen.getByText('Bridge ready')).toBeInTheDocument()
+  })
+
+  it('does not connect to a websocket gateway unless a gateway url is configured', () => {
+    render(<App />)
+
+    expect(socketSpies.connect).not.toHaveBeenCalled()
   })
 })
