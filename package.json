@@ -7,14 +7,15 @@
     "dev": "vite",
     "build": "tsc -p tsconfig.json && vite build",
     "server": "tsx server/index.ts",
+    "hermes:demo": "tsx server/canvas/hermesCanvasClient.ts",
     "test": "vitest run",
     "test:watch": "vitest",
     "lint:types": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
+    "@excalidraw/excalidraw": "^0.18.1",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "tldraw": "^3.0.0",
     "zod": "^3.23.8",
     "zustand": "^5.0.0"
   },

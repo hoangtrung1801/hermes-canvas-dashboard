@@ -683,8 +683,7 @@ body {
   overflow: hidden;
 }
 
-/* Tldraw layout adjustment to fill the panel */
-.canvas-container .tl-container {
+.canvas-container .excalidraw {
   position: absolute !important;
   width: 100% !important;
   height: 100% !important;

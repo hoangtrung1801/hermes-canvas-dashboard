@@ -63,4 +63,31 @@ describe('canvas gateway integration', () => {
 
     expect(JSON.parse(received).type).toBe('canvas.action')
   })
+
+  it('does not crash when a bridge connection sends a Hermes action payload', async () => {
+    const gateway = createCanvasGateway(8791)
+    instances.push(gateway)
+
+    const bridgeClient = new WebSocket(
+      'ws://localhost:8791/canvas?canvasId=canvas_001&role=bridge'
+    )
+    clients.push(bridgeClient)
+
+    const received = await new Promise<string>((resolve) => {
+      bridgeClient.addEventListener('message', (event: { data: unknown }) =>
+        resolve(String(event.data))
+      )
+      bridgeClient.addEventListener('open', () => {
+        bridgeClient.send(
+          JSON.stringify(
+            createHermesCanvasToolPayload('canvas_001', [{ type: 'read_canvas' }])
+          )
+        )
+      })
+    })
+
+    const parsed = JSON.parse(received)
+    expect(parsed.type).toBe('canvas.error')
+    expect(parsed.message).toContain('Invalid bridge message')
+  })
 })

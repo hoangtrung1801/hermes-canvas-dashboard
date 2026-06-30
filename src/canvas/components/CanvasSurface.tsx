@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
-import { Tldraw } from 'tldraw'
-import { TldrawAdapter } from '../adapters/TldrawAdapter'
+import { Excalidraw } from '@excalidraw/excalidraw'
+import { ExcalidrawAdapter, type ExcalidrawApiLike } from '../adapters/ExcalidrawAdapter'
 import { CanvasBridge } from '../bridge/CanvasBridge'
 import { getCanvasGatewayUrl } from '../bridge/gatewayConfig'
 import { BridgeWebSocketClient } from '../bridge/websocketClient'
@@ -107,12 +107,11 @@ export function CanvasSurface() {
   }, [bridge, setObservation, setStatus, addLog])
 
   return (
-    <Tldraw
-      persistenceKey="hermes-canvas"
-      onMount={(editor) => {
-        const adapter = new TldrawAdapter(editor as never, 'canvas_001')
+    <Excalidraw
+      excalidrawAPI={(api) => {
+        const adapter = new ExcalidrawAdapter(api as unknown as ExcalidrawApiLike, 'canvas_001')
         const bridgeInstance = new CanvasBridge(adapter)
-        setBridge(bridgeInstance, adapter, editor)
+        setBridge(bridgeInstance, adapter, api)
         // Set initial observation state so UI has something to show initially
         setObservation(adapter.getCanvasState())
       }}

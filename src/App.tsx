@@ -44,7 +44,7 @@ export default function App() {
         <section className="canvas-panel">
           <div className="canvas-header-bar">
             <span className="canvas-title">Interactive Canvas Surface</span>
-            <span className="canvas-engine-badge">tldraw engine</span>
+            <span className="canvas-engine-badge">Excalidraw engine</span>
           </div>
           <div className="canvas-container">
             <CanvasSurface />

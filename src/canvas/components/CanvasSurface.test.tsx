@@ -15,35 +15,30 @@ vi.mock('../bridge/websocketClient', () => ({
   }
 }))
 
-vi.mock('tldraw', () => ({
-  Tldraw: ({ onMount }: { onMount(editor: unknown): void }) => {
+vi.mock('@excalidraw/excalidraw', () => ({
+  Excalidraw: ({ excalidrawAPI }: { excalidrawAPI(api: unknown): void }) => {
     useEffect(() => {
-      onMount({
-        createShape() {},
-        updateShape() {},
-        deleteShape() {},
-        getCurrentPageShapes() {
+      excalidrawAPI({
+        updateScene() {},
+        getSceneElements() {
           return []
         },
-        getSelectedShapeIds() {
-          return []
+        getAppState() {
+          return { scrollX: 0, scrollY: 0, width: 1200, height: 800, selectedElementIds: {} }
         },
-        getViewportPageBounds() {
-          return { x: 0, y: 0, w: 1200, h: 800 }
-        },
-        zoomToFit() {}
+        scrollToContent() {}
       })
     }, [])
 
-    return <div data-testid="tldraw-root">tldraw mounted</div>
+    return <div data-testid="excalidraw-root">excalidraw mounted</div>
   }
 }))
 
 describe('CanvasSurface', () => {
-  it('renders the tldraw surface inside the app shell', () => {
+  it('renders the Excalidraw surface inside the app shell', () => {
     render(<App />)
 
-    expect(screen.getByTestId('tldraw-root')).toBeInTheDocument()
+    expect(screen.getByTestId('excalidraw-root')).toBeInTheDocument()
     expect(screen.getByText('Bridge ready')).toBeInTheDocument()
   })
 

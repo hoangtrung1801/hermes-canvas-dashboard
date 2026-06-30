@@ -6,6 +6,11 @@ import {
 } from '../../src/canvas/protocol/canvasMessages'
 import { RoomManager } from './roomManager'
 
+type UnknownEnvelope = {
+  requestId?: unknown
+  type?: unknown
+}
+
 export function createCanvasGateway(port = 8787) {
   const rooms = new RoomManager()
   const wss = new WebSocketServer({ port })
@@ -31,18 +36,58 @@ export function createCanvasGateway(port = 8787) {
 
     socket.on('message', (raw: unknown) => {
       const payload = String(raw)
-      const parsed = JSON.parse(payload)
+      let parsed: UnknownEnvelope
+      try {
+        parsed = JSON.parse(payload)
+      } catch (error) {
+        sendCanvasError(socket, 'req_invalid_json', `Invalid JSON: ${formatError(error)}`)
+        return
+      }
 
       if (role === 'hermes') {
-        hermesToCanvasEnvelopeSchema.parse(parsed)
+        const validated = hermesToCanvasEnvelopeSchema.safeParse(parsed)
+        if (!validated.success) {
+          sendCanvasError(
+            socket,
+            getRequestId(parsed),
+            `Invalid Hermes message: ${validated.error.message}`
+          )
+          return
+        }
         rooms.forwardToBridge(canvasId, payload)
         return
       }
 
-      canvasToHermesEnvelopeSchema.parse(parsed)
+      const validated = canvasToHermesEnvelopeSchema.safeParse(parsed)
+      if (!validated.success) {
+        sendCanvasError(
+          socket,
+          getRequestId(parsed),
+          `Invalid bridge message: ${validated.error.message}`
+        )
+        return
+      }
       rooms.forwardToHermes(canvasId, payload)
     })
   })
 
   return { wss, rooms }
+}
+
+function getRequestId(envelope: UnknownEnvelope): string {
+  return typeof envelope.requestId === 'string' ? envelope.requestId : 'req_invalid_message'
+}
+
+function sendCanvasError(socket: WebSocket, requestId: string, message: string) {
+  socket.send(
+    JSON.stringify({
+      type: 'canvas.error',
+      requestId,
+      message
+    })
+  )
+}
+
+function formatError(error: unknown): string {
+  return error instanceof Error ? error.message : String(error)
 }

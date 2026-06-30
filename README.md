@@ -1,15 +1,30 @@
 # Canvas for Hermes
 
-Hermes sends validated `canvas.action` messages to a browser-resident Canvas Bridge. The bridge applies those actions to a tldraw canvas and replies with `canvas.result` and `canvas.observation`.
+Hermes sends validated `canvas.action` messages to a browser-resident Canvas Bridge. The bridge applies those actions to an Excalidraw canvas and replies with `canvas.result` and `canvas.observation`.
 
 ## Local development
 
 1. Install dependencies: `npm install`
 2. Start the gateway: `npm run server`
 3. Start the frontend: `VITE_CANVAS_GATEWAY_URL="ws://localhost:8787/canvas?canvasId=canvas_001&role=bridge" npm run dev`
-4. Run tests: `npm test`
+4. Send a Hermes-style write batch: `npm run hermes:demo`
+5. Run tests: `npm test`
 
 The frontend can also run without the WebSocket gateway. When `VITE_CANVAS_GATEWAY_URL` is not set, the local canvas and action simulator stay active and the app does not attempt a WebSocket connection.
+
+## Hermes demo client
+
+With the gateway and browser bridge running, execute:
+
+```bash
+npm run hermes:demo
+```
+
+The script connects as `role=hermes`, sends a `canvas.action` batch that writes blocks into the canvas, and prints `canvas.result` plus `canvas.observation` responses. To send custom actions:
+
+```bash
+npm run hermes:demo -- --actions '[{"type":"create_text","text":"Hello from Hermes","x":120,"y":160}]'
+```
 
 ## MVP message flow
 
@@ -55,8 +70,8 @@ Create a Link card with a title and URL:
 ```json
 {
   "type": "create_link_card",
-  "name": "tldraw Documentation",
-  "url": "https://tldraw.dev",
+  "name": "Excalidraw Documentation",
+  "url": "https://docs.excalidraw.com",
   "x": 100,
   "y": 350
 }

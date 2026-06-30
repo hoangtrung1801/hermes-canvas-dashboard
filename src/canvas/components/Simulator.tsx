@@ -54,7 +54,7 @@ const PRESETS = [
     name: '📝 Yellow Note Card',
     value: {
       type: 'create_note',
-      text: 'Architecture Note:\nCanvas bridge receives action envelopes via WebSocket and updates tldraw state.',
+      text: 'Architecture Note:\nCanvas bridge receives action envelopes via WebSocket and updates Excalidraw state.',
       x: 450,
       y: 150
     }
@@ -63,8 +63,8 @@ const PRESETS = [
     name: '🔗 Documentation Link',
     value: {
       type: 'create_link_card',
-      name: 'tldraw Documentation',
-      url: 'https://tldraw.dev',
+      name: 'Excalidraw Documentation',
+      url: 'https://docs.excalidraw.com',
       x: 100,
       y: 350
     }
