@@ -40,6 +40,13 @@ const PRESETS = [
     ]
   },
   {
+    name: '📋 Todo Data by Block ID',
+    value: {
+      type: 'get_todo_block_data',
+      blockId: 'block_0001'
+    }
+  },
+  {
     name: '🎯 Sprint Task Card',
     value: {
       type: 'create_task_card',

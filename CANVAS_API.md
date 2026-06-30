@@ -90,6 +90,11 @@ type ActionExecutionResult = {
   updatedTaskIds?: string[]
   deletedTaskIds?: string[]
   matchedBlockIds?: string[]
+  todoBlock?: {
+    id: string
+    name?: string
+    tasks: TodoTask[]
+  }
   error?: string
 }
 ```
@@ -625,6 +630,49 @@ Result fields:
 
 - `matchedBlockIds`
 - `error` if no block has that name.
+
+### get_todo_block_data
+
+Returns structured todo data for one todo block by `blockId`.
+
+```json
+{
+  "type": "get_todo_block_data",
+  "blockId": "block_0001"
+}
+```
+
+Schema:
+
+```ts
+type GetTodoBlockDataAction = {
+  type: 'get_todo_block_data'
+  blockId: string // non-empty
+}
+```
+
+Example result item:
+
+```json
+{
+  "actionType": "get_todo_block_data",
+  "matchedBlockIds": ["block_0001"],
+  "todoBlock": {
+    "id": "block_0001",
+    "name": "Launch Checklist",
+    "tasks": [
+      { "id": "task_copy", "text": "Write launch copy", "done": false },
+      { "id": "task_assets", "text": "Prepare screenshots", "done": true }
+    ]
+  }
+}
+```
+
+Result fields:
+
+- `matchedBlockIds`
+- `todoBlock`
+- `error` if the block is unknown or is not a todo block.
 
 ### read_canvas
 

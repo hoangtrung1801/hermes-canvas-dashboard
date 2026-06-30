@@ -1,9 +1,11 @@
+import { createServer, type IncomingMessage, type ServerResponse } from 'http'
+import { join } from 'node:path'
 import { WebSocketServer, type WebSocket } from 'ws'
-import type { IncomingMessage } from 'http'
 import {
   canvasToHermesEnvelopeSchema,
   hermesToCanvasEnvelopeSchema
 } from '../../src/canvas/protocol/canvasMessages'
+import { CanvasFileStore } from './canvasFileStore'
 import { RoomManager } from './roomManager'
 
 type UnknownEnvelope = {
@@ -11,9 +13,17 @@ type UnknownEnvelope = {
   type?: unknown
 }
 
-export function createCanvasGateway(port = 8787) {
+type CanvasGatewayOptions = {
+  dataDir?: string
+}
+
+export function createCanvasGateway(port = 8787, options: CanvasGatewayOptions = {}) {
   const rooms = new RoomManager()
-  const wss = new WebSocketServer({ port })
+  const store = new CanvasFileStore(options.dataDir ?? join(process.cwd(), 'data'))
+  const server = createServer((request, response) => {
+    void handleHttpRequest(request, response, store)
+  })
+  const wss = new WebSocketServer({ server, path: '/canvas' })
 
   wss.on('connection', (socket: WebSocket, request: IncomingMessage) => {
     const url = new URL(
@@ -71,7 +81,88 @@ export function createCanvasGateway(port = 8787) {
     })
   })
 
-  return { wss, rooms }
+  server.listen(port)
+
+  return {
+    wss,
+    server,
+    rooms,
+    close(callback: () => void) {
+      wss.close(() => {
+        server.close(() => callback())
+      })
+    }
+  }
+}
+
+async function handleHttpRequest(
+  request: IncomingMessage,
+  response: ServerResponse,
+  store: CanvasFileStore
+): Promise<void> {
+  setCorsHeaders(response)
+
+  if (request.method === 'OPTIONS') {
+    response.writeHead(204)
+    response.end()
+    return
+  }
+
+  const url = new URL(request.url ?? '/', 'http://localhost')
+  const match = /^\/canvas-state\/([^/]+)$/.exec(url.pathname)
+  if (!match) {
+    sendJson(response, 404, { error: 'Not found' })
+    return
+  }
+
+  const canvasId = decodeURIComponent(match[1])
+
+  try {
+    if (request.method === 'GET') {
+      const snapshot = await store.load(canvasId)
+      if (!snapshot) {
+        sendJson(response, 404, { error: 'Canvas snapshot not found' })
+        return
+      }
+
+      sendJson(response, 200, snapshot)
+      return
+    }
+
+    if (request.method === 'PUT') {
+      const snapshot = await readJsonBody(request)
+      await store.save(canvasId, snapshot)
+      response.writeHead(204)
+      response.end()
+      return
+    }
+
+    response.setHeader('Allow', 'GET, PUT, OPTIONS')
+    sendJson(response, 405, { error: 'Method not allowed' })
+  } catch (error) {
+    sendJson(response, 400, { error: formatError(error) })
+  }
+}
+
+function setCorsHeaders(response: ServerResponse): void {
+  response.setHeader('Access-Control-Allow-Origin', '*')
+  response.setHeader('Access-Control-Allow-Methods', 'GET, PUT, OPTIONS')
+  response.setHeader('Access-Control-Allow-Headers', 'Content-Type')
+}
+
+async function readJsonBody(request: IncomingMessage): Promise<unknown> {
+  const chunks: Buffer[] = []
+  for await (const chunk of request) {
+    chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk))
+  }
+
+  const raw = Buffer.concat(chunks).toString('utf8')
+  return raw ? JSON.parse(raw) : null
+}
+
+function sendJson(response: ServerResponse, status: number, payload: unknown): void {
+  response.writeHead(status, { 'Content-Type': 'application/json' })
+  response.end(JSON.stringify(payload))
 }
 
 function getRequestId(envelope: UnknownEnvelope): string {

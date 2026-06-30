@@ -10,7 +10,16 @@ Hermes sends validated `canvas.action` messages to a browser-resident Canvas Bri
 4. Send a Hermes-style write batch: `npm run hermes:demo`
 5. Run tests: `npm test`
 
-The frontend can also run without the WebSocket gateway. When `VITE_CANVAS_GATEWAY_URL` is not set, the local canvas and action simulator stay active and the app does not attempt a WebSocket connection.
+The gateway also exposes a local file-backed canvas state API at `http://localhost:8787/canvas-state/canvas_001`. The browser saves and restores the single canvas from `data/canvas_001.json` through that API.
+
+If port `8787` is already in use, start the gateway on another port and point the frontend at it:
+
+```bash
+CANVAS_GATEWAY_PORT=8788 npm run server
+VITE_CANVAS_STATE_URL="http://localhost:8788/canvas-state" VITE_CANVAS_GATEWAY_URL="ws://localhost:8788/canvas?canvasId=canvas_001&role=bridge" npm run dev
+```
+
+The frontend can run without `VITE_CANVAS_GATEWAY_URL`, so the local canvas and action simulator stay active without a WebSocket connection. Durable JSON-file persistence still requires `npm run server` to be running.
 
 ## Hermes demo client
 
@@ -33,6 +42,7 @@ npm run hermes:demo -- --actions '[{"type":"create_text","text":"Hello from Herm
 3. The gateway forwards the action to the active bridge client for that canvas.
 4. The browser validates the action, executes it through `CanvasBridge`, and returns either `canvas.error` or the `canvas.result` plus `canvas.observation` pair.
 5. The gateway forwards the bridge response back to the Hermes client.
+6. The browser saves the latest canvas snapshot to `PUT http://localhost:8787/canvas-state/canvas_001`; the gateway writes it to `data/canvas_001.json`.
 
 ## Built-in blocks
 

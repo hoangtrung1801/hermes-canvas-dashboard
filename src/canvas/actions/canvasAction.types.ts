@@ -107,6 +107,11 @@ export type GetBlockByNameAction = {
   name: string
 }
 
+export type GetTodoBlockDataAction = {
+  type: 'get_todo_block_data'
+  blockId: string
+}
+
 export type ZoomToFitAction = {
   type: 'zoom_to_fit'
 }
@@ -127,4 +132,5 @@ export type CanvasAction =
   | DeleteBlockAction
   | ReadCanvasAction
   | GetBlockByNameAction
+  | GetTodoBlockDataAction
   | ZoomToFitAction

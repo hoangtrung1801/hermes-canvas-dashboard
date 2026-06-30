@@ -101,6 +101,10 @@ export const canvasActionSchema = z.discriminatedUnion('type', [
     name: z.string().min(1)
   }),
   z.object({
+    type: z.literal('get_todo_block_data'),
+    blockId: z.string().min(1)
+  }),
+  z.object({
     type: z.literal('zoom_to_fit')
   })
 ])

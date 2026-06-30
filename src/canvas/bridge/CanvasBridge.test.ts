@@ -285,4 +285,108 @@ describe('CanvasBridge', () => {
       { id: 'task_docs', text: 'Write docs', done: true }
     ])
   })
+
+  it('returns todo block data by block id', () => {
+    const bridge = new CanvasBridge(createFakeAdapter())
+
+    const createResponse = bridge.handleActionEnvelope({
+      type: 'canvas.action',
+      requestId: 'req_todo_create',
+      canvasId: 'canvas_001',
+      actions: [
+        {
+          type: 'create_todo_block',
+          name: 'Launch checklist',
+          x: 100,
+          y: 160,
+          tasks: [{ id: 'task_docs', text: 'Write docs' }]
+        }
+      ]
+    })
+
+    if ('error' in createResponse) {
+      throw new Error('expected bridge response, received error')
+    }
+
+    const blockId = createResponse.result.results[0].createdBlockIds?.[0]
+    expect(blockId).toBeDefined()
+
+    const response = bridge.handleActionEnvelope({
+      type: 'canvas.action',
+      requestId: 'req_todo_read',
+      canvasId: 'canvas_001',
+      actions: [{ type: 'get_todo_block_data', blockId: blockId! }]
+    })
+
+    if ('error' in response) {
+      throw new Error('expected bridge response, received error')
+    }
+
+    expect(response.result.ok).toBe(true)
+    expect(response.result.results[0]).toMatchObject({
+      actionType: 'get_todo_block_data',
+      matchedBlockIds: [blockId],
+      todoBlock: {
+        id: blockId,
+        name: 'Launch checklist',
+        tasks: [{ id: 'task_docs', text: 'Write docs', done: false }]
+      }
+    })
+  })
+
+  it('returns an action error when todo block data is requested for an unknown block', () => {
+    const bridge = new CanvasBridge(createFakeAdapter())
+
+    const response = bridge.handleActionEnvelope({
+      type: 'canvas.action',
+      requestId: 'req_todo_missing',
+      canvasId: 'canvas_001',
+      actions: [{ type: 'get_todo_block_data', blockId: 'block_missing' }]
+    })
+
+    if ('error' in response) {
+      throw new Error('expected bridge response, received error')
+    }
+
+    expect(response.result.ok).toBe(false)
+    expect(response.result.results[0]).toEqual({
+      actionType: 'get_todo_block_data',
+      error: 'Unknown block block_missing'
+    })
+  })
+
+  it('returns an action error when todo block data is requested for a non-todo block', () => {
+    const bridge = new CanvasBridge(createFakeAdapter())
+
+    const createResponse = bridge.handleActionEnvelope({
+      type: 'canvas.action',
+      requestId: 'req_text_create',
+      canvasId: 'canvas_001',
+      actions: [{ type: 'create_text', text: 'Hello', x: 80, y: 120 }]
+    })
+
+    if ('error' in createResponse) {
+      throw new Error('expected bridge response, received error')
+    }
+
+    const blockId = createResponse.result.results[0].createdBlockIds?.[0]
+    expect(blockId).toBeDefined()
+
+    const response = bridge.handleActionEnvelope({
+      type: 'canvas.action',
+      requestId: 'req_todo_wrong_type',
+      canvasId: 'canvas_001',
+      actions: [{ type: 'get_todo_block_data', blockId: blockId! }]
+    })
+
+    if ('error' in response) {
+      throw new Error('expected bridge response, received error')
+    }
+
+    expect(response.result.ok).toBe(false)
+    expect(response.result.results[0]).toEqual({
+      actionType: 'get_todo_block_data',
+      error: `Block ${blockId} is not a todo block`
+    })
+  })
 })

@@ -47,6 +47,15 @@ describe('canvasActionSchema', () => {
     expect(parsed).toHaveLength(4)
   })
 
+  it('accepts get_todo_block_data by block id', () => {
+    const parsed = canvasActionSchema.parse({
+      type: 'get_todo_block_data',
+      blockId: 'block_0001'
+    })
+
+    expect(parsed.type).toBe('get_todo_block_data')
+  })
+
   it('rejects arrows without endpoints', () => {
     expect(() =>
       canvasActionSchema.parse({

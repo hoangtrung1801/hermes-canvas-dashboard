@@ -1,9 +1,11 @@
 import { createCanvasGateway } from './canvas/canvasGateway'
 
-const { wss } = createCanvasGateway(8787)
+const port = Number(process.env.CANVAS_GATEWAY_PORT ?? 8787)
+const gateway = createCanvasGateway(port)
 
-console.log('Canvas gateway listening on ws://localhost:8787/canvas')
+console.log(`Canvas gateway listening on ws://localhost:${port}/canvas`)
+console.log(`Canvas state file API listening on http://localhost:${port}/canvas-state/canvas_001`)
 
 process.on('SIGINT', () => {
-  wss.close(() => process.exit(0))
+  gateway.close(() => process.exit(0))
 })

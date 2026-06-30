@@ -22,13 +22,29 @@ const blockSchema = z.object({
   shapeIds: z.array(z.string())
 })
 
+const todoTaskSchema = z.object({
+  id: z.string(),
+  text: z.string(),
+  done: z.boolean()
+})
+
+const todoBlockResultSchema = z.object({
+  id: z.string(),
+  name: z.string().optional(),
+  tasks: z.array(todoTaskSchema)
+})
+
 const resultItemSchema = z.object({
   actionType: z.string(),
   createdBlockIds: z.array(z.string()).optional(),
   updatedBlockIds: z.array(z.string()).optional(),
   deletedBlockIds: z.array(z.string()).optional(),
   createdShapeIds: z.array(z.string()).optional(),
+  createdTaskIds: z.array(z.string()).optional(),
+  updatedTaskIds: z.array(z.string()).optional(),
+  deletedTaskIds: z.array(z.string()).optional(),
   matchedBlockIds: z.array(z.string()).optional(),
+  todoBlock: todoBlockResultSchema.optional(),
   error: z.string().optional()
 })
 

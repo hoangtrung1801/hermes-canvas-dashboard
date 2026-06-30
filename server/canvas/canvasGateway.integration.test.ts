@@ -1,11 +1,15 @@
+import { mkdtemp, rm } from 'node:fs/promises'
+import { join } from 'node:path'
+import { tmpdir } from 'node:os'
 import { afterEach, describe, expect, it } from 'vitest'
 import { WebSocket } from 'ws'
 import { createCanvasGateway } from './canvasGateway'
 import { createHermesCanvasToolPayload } from './hermesCanvasTool'
 
 describe('canvas gateway integration', () => {
-  const instances: Array<{ wss: { close(callback: () => void): void } }> = []
+  const instances: Array<{ close(callback: () => void): void }> = []
   const clients: WebSocket[] = []
+  const tempDirs: string[] = []
 
   afterEach(async () => {
     await Promise.all(
@@ -27,13 +31,15 @@ describe('canvas gateway integration', () => {
     )
 
     await Promise.all(
-      instances.map(
+      instances.splice(0).map(
         (instance) =>
           new Promise<void>((resolve) => {
-            instance.wss.close(() => resolve())
+            instance.close(() => resolve())
           })
       )
     )
+
+    await Promise.all(tempDirs.splice(0).map((dir) => rm(dir, { recursive: true, force: true })))
   })
 
   it('forwards Hermes actions to the connected bridge client', async () => {
@@ -89,5 +95,34 @@ describe('canvas gateway integration', () => {
     const parsed = JSON.parse(received)
     expect(parsed.type).toBe('canvas.error')
     expect(parsed.message).toContain('Invalid bridge message')
+  })
+
+  it('persists canvas snapshots through the local http endpoint', async () => {
+    const dataDir = await mkdtemp(join(tmpdir(), 'hermes-canvas-http-'))
+    tempDirs.push(dataDir)
+    const gateway = createCanvasGateway(8792, { dataDir })
+    instances.push(gateway)
+
+    const snapshot = {
+      version: 1,
+      canvasId: 'canvas_001',
+      elements: [{ id: 'element_0001', type: 'rectangle', x: 10, y: 20, width: 100, height: 80 }],
+      adapter: {
+        blocks: [],
+        sequence: 1,
+        todoTaskSequence: 0
+      }
+    }
+
+    const putResponse = await fetch('http://localhost:8792/canvas-state/canvas_001', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(snapshot)
+    })
+    const getResponse = await fetch('http://localhost:8792/canvas-state/canvas_001')
+
+    expect(putResponse.status).toBe(204)
+    expect(getResponse.status).toBe(200)
+    await expect(getResponse.json()).resolves.toEqual(snapshot)
   })
 })

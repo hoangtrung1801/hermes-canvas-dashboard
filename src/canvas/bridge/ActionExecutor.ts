@@ -1,5 +1,6 @@
 import type { CanvasAction } from '../actions/canvasAction.types'
 import type { CanvasAdapter } from '../adapters/canvasAdapter'
+import type { TodoTask } from '../blocks/block.types'
 
 export type ActionExecutionResult = {
   actionType: CanvasAction['type']
@@ -11,7 +12,23 @@ export type ActionExecutionResult = {
   updatedTaskIds?: string[]
   deletedTaskIds?: string[]
   matchedBlockIds?: string[]
+  todoBlock?: {
+    id: string
+    name?: string
+    tasks: TodoTask[]
+  }
   error?: string
+}
+
+function isTodoTask(task: unknown): task is TodoTask {
+  if (!task || typeof task !== 'object') return false
+
+  const record = task as Record<string, unknown>
+  return (
+    typeof record.id === 'string' &&
+    typeof record.text === 'string' &&
+    typeof record.done === 'boolean'
+  )
 }
 
 export class ActionExecutor {
@@ -141,6 +158,30 @@ export class ActionExecutor {
         return matched
           ? { actionType: action.type, matchedBlockIds: [matched.id] }
           : { actionType: action.type, error: `Unknown block named ${action.name}` }
+      }
+      case 'get_todo_block_data': {
+        const block = this.adapter.getBlockById(action.blockId)
+        if (!block) {
+          return { actionType: action.type, error: `Unknown block ${action.blockId}` }
+        }
+
+        if (block.type !== 'todo_block') {
+          return { actionType: action.type, error: `Block ${action.blockId} is not a todo block` }
+        }
+
+        const tasks = Array.isArray(block.props?.tasks)
+          ? block.props.tasks.filter(isTodoTask)
+          : []
+
+        return {
+          actionType: action.type,
+          matchedBlockIds: [block.id],
+          todoBlock: {
+            id: block.id,
+            name: block.name,
+            tasks
+          }
+        }
       }
       case 'read_canvas':
       case 'zoom_to_fit':

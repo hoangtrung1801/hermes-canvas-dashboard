@@ -165,4 +165,29 @@ describe('ExcalidrawAdapter', () => {
     expect(state.selectedShapeIds).toEqual(['element_0001'])
     expect(state.viewport).toEqual({ x: 25, y: 50, w: 1000, h: 700 })
   })
+
+  it('restores blocks from a snapshot and continues generated ids', () => {
+    const api = createFakeApi()
+    const adapter = new ExcalidrawAdapter(api, 'canvas_001')
+    const created = adapter.createTodoBlock({
+      name: 'Launch checklist',
+      x: 100,
+      y: 120,
+      tasks: ['Write docs']
+    })
+
+    const restored = new ExcalidrawAdapter(createFakeApi(), 'canvas_001', adapter.exportSnapshot())
+
+    expect(restored.getBlockById(created.block.id)).toEqual(created.block)
+    expect(restored.getCanvasState().blocks).toEqual([created.block])
+
+    const next = restored.createTaskCard({
+      name: 'Ship feature',
+      x: 240,
+      y: 320
+    })
+
+    expect(next.block.id).not.toBe(created.block.id)
+    expect(next.shapeIds).not.toEqual(expect.arrayContaining(created.shapeIds))
+  })
 })

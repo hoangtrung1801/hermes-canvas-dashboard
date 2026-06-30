@@ -27,6 +27,12 @@ export type ExcalidrawApiLike = {
   scrollToContent(target?: string | ExcalidrawElementLike | readonly ExcalidrawElementLike[]): void
 }
 
+export type ExcalidrawAdapterSnapshot = {
+  blocks: CanvasBlock[]
+  sequence: number
+  todoTaskSequence: number
+}
+
 export class ExcalidrawAdapter implements CanvasAdapter {
   private readonly blocks = new Map<string, CanvasBlock>()
   private sequence = 0
@@ -34,8 +40,25 @@ export class ExcalidrawAdapter implements CanvasAdapter {
 
   constructor(
     private readonly api: ExcalidrawApiLike,
-    public readonly canvasId: string
-  ) {}
+    public readonly canvasId: string,
+    snapshot?: ExcalidrawAdapterSnapshot
+  ) {
+    if (snapshot) {
+      snapshot.blocks.forEach((block) => {
+        this.blocks.set(block.id, this.cloneBlock(block))
+      })
+      this.sequence = snapshot.sequence
+      this.todoTaskSequence = snapshot.todoTaskSequence
+    }
+  }
+
+  exportSnapshot(): ExcalidrawAdapterSnapshot {
+    return {
+      blocks: [...this.blocks.values()].map((block) => this.cloneBlock(block)),
+      sequence: this.sequence,
+      todoTaskSequence: this.todoTaskSequence
+    }
+  }
 
   createText(input: { text: string; x: number; y: number; name?: string }): AdapterCreateResult {
     return this.createBlock('text', input)
@@ -501,5 +524,13 @@ export class ExcalidrawAdapter implements CanvasAdapter {
   private nextTodoTaskId(): string {
     this.todoTaskSequence += 1
     return `todo_${this.todoTaskSequence.toString().padStart(4, '0')}`
+  }
+
+  private cloneBlock(block: CanvasBlock): CanvasBlock {
+    return {
+      ...block,
+      shapeIds: [...block.shapeIds],
+      props: block.props ? structuredClone(block.props) : undefined
+    }
   }
 }
