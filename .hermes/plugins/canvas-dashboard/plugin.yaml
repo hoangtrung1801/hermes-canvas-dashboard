@@ -1,0 +1,8 @@
+name: canvas-dashboard
+version: 0.1.0
+description: Send action batches to a user-managed Canvas Dashboard API.
+author: local
+type: general
+entry_point: __init__.py
+dependencies:
+  - websocket-client
