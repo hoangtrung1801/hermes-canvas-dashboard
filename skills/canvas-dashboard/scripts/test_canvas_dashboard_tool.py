@@ -105,6 +105,55 @@ class CanvasDashboardToolTests(unittest.TestCase):
         )
         self.assertEqual(config.actions, [{"type": "read_canvas"}])
 
+    def test_parse_config_uses_environment_defaults(self):
+        namespace = parse_args(["--actions", '[{"type":"read_canvas"}]'])
+        config = parse_config(
+            namespace,
+            env={
+                "CANVAS_DASHBOARD_URL": "wss://canvas.example/ws?canvasId=old&role=bridge",
+                "CANVAS_DASHBOARD_CANVAS_ID": "team_canvas",
+                "CANVAS_DASHBOARD_TIMEOUT_MS": "9000",
+            },
+            now_ms=lambda: 12345,
+        )
+
+        self.assertEqual(config.canvas_id, "team_canvas")
+        self.assertEqual(config.timeout_ms, 9000)
+        self.assertEqual(
+            config.url,
+            "wss://canvas.example/ws?canvasId=team_canvas&role=hermes",
+        )
+
+    def test_parse_config_cli_options_override_environment(self):
+        namespace = parse_args(
+            [
+                "--actions",
+                '[{"type":"read_canvas"}]',
+                "--url",
+                "ws://localhost:8787/canvas?canvasId=cli_old&role=bridge",
+                "--canvasId",
+                "cli_canvas",
+                "--timeoutMs",
+                "3000",
+            ]
+        )
+        config = parse_config(
+            namespace,
+            env={
+                "CANVAS_DASHBOARD_URL": "wss://canvas.example/ws?canvasId=env&role=bridge",
+                "CANVAS_DASHBOARD_CANVAS_ID": "env_canvas",
+                "CANVAS_DASHBOARD_TIMEOUT_MS": "9000",
+            },
+            now_ms=lambda: 12345,
+        )
+
+        self.assertEqual(config.canvas_id, "cli_canvas")
+        self.assertEqual(config.timeout_ms, 3000)
+        self.assertEqual(
+            config.url,
+            "ws://localhost:8787/canvas?canvasId=cli_canvas&role=hermes",
+        )
+
     def test_parse_config_rejects_invalid_json(self):
         namespace = parse_args(["--actions", "not-json"])
 

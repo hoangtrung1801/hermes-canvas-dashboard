@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 import time
 from dataclasses import dataclass
@@ -103,12 +104,11 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
         description="Send Hermes canvas action batches to the Canvas Bridge."
     )
     parser.add_argument("--actions", help="JSON array of canvas actions")
-    parser.add_argument("--url", default=DEFAULT_URL, help="Canvas gateway WebSocket URL")
-    parser.add_argument("--canvasId", default=DEFAULT_CANVAS_ID, help="Canvas id")
+    parser.add_argument("--url", help="Canvas gateway WebSocket URL")
+    parser.add_argument("--canvasId", help="Canvas id")
     parser.add_argument("--requestId", help="Request id")
     parser.add_argument(
         "--timeoutMs",
-        default=str(DEFAULT_TIMEOUT_MS),
         help="Timeout in milliseconds",
     )
     return parser.parse_args(argv)
@@ -116,8 +116,11 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
 
 def parse_config(
     namespace: argparse.Namespace,
+    env: dict[str, str] | None = None,
     now_ms: Any | None = None,
 ) -> ToolConfig:
+    env_values = os.environ if env is None else env
+
     if namespace.actions is None:
         raise CanvasDashboardToolError("--actions is required")
 
@@ -130,8 +133,9 @@ def parse_config(
 
     actions = validate_actions(parsed_actions)
 
+    timeout_value = namespace.timeoutMs or env_values.get("CANVAS_DASHBOARD_TIMEOUT_MS")
     try:
-        timeout_ms = int(namespace.timeoutMs)
+        timeout_ms = int(timeout_value or DEFAULT_TIMEOUT_MS)
     except ValueError as error:
         raise CanvasDashboardToolError(
             "--timeoutMs must be a positive integer"
@@ -140,7 +144,11 @@ def parse_config(
     if timeout_ms <= 0:
         raise CanvasDashboardToolError("--timeoutMs must be a positive integer")
 
-    canvas_id = namespace.canvasId
+    canvas_id = (
+        namespace.canvasId
+        or env_values.get("CANVAS_DASHBOARD_CANVAS_ID")
+        or DEFAULT_CANVAS_ID
+    )
     if not isinstance(canvas_id, str) or not canvas_id.strip():
         raise CanvasDashboardToolError("--canvasId must be a non-empty string")
 
@@ -150,7 +158,10 @@ def parse_config(
         raise CanvasDashboardToolError("--requestId must be a non-empty string")
 
     return ToolConfig(
-        url=normalize_url(namespace.url, canvas_id),
+        url=normalize_url(
+            namespace.url or env_values.get("CANVAS_DASHBOARD_URL") or DEFAULT_URL,
+            canvas_id,
+        ),
         canvas_id=canvas_id,
         request_id=request_id,
         timeout_ms=timeout_ms,
