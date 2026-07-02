@@ -4,7 +4,7 @@
 
 **Goal:** Add a repo-local `canvas-dashboard` operational skill and a Python CLI that lets Hermes send machine-readable action batches through the existing Canvas Bridge.
 
-**Architecture:** Keep the bridge protocol unchanged. Add one Python CLI under `scripts/` with small, testable helper functions and lazy WebSocket dependency loading. Add one repo-local skill under `skills/canvas-dashboard/` that documents full Canvas API usage and points agents at the CLI.
+**Architecture:** Keep the bridge protocol unchanged. Add one Python CLI under `skills/canvas-dashboard/` with small, testable helper functions and lazy WebSocket dependency loading. Add one repo-local skill under `skills/canvas-dashboard/` that documents full Canvas API usage and points agents at the CLI.
 
 **Tech Stack:** Python 3 standard library, optional `websocket-client`, `unittest`, existing Node/Vite/TypeScript bridge.
 
@@ -12,9 +12,9 @@
 
 ## File Structure
 
-- Create `scripts/canvas_dashboard_tool.py`
+- Create `skills/canvas-dashboard/canvas_dashboard_tool.py`
   Python CLI and testable helper functions for parsing args, normalizing URLs, validating action arrays, building request envelopes, collecting matching responses, and printing stable JSON.
-- Create `scripts/test_canvas_dashboard_tool.py`
+- Create `skills/canvas-dashboard/test_canvas_dashboard_tool.py`
   Standard-library `unittest` tests for the Python helper functions. Tests must not open a WebSocket connection.
 - Create `skills/canvas-dashboard/SKILL.md`
   Agent-facing operational skill covering startup requirements, CLI usage, response handling, all current Canvas API actions, batch examples, and troubleshooting.
@@ -22,12 +22,12 @@
 ## Task 1: Add Python Tool Helper Tests
 
 **Files:**
-- Create: `scripts/test_canvas_dashboard_tool.py`
-- Create: `scripts/canvas_dashboard_tool.py`
+- Create: `skills/canvas-dashboard/test_canvas_dashboard_tool.py`
+- Create: `skills/canvas-dashboard/canvas_dashboard_tool.py`
 
 - [ ] **Step 1: Create a minimal importable Python module**
 
-Create `scripts/canvas_dashboard_tool.py` with enough symbols for tests to import:
+Create `skills/canvas-dashboard/canvas_dashboard_tool.py` with enough symbols for tests to import:
 
 ```python
 #!/usr/bin/env python3
@@ -123,7 +123,7 @@ def format_failure(
 
 - [ ] **Step 2: Write failing unit tests**
 
-Create `scripts/test_canvas_dashboard_tool.py`:
+Create `skills/canvas-dashboard/test_canvas_dashboard_tool.py`:
 
 ```python
 import unittest
@@ -223,7 +223,7 @@ if __name__ == "__main__":
 Run:
 
 ```bash
-python3 -m unittest scripts/test_canvas_dashboard_tool.py
+python3 -m unittest skills/canvas-dashboard/test_canvas_dashboard_tool.py
 ```
 
 Expected: PASS for helper tests.
@@ -231,15 +231,15 @@ Expected: PASS for helper tests.
 - [ ] **Step 4: Commit helper tests and importable skeleton**
 
 ```bash
-git add scripts/canvas_dashboard_tool.py scripts/test_canvas_dashboard_tool.py
+git add skills/canvas-dashboard/canvas_dashboard_tool.py skills/canvas-dashboard/test_canvas_dashboard_tool.py
 git commit -m "test: add canvas dashboard python tool coverage"
 ```
 
 ## Task 2: Implement Python CLI Runtime
 
 **Files:**
-- Modify: `scripts/canvas_dashboard_tool.py`
-- Test: `scripts/test_canvas_dashboard_tool.py`
+- Modify: `skills/canvas-dashboard/canvas_dashboard_tool.py`
+- Test: `skills/canvas-dashboard/test_canvas_dashboard_tool.py`
 
 - [ ] **Step 1: Extend tests for argument parsing and bridge error detection**
 
@@ -291,14 +291,14 @@ class CanvasDashboardToolTests(unittest.TestCase):
 Run:
 
 ```bash
-python3 -m unittest scripts/test_canvas_dashboard_tool.py
+python3 -m unittest skills/canvas-dashboard/test_canvas_dashboard_tool.py
 ```
 
 Expected: FAIL because `parse_args`, `parse_config`, and `should_fail_for_response` are not implemented yet.
 
 - [ ] **Step 3: Implement CLI parsing, WebSocket execution, and main**
 
-Append and integrate this code in `scripts/canvas_dashboard_tool.py`:
+Append and integrate this code in `skills/canvas-dashboard/canvas_dashboard_tool.py`:
 
 ```python
 def parse_args(argv: list[str]) -> argparse.Namespace:
@@ -437,7 +437,7 @@ if __name__ == "__main__":
 Run:
 
 ```bash
-python3 -m unittest scripts/test_canvas_dashboard_tool.py
+python3 -m unittest skills/canvas-dashboard/test_canvas_dashboard_tool.py
 ```
 
 Expected: PASS.
@@ -447,7 +447,7 @@ Expected: PASS.
 Run:
 
 ```bash
-python3 scripts/canvas_dashboard_tool.py --actions '[{"type":"read_canvas"}]' --timeoutMs 100
+python3 skills/canvas-dashboard/canvas_dashboard_tool.py --actions '[{"type":"read_canvas"}]' --timeoutMs 100
 ```
 
 Expected: exits non-zero and prints one JSON object with `"ok": false`. If no `websocket-client` package is installed, the error should explain the install command.
@@ -455,7 +455,7 @@ Expected: exits non-zero and prints one JSON object with `"ok": false`. If no `w
 - [ ] **Step 6: Commit Python CLI runtime**
 
 ```bash
-git add scripts/canvas_dashboard_tool.py scripts/test_canvas_dashboard_tool.py
+git add skills/canvas-dashboard/canvas_dashboard_tool.py skills/canvas-dashboard/test_canvas_dashboard_tool.py
 git commit -m "feat: add canvas dashboard python tool"
 ```
 
@@ -503,7 +503,7 @@ python3 -m pip install websocket-client
 Send actions with:
 
 ```bash
-python3 scripts/canvas_dashboard_tool.py --actions '[{"type":"read_canvas"}]'
+python3 skills/canvas-dashboard/canvas_dashboard_tool.py --actions '[{"type":"read_canvas"}]'
 ```
 
 Useful options:
@@ -532,37 +532,37 @@ Stop and inspect the JSON if:
 ### create_text
 
 ```bash
-python3 scripts/canvas_dashboard_tool.py --actions '[{"type":"create_text","text":"Hello from Hermes","x":100,"y":120,"name":"Greeting"}]'
+python3 skills/canvas-dashboard/canvas_dashboard_tool.py --actions '[{"type":"create_text","text":"Hello from Hermes","x":100,"y":120,"name":"Greeting"}]'
 ```
 
 ### create_box
 
 ```bash
-python3 scripts/canvas_dashboard_tool.py --actions '[{"type":"create_box","name":"Container","text":"Planning area","x":80,"y":80,"w":650,"h":420}]'
+python3 skills/canvas-dashboard/canvas_dashboard_tool.py --actions '[{"type":"create_box","name":"Container","text":"Planning area","x":80,"y":80,"w":650,"h":420}]'
 ```
 
 ### create_note
 
 ```bash
-python3 scripts/canvas_dashboard_tool.py --actions '[{"type":"create_note","text":"Architecture note","x":450,"y":150,"name":"Note"}]'
+python3 skills/canvas-dashboard/canvas_dashboard_tool.py --actions '[{"type":"create_note","text":"Architecture note","x":450,"y":150,"name":"Note"}]'
 ```
 
 ### create_todo_block
 
 ```bash
-python3 scripts/canvas_dashboard_tool.py --actions '[{"type":"create_todo_block","name":"Launch Checklist","x":100,"y":150,"tasks":[{"id":"task_copy","text":"Write launch copy"},{"id":"task_assets","text":"Prepare screenshots","done":true},"Ship release"],"props":{"priority":"high"}}]'
+python3 skills/canvas-dashboard/canvas_dashboard_tool.py --actions '[{"type":"create_todo_block","name":"Launch Checklist","x":100,"y":150,"tasks":[{"id":"task_copy","text":"Write launch copy"},{"id":"task_assets","text":"Prepare screenshots","done":true},"Ship release"],"props":{"priority":"high"}}]'
 ```
 
 ### create_task_card
 
 ```bash
-python3 scripts/canvas_dashboard_tool.py --actions '[{"type":"create_task_card","name":"Design import modal","text":"Create modern modal UI","x":100,"y":120,"props":{"status":"todo","priority":"medium","assignee":"Hermes"}}]'
+python3 skills/canvas-dashboard/canvas_dashboard_tool.py --actions '[{"type":"create_task_card","name":"Design import modal","text":"Create modern modal UI","x":100,"y":120,"props":{"status":"todo","priority":"medium","assignee":"Hermes"}}]'
 ```
 
 ### create_link_card
 
 ```bash
-python3 scripts/canvas_dashboard_tool.py --actions '[{"type":"create_link_card","name":"Excalidraw Documentation","url":"https://docs.excalidraw.com","x":100,"y":350,"props":{"category":"docs"}}]'
+python3 skills/canvas-dashboard/canvas_dashboard_tool.py --actions '[{"type":"create_link_card","name":"Excalidraw Documentation","url":"https://docs.excalidraw.com","x":100,"y":350,"props":{"category":"docs"}}]'
 ```
 
 ### create_arrow
@@ -570,73 +570,73 @@ python3 scripts/canvas_dashboard_tool.py --actions '[{"type":"create_link_card",
 Use block ids returned by previous create or lookup actions.
 
 ```bash
-python3 scripts/canvas_dashboard_tool.py --actions '[{"type":"create_arrow","fromBlockId":"block_0001","toBlockId":"block_0002","label":"depends on"}]'
+python3 skills/canvas-dashboard/canvas_dashboard_tool.py --actions '[{"type":"create_arrow","fromBlockId":"block_0001","toBlockId":"block_0002","label":"depends on"}]'
 ```
 
 ### update_text
 
 ```bash
-python3 scripts/canvas_dashboard_tool.py --actions '[{"type":"update_text","blockId":"block_0001","text":"Updated text"}]'
+python3 skills/canvas-dashboard/canvas_dashboard_tool.py --actions '[{"type":"update_text","blockId":"block_0001","text":"Updated text"}]'
 ```
 
 ### append_todo_task
 
 ```bash
-python3 scripts/canvas_dashboard_tool.py --actions '[{"type":"append_todo_task","blockId":"block_0001","taskId":"task_review","text":"Review implementation"}]'
+python3 skills/canvas-dashboard/canvas_dashboard_tool.py --actions '[{"type":"append_todo_task","blockId":"block_0001","taskId":"task_review","text":"Review implementation"}]'
 ```
 
 ### set_todo_task_done
 
 ```bash
-python3 scripts/canvas_dashboard_tool.py --actions '[{"type":"set_todo_task_done","blockId":"block_0001","taskId":"task_review","done":true}]'
+python3 skills/canvas-dashboard/canvas_dashboard_tool.py --actions '[{"type":"set_todo_task_done","blockId":"block_0001","taskId":"task_review","done":true}]'
 ```
 
 ### remove_todo_task
 
 ```bash
-python3 scripts/canvas_dashboard_tool.py --actions '[{"type":"remove_todo_task","blockId":"block_0001","taskId":"task_review"}]'
+python3 skills/canvas-dashboard/canvas_dashboard_tool.py --actions '[{"type":"remove_todo_task","blockId":"block_0001","taskId":"task_review"}]'
 ```
 
 ### move_block
 
 ```bash
-python3 scripts/canvas_dashboard_tool.py --actions '[{"type":"move_block","blockId":"block_0001","x":240,"y":320}]'
+python3 skills/canvas-dashboard/canvas_dashboard_tool.py --actions '[{"type":"move_block","blockId":"block_0001","x":240,"y":320}]'
 ```
 
 ### delete_block
 
 ```bash
-python3 scripts/canvas_dashboard_tool.py --actions '[{"type":"delete_block","blockId":"block_0001"}]'
+python3 skills/canvas-dashboard/canvas_dashboard_tool.py --actions '[{"type":"delete_block","blockId":"block_0001"}]'
 ```
 
 ### get_block_by_name
 
 ```bash
-python3 scripts/canvas_dashboard_tool.py --actions '[{"type":"get_block_by_name","name":"Launch Checklist"}]'
+python3 skills/canvas-dashboard/canvas_dashboard_tool.py --actions '[{"type":"get_block_by_name","name":"Launch Checklist"}]'
 ```
 
 ### get_todo_block_data
 
 ```bash
-python3 scripts/canvas_dashboard_tool.py --actions '[{"type":"get_todo_block_data","blockId":"block_0001"}]'
+python3 skills/canvas-dashboard/canvas_dashboard_tool.py --actions '[{"type":"get_todo_block_data","blockId":"block_0001"}]'
 ```
 
 ### read_canvas
 
 ```bash
-python3 scripts/canvas_dashboard_tool.py --actions '[{"type":"read_canvas"}]'
+python3 skills/canvas-dashboard/canvas_dashboard_tool.py --actions '[{"type":"read_canvas"}]'
 ```
 
 ### zoom_to_fit
 
 ```bash
-python3 scripts/canvas_dashboard_tool.py --actions '[{"type":"zoom_to_fit"}]'
+python3 skills/canvas-dashboard/canvas_dashboard_tool.py --actions '[{"type":"zoom_to_fit"}]'
 ```
 
 ## Batch Example
 
 ```bash
-python3 scripts/canvas_dashboard_tool.py --actions '[{"type":"create_box","name":"Plan","text":"Dashboard plan","x":80,"y":80,"w":500,"h":280},{"type":"create_todo_block","name":"Next Steps","x":120,"y":150,"tasks":["Read current canvas","Update task status"]},{"type":"zoom_to_fit"},{"type":"read_canvas"}]'
+python3 skills/canvas-dashboard/canvas_dashboard_tool.py --actions '[{"type":"create_box","name":"Plan","text":"Dashboard plan","x":80,"y":80,"w":500,"h":280},{"type":"create_todo_block","name":"Next Steps","x":120,"y":150,"tasks":["Read current canvas","Update task status"]},{"type":"zoom_to_fit"},{"type":"read_canvas"}]'
 ```
 
 ## Source of Truth
@@ -672,8 +672,8 @@ git commit -m "docs: add canvas dashboard skill"
 ## Task 4: Final Verification
 
 **Files:**
-- Verify: `scripts/canvas_dashboard_tool.py`
-- Verify: `scripts/test_canvas_dashboard_tool.py`
+- Verify: `skills/canvas-dashboard/canvas_dashboard_tool.py`
+- Verify: `skills/canvas-dashboard/test_canvas_dashboard_tool.py`
 - Verify: `skills/canvas-dashboard/SKILL.md`
 
 - [ ] **Step 1: Run Python unit tests**
@@ -681,7 +681,7 @@ git commit -m "docs: add canvas dashboard skill"
 Run:
 
 ```bash
-python3 -m unittest scripts/test_canvas_dashboard_tool.py
+python3 -m unittest skills/canvas-dashboard/test_canvas_dashboard_tool.py
 ```
 
 Expected: PASS.

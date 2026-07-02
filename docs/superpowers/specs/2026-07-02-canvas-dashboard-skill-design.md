@@ -10,7 +10,7 @@ Hermes needs a repo-local `canvas-dashboard` skill that explains how to operate 
 
 - Add a repo-local operational skill at `skills/canvas-dashboard/SKILL.md`.
 - Cover the full current Canvas API from `CANVAS_API.md`, including every action and response envelope.
-- Add a Python CLI at `scripts/canvas_dashboard_tool.py`.
+- Add a Python CLI at `skills/canvas-dashboard/canvas_dashboard_tool.py`.
 - Make the CLI suitable for agent use by emitting stable machine-readable JSON.
 - Keep the existing bridge protocol unchanged.
 
@@ -37,10 +37,10 @@ The skill should avoid UI implementation guidance. Its scope is operating the br
 
 ## Python CLI Contract
 
-Add `scripts/canvas_dashboard_tool.py` as a standalone Python script invoked with:
+Add `skills/canvas-dashboard/canvas_dashboard_tool.py` as a standalone Python script invoked with:
 
 ```bash
-python3 scripts/canvas_dashboard_tool.py --actions '[{"type":"read_canvas"}]'
+python3 skills/canvas-dashboard/canvas_dashboard_tool.py --actions '[{"type":"read_canvas"}]'
 ```
 
 The script supports:
@@ -64,7 +64,7 @@ python3 -m pip install websocket-client
 1. Hermes reads `skills/canvas-dashboard/SKILL.md`.
 2. Hermes ensures the gateway is running with `npm run server`.
 3. Hermes ensures the browser canvas is open and connected as `role=bridge`.
-4. Hermes calls `python3 scripts/canvas_dashboard_tool.py --actions '<json action array>'`.
+4. Hermes calls `python3 skills/canvas-dashboard/canvas_dashboard_tool.py --actions '<json action array>'`.
 5. The script parses CLI options, lightly validates the action array, builds a `canvas.action` envelope, and connects to the gateway as `role=hermes`.
 6. The script sends the action envelope and records response envelopes for the matching request id.
 7. The script exits successfully after receiving the matching `canvas.observation`.
