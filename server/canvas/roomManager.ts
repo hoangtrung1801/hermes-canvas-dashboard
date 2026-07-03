@@ -21,6 +21,17 @@ export class RoomManager {
     this.getOrCreate(canvasId).bridge = socket
   }
 
+  detachBridge(canvasId: string, socket: { send(data: string): void }) {
+    const room = this.rooms.get(canvasId)
+    if (room?.bridge === socket) {
+      delete room.bridge
+    }
+  }
+
+  hasBridge(canvasId: string): boolean {
+    return Boolean(this.rooms.get(canvasId)?.bridge)
+  }
+
   attachHermes(canvasId: string, socket: { send(data: string): void }) {
     this.getOrCreate(canvasId).hermes = socket
   }

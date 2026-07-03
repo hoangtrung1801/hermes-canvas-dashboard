@@ -40,6 +40,7 @@ export function createCanvasGateway(port = 8787, options: CanvasGatewayOptions =
 
     if (role === 'bridge') {
       rooms.attachBridge(canvasId, socket)
+      socket.on('close', () => rooms.detachBridge(canvasId, socket))
     } else {
       rooms.attachHermes(canvasId, socket)
     }

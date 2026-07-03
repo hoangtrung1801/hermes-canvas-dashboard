@@ -11,6 +11,34 @@ describe('RoomManager', () => {
 
     expect(roomA).toBe(roomB)
   })
+
+  it('reports whether a bridge is attached for a canvas id', () => {
+    const rooms = new RoomManager()
+    const bridge = { send() {} }
+
+    expect(rooms.hasBridge('canvas_001')).toBe(false)
+
+    rooms.attachBridge('canvas_001', bridge)
+
+    expect(rooms.hasBridge('canvas_001')).toBe(true)
+    expect(rooms.hasBridge('canvas_002')).toBe(false)
+  })
+
+  it('clears bridge presence only for the attached bridge socket', () => {
+    const rooms = new RoomManager()
+    const firstBridge = { send() {} }
+    const secondBridge = { send() {} }
+
+    rooms.attachBridge('canvas_001', firstBridge)
+    rooms.attachBridge('canvas_001', secondBridge)
+    rooms.detachBridge('canvas_001', firstBridge)
+
+    expect(rooms.hasBridge('canvas_001')).toBe(true)
+
+    rooms.detachBridge('canvas_001', secondBridge)
+
+    expect(rooms.hasBridge('canvas_001')).toBe(false)
+  })
 })
 
 describe('createHermesCanvasToolPayload', () => {
