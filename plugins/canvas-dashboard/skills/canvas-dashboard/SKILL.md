@@ -46,6 +46,8 @@ Useful options:
 - `--requestId`: stable request id for correlation.
 - `--timeoutMs`: timeout in milliseconds. Overrides `CANVAS_DASHBOARD_TIMEOUT_MS`.
 
+When using the Hermes `canvas_action` plugin tool, the plugin automatically prepends `{"type":"read_canvas"}` before any non-read action batch so the agent catches up on current canvas context before changing anything. The standalone `scripts/canvas_dashboard_tool.py` CLI sends exactly the actions you provide.
+
 The tool prints a single JSON object. On success, `ok` is `true` and `responses` contains the received `canvas.result` and `canvas.observation` envelopes. On failure, `ok` is `false` and `error` explains the failure.
 
 ## Response Handling

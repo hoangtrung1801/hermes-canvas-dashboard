@@ -1,4 +1,6 @@
 import unittest
+import types
+import sys
 from importlib import util
 from pathlib import Path
 
@@ -7,10 +9,22 @@ from tools import build_tool_config, handle_canvas_action
 
 def load_plugin_entrypoint():
     module_path = Path(__file__).resolve().parent / "__init__.py"
-    spec = util.spec_from_file_location("canvas_dashboard_plugin", module_path)
+    spec = util.spec_from_file_location(
+        "hermes_plugins.canvas_dashboard",
+        module_path,
+        submodule_search_locations=[str(module_path.parent)],
+    )
     if spec is None or spec.loader is None:
         raise RuntimeError("Unable to load plugin entrypoint")
+    if "hermes_plugins" not in sys.modules:
+        parent = types.ModuleType("hermes_plugins")
+        parent.__path__ = []
+        parent.__package__ = "hermes_plugins"
+        sys.modules["hermes_plugins"] = parent
     module = util.module_from_spec(spec)
+    module.__package__ = "hermes_plugins.canvas_dashboard"
+    module.__path__ = [str(module_path.parent)]
+    sys.modules[spec.name] = module
     spec.loader.exec_module(module)
     return module
 
@@ -28,7 +42,7 @@ class FakeContext:
 
 
 class CanvasDashboardPluginTests(unittest.TestCase):
-    def test_register_adds_tool_and_skill(self):
+    def test_register_adds_tool(self):
         ctx = FakeContext()
         plugin = load_plugin_entrypoint()
 
@@ -36,9 +50,7 @@ class CanvasDashboardPluginTests(unittest.TestCase):
 
         self.assertEqual(ctx.tools[0]["name"], "canvas_action")
         self.assertEqual(ctx.tools[0]["toolset"], "canvas_dashboard")
-        self.assertEqual(ctx.skills[0]["name"], "canvas-dashboard")
-        self.assertIsInstance(ctx.skills[0]["path"], Path)
-        self.assertEqual(ctx.skills[0]["path"].name, "canvas-dashboard")
+        self.assertEqual(ctx.skills, [])
 
     def test_build_tool_config_uses_payload_over_environment(self):
         config = build_tool_config(
@@ -84,6 +96,36 @@ class CanvasDashboardPluginTests(unittest.TestCase):
             "wss://canvas.example/ws?canvasId=env_canvas&role=hermes",
         )
 
+    def test_build_tool_config_keeps_read_only_action_single(self):
+        config = build_tool_config({"actions": [{"type": "read_canvas"}]})
+
+        self.assertEqual(config.actions, [{"type": "read_canvas"}])
+
+    def test_build_tool_config_prepends_read_canvas_before_non_read_actions(self):
+        config = build_tool_config(
+            {"actions": [{"type": "create_text", "text": "Hello"}]}
+        )
+
+        self.assertEqual(
+            config.actions,
+            [{"type": "read_canvas"}, {"type": "create_text", "text": "Hello"}],
+        )
+
+    def test_build_tool_config_does_not_duplicate_existing_leading_read_canvas(self):
+        config = build_tool_config(
+            {
+                "actions": [
+                    {"type": "read_canvas"},
+                    {"type": "create_text", "text": "Hello"},
+                ]
+            }
+        )
+
+        self.assertEqual(
+            config.actions,
+            [{"type": "read_canvas"}, {"type": "create_text", "text": "Hello"}],
+        )
+
     def test_handle_canvas_action_returns_runner_result(self):
         def fake_runner(config):
             return {
@@ -98,13 +140,19 @@ class CanvasDashboardPluginTests(unittest.TestCase):
             }
 
         result = handle_canvas_action(
-            {"actions": [{"type": "read_canvas"}], "requestId": "req_plugin"},
+            {
+                "actions": [{"type": "create_text", "text": "Hello"}],
+                "requestId": "req_plugin",
+            },
             runner=fake_runner,
         )
 
         self.assertTrue(result["ok"])
         self.assertEqual(result["request"]["requestId"], "req_plugin")
-        self.assertEqual(result["request"]["actions"], [{"type": "read_canvas"}])
+        self.assertEqual(
+            result["request"]["actions"],
+            [{"type": "read_canvas"}, {"type": "create_text", "text": "Hello"}],
+        )
 
     def test_handle_canvas_action_returns_structured_validation_error(self):
         result = handle_canvas_action({"actions": []})

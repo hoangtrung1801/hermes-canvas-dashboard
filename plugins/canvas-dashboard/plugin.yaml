@@ -6,3 +6,7 @@ type: general
 entry_point: __init__.py
 dependencies:
   - websocket-client
+requires_env:
+  - CANVAS_DASHBOARD_URL
+  - CANVAS_DASHBOARD_CANVAS_ID
+  - CANVAS_DASHBOARD_TIMEOUT_MS

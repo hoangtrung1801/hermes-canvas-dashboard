@@ -12,7 +12,7 @@ CANVAS_ACTION_SCHEMA = {
                 "required": ["type"],
                 "additionalProperties": True,
             },
-            "description": "Canvas action objects to send in one canvas.action batch.",
+            "description": "Canvas action objects to send in one canvas.action batch. The plugin automatically prepends read_canvas before any non-read action so Hermes catches up on current canvas state first.",
         },
         "url": {
             "type": "string",

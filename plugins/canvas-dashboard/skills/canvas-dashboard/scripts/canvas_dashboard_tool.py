@@ -9,8 +9,14 @@ import os
 import sys
 import time
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any
 from urllib.parse import parse_qsl, urlencode, urlparse, urlunparse
+
+
+VENDOR_DIR = Path(__file__).resolve().parents[3] / "vendor"
+if VENDOR_DIR.exists():
+    sys.path.insert(0, str(VENDOR_DIR))
 
 
 DEFAULT_CANVAS_ID = "canvas_001"

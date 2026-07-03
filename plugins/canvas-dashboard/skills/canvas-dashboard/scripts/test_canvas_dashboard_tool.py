@@ -94,7 +94,7 @@ class CanvasDashboardToolTests(unittest.TestCase):
 
     def test_parse_config_uses_defaults_and_generated_request_id(self):
         namespace = parse_args(["--actions", '[{"type":"read_canvas"}]'])
-        config = parse_config(namespace, now_ms=lambda: 12345)
+        config = parse_config(namespace, env={}, now_ms=lambda: 12345)
 
         self.assertEqual(config.canvas_id, "canvas_001")
         self.assertEqual(config.timeout_ms, 5000)

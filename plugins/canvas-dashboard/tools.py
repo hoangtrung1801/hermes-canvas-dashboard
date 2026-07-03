@@ -27,6 +27,17 @@ def _load_canvas_tool_module():
 
 canvas_tool = _load_canvas_tool_module()
 
+READ_CANVAS_ACTION = {"type": "read_canvas"}
+
+
+def _with_required_canvas_read(actions: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Ensure every non-read request catches up on canvas state before acting."""
+    if len(actions) == 1 and actions[0].get("type") == "read_canvas":
+        return actions
+    if actions and actions[0].get("type") == "read_canvas":
+        return actions
+    return [READ_CANVAS_ACTION.copy(), *actions]
+
 
 def build_tool_config(
     payload: dict[str, Any],
@@ -40,13 +51,21 @@ def build_tool_config(
         requestId=payload.get("requestId"),
         timeoutMs=payload.get("timeoutMs"),
     )
-    return canvas_tool.parse_config(namespace, env=env, now_ms=now_ms)
+    config = canvas_tool.parse_config(namespace, env=env, now_ms=now_ms)
+    return canvas_tool.ToolConfig(
+        url=config.url,
+        canvas_id=config.canvas_id,
+        request_id=config.request_id,
+        timeout_ms=config.timeout_ms,
+        actions=_with_required_canvas_read(config.actions),
+    )
 
 
 def handle_canvas_action(
     payload: dict[str, Any],
     ctx: Any | None = None,
     runner: Callable[[Any], dict[str, Any]] | None = None,
+    **_: Any,
 ) -> dict[str, Any]:
     del ctx
     try:
