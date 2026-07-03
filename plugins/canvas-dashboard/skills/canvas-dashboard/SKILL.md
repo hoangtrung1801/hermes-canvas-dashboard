@@ -5,13 +5,19 @@ description: Operate a user-managed Hermes Canvas Dashboard or Canvas Bridge API
 
 # Canvas Dashboard
 
-Use this skill to interact with a running Canvas Dashboard API. The user is responsible for starting and managing the dashboard, gateway, browser bridge, auth tunnel, or any other server-side process. The agent's job is to call the API, inspect responses, and choose follow-up actions.
+Use this skill to interact with a running Canvas Gateway or Canvas Dashboard API. The user is responsible for starting and managing the gateway, dashboard, browser bridge, auth tunnel, or any other server-side process. The agent's job is to call the API, inspect responses, and choose follow-up actions.
 
 Do not start, stop, build, or modify the user's canvas server unless the user explicitly asks for that. Do not assume this skill is being used inside the canvas source repository.
 
 ## Connection
 
 Ask the user for the WebSocket URL and canvas id when they are not already available. The tool defaults to a local development endpoint, but production or shared dashboards should pass explicit connection settings.
+
+The gateway must be running before using this skill. Opening the canvas dashboard is optional:
+
+- If the dashboard is open and connected as `role=bridge`, actions execute live in the browser.
+- If the dashboard is closed, the gateway executes the same action batch headlessly against the persisted snapshot and saves the result.
+- If no snapshot exists yet, the gateway creates a blank canvas snapshot.
 
 Use `uv` so the WebSocket dependency is available without relying on system `pip`:
 
@@ -184,12 +190,12 @@ uv run --with websocket-client scripts/canvas_dashboard_tool.py --actions '[{"ty
 
 ## Source of Truth
 
-The running Canvas Dashboard API is authoritative. The Python tool does lightweight preflight validation only; the bridge performs authoritative validation and returns `canvas.error` or per-action result errors for invalid or impossible actions.
+The running Canvas Gateway API is authoritative. The Python tool does lightweight preflight validation only; the live bridge or headless executor performs authoritative validation and returns `canvas.error` or per-action result errors for invalid or impossible actions. The browser bridge is required only for live visual execution.
 
 ## Troubleshooting
 
 - `Missing Python dependency websocket-client`: run `uv run --with websocket-client scripts/canvas_dashboard_tool.py --actions '[{"type":"read_canvas"}]'` or vendor it once with `uv pip install --target vendor websocket-client`.
-- `Unable to connect`: ask the user for the active dashboard WebSocket URL and verify `--url`.
-- Timeout waiting for `canvas.observation`: ask the user to confirm the canvas dashboard and bridge are running for the selected `canvasId`.
+- `Unable to connect`: ask the user for the active gateway WebSocket URL and verify `--url`.
+- Timeout waiting for `canvas.observation`: ask the user to confirm the gateway is running for the selected `canvasId`.
 - `canvas.error`: fix the action payload according to the API response and the action examples in this skill.
 - Result item contains `error`: the envelope was valid, but that action failed; inspect ids and block types.

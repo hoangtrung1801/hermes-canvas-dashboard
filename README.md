@@ -1,16 +1,21 @@
 # Canvas for Hermes
 
-Hermes sends validated `canvas.action` messages to a browser-resident Canvas Bridge. The bridge applies those actions to an Excalidraw canvas and replies with `canvas.result` and `canvas.observation`.
+Hermes sends validated `canvas.action` messages to the Canvas Gateway. When the dashboard is open, the browser bridge applies those actions live; when it is closed, the gateway applies them headlessly to the persisted canvas snapshot.
 
 ## Local development
 
 1. Install dependencies: `npm install`
 2. Start the gateway: `npm run server`
-3. Start the frontend: `VITE_CANVAS_GATEWAY_URL="ws://localhost:8787/canvas?canvasId=canvas_001&role=bridge" npm run dev`
+3. Optional: start the frontend for live visual editing: `VITE_CANVAS_GATEWAY_URL="ws://localhost:8787/canvas?canvasId=canvas_001&role=bridge" npm run dev`
 4. Send a Hermes-style write batch: `npm run hermes:demo`
 5. Run tests: `npm test`
 
-The gateway also exposes a local file-backed canvas state API at `http://localhost:8787/canvas-state/canvas_001`. The browser saves and restores the single canvas from `data/canvas_001.json` through that API.
+The gateway exposes two canvas capabilities:
+
+- WebSocket action API: `ws://localhost:8787/canvas?canvasId=canvas_001&role=hermes`
+- Local file-backed canvas state API: `http://localhost:8787/canvas-state/canvas_001`
+
+When the frontend dashboard is open and connected as `role=bridge`, actions are handled live by the browser bridge. When no dashboard bridge is connected, the gateway executes actions headlessly against `data/canvas_001.json`; if no snapshot exists, it creates a blank one. The next dashboard load restores that saved state.
 
 If port `8787` is already in use, start the gateway on another port and point the frontend at it:
 
@@ -19,7 +24,7 @@ CANVAS_GATEWAY_PORT=8788 npm run server
 VITE_CANVAS_STATE_URL="http://localhost:8788/canvas-state" VITE_CANVAS_GATEWAY_URL="ws://localhost:8788/canvas?canvasId=canvas_001&role=bridge" npm run dev
 ```
 
-The frontend can run without `VITE_CANVAS_GATEWAY_URL`, so the local canvas and action simulator stay active without a WebSocket connection. Durable JSON-file persistence still requires `npm run server` to be running.
+The frontend can run without `VITE_CANVAS_GATEWAY_URL`, so the local canvas and action simulator stay active without a WebSocket connection. Durable JSON-file persistence and headless action execution still require `npm run server` to be running.
 
 ## Install the Hermes plugin
 
@@ -33,7 +38,7 @@ By default this copies the plugin to `~/.hermes/plugins/canvas-dashboard`. Use `
 
 ## Hermes demo client
 
-With the gateway and browser bridge running, execute:
+With the gateway running, execute:
 
 ```bash
 npm run hermes:demo
@@ -49,10 +54,10 @@ npm run hermes:demo -- --actions '[{"type":"create_text","text":"Hello from Herm
 
 1. The browser sends `canvas.ready` to `ws://localhost:8787/canvas?canvasId=canvas_001&role=bridge` when the canvas is mounted.
 2. Hermes sends a `canvas.action` envelope to `ws://localhost:8787/canvas?canvasId=canvas_001&role=hermes`.
-3. The gateway forwards the action to the active bridge client for that canvas.
-4. The browser validates the action, executes it through `CanvasBridge`, and returns either `canvas.error` or the `canvas.result` plus `canvas.observation` pair.
-5. The gateway forwards the bridge response back to the Hermes client.
-6. The browser saves the latest canvas snapshot to `PUT http://localhost:8787/canvas-state/canvas_001`; the gateway writes it to `data/canvas_001.json`.
+3. If an active bridge client is connected for that canvas, the gateway forwards the action to it.
+4. If no bridge client is connected, the gateway executes the action headlessly against the persisted snapshot.
+5. The live bridge or headless executor returns either `canvas.error` or the `canvas.result` plus `canvas.observation` pair.
+6. The browser or headless executor saves the latest canvas snapshot to `data/canvas_001.json`.
 
 ## Built-in blocks
 
