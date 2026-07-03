@@ -1,4 +1,4 @@
-import { mkdtemp, rm } from 'node:fs/promises'
+import { mkdtemp, readFile, rm } from 'node:fs/promises'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 import { afterEach, describe, expect, it } from 'vitest'
@@ -124,5 +124,68 @@ describe('canvas gateway integration', () => {
     expect(putResponse.status).toBe(204)
     expect(getResponse.status).toBe(200)
     await expect(getResponse.json()).resolves.toEqual(snapshot)
+  })
+
+  it('executes Hermes actions headlessly when no bridge client is connected', async () => {
+    const dataDir = await mkdtemp(join(tmpdir(), 'hermes-canvas-headless-gateway-'))
+    tempDirs.push(dataDir)
+    const gateway = createCanvasGateway(8793, { dataDir })
+    instances.push(gateway)
+
+    const hermesClient = new WebSocket(
+      'ws://localhost:8793/canvas?canvasId=canvas_001&role=hermes'
+    )
+    clients.push(hermesClient)
+
+    const responses = await new Promise<any[]>((resolve, reject) => {
+      const received: any[] = []
+      const timer = setTimeout(() => reject(new Error('Timed out waiting for headless responses')), 2000)
+
+      hermesClient.addEventListener('message', (event: { data: unknown }) => {
+        received.push(JSON.parse(String(event.data)))
+        if (received.some((item) => item.type === 'canvas.observation')) {
+          clearTimeout(timer)
+          resolve(received)
+        }
+      })
+
+      hermesClient.addEventListener('open', () => {
+        hermesClient.send(
+          JSON.stringify(
+            createHermesCanvasToolPayload('canvas_001', [
+              { type: 'create_text', text: 'Created without dashboard', x: 80, y: 120 }
+            ])
+          )
+        )
+      })
+    })
+
+    expect(responses[0]).toMatchObject({
+      type: 'canvas.result',
+      ok: true,
+      results: [
+        {
+          actionType: 'create_text',
+          createdBlockIds: ['block_0001']
+        }
+      ]
+    })
+    expect(responses[1]).toMatchObject({
+      type: 'canvas.observation',
+      state: {
+        blocks: [
+          {
+            id: 'block_0001',
+            text: 'Created without dashboard'
+          }
+        ]
+      }
+    })
+
+    const saved = JSON.parse(await readFile(join(dataDir, 'canvas_001.json'), 'utf8'))
+    expect(saved.adapter.blocks[0]).toMatchObject({
+      id: 'block_0001',
+      text: 'Created without dashboard'
+    })
   })
 })

@@ -6,6 +6,7 @@ import {
   hermesToCanvasEnvelopeSchema
 } from '../../src/canvas/protocol/canvasMessages'
 import { CanvasFileStore } from './canvasFileStore'
+import { executeHeadlessCanvasAction } from './headlessCanvasExecutor'
 import { RoomManager } from './roomManager'
 
 type UnknownEnvelope = {
@@ -65,7 +66,16 @@ export function createCanvasGateway(port = 8787, options: CanvasGatewayOptions =
           )
           return
         }
-        rooms.forwardToBridge(canvasId, payload)
+        if (rooms.hasBridge(canvasId)) {
+          rooms.forwardToBridge(canvasId, payload)
+          return
+        }
+
+        void executeHeadlessCanvasAction(store, validated.data).then((responses) => {
+          responses.forEach((responseEnvelope) => {
+            socket.send(JSON.stringify(responseEnvelope))
+          })
+        })
         return
       }
 
