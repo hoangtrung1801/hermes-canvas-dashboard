@@ -191,8 +191,10 @@ def run_bridge_request(config: ToolConfig) -> dict[str, Any]:
         import websocket
     except ImportError as error:
         raise CanvasDashboardToolError(
-            "Missing Python dependency websocket-client. Install it with: "
-            "python3 -m pip install websocket-client"
+            "Missing Python dependency websocket-client. Run with uv, e.g.: "
+            "uv run --with websocket-client scripts/canvas_dashboard_tool.py --actions "
+            "'[{\"type\":\"read_canvas\"}]' or vendor it once with "
+            "uv pip install --target vendor websocket-client"
         ) from error
 
     try:
