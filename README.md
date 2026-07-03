@@ -21,6 +21,16 @@ VITE_CANVAS_STATE_URL="http://localhost:8788/canvas-state" VITE_CANVAS_GATEWAY_U
 
 The frontend can run without `VITE_CANVAS_GATEWAY_URL`, so the local canvas and action simulator stay active without a WebSocket connection. Durable JSON-file persistence still requires `npm run server` to be running.
 
+## Install the Hermes plugin
+
+The repo includes a Hermes plugin at `plugins/canvas-dashboard`. From a clone of this repo, install it into the current user's Hermes plugin directory with:
+
+```bash
+scripts/install-canvas-dashboard-plugin.sh
+```
+
+By default this copies the plugin to `~/.hermes/plugins/canvas-dashboard`. Use `--force` to replace an existing install, `--symlink` while developing against this checkout, or `--dest <dir>` to install into a different plugin root. Add `--install-deps` if the target Python environment still needs `websocket-client`.
+
 ## Hermes demo client
 
 With the gateway and browser bridge running, execute:
