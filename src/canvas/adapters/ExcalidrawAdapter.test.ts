@@ -148,6 +148,28 @@ describe('ExcalidrawAdapter', () => {
     )
   })
 
+  it('does not create an arrow when either endpoint block is missing', () => {
+    const api = createFakeApi()
+    const adapter = new ExcalidrawAdapter(api, 'canvas_001')
+    const created = adapter.createTaskCard({
+      name: 'Existing block',
+      x: 100,
+      y: 120
+    })
+
+    expect(adapter.createArrow({
+      fromBlockId: created.block.id,
+      toBlockId: 'block_missing',
+      label: 'Missing target'
+    })).toBeNull()
+    expect(adapter.createArrow({
+      fromBlockId: 'block_missing',
+      toBlockId: created.block.id,
+      label: 'Missing source'
+    })).toBeNull()
+    expect(api.elements).toHaveLength(created.shapeIds.length)
+  })
+
   it('reports selected ids and viewport from Excalidraw app state', () => {
     const api = createFakeApi()
     api.appState = {

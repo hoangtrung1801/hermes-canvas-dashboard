@@ -31,6 +31,14 @@ function isTodoTask(task: unknown): task is TodoTask {
   )
 }
 
+function missingArrowEndpoint(
+  action: Extract<CanvasAction, { type: 'create_arrow' }>,
+  adapter: CanvasAdapter
+): string {
+  if (!adapter.getBlockById(action.fromBlockId)) return action.fromBlockId
+  return action.toBlockId
+}
+
 export class ActionExecutor {
   constructor(private readonly adapter: CanvasAdapter) {}
 
@@ -96,11 +104,16 @@ export class ActionExecutor {
       }
       case 'create_arrow': {
         const created = this.adapter.createArrow(action)
-        return {
-          actionType: action.type,
-          createdBlockIds: [created.block.id],
-          createdShapeIds: created.shapeIds
-        }
+        return created
+          ? {
+              actionType: action.type,
+              createdBlockIds: [created.block.id],
+              createdShapeIds: created.shapeIds
+            }
+          : {
+              actionType: action.type,
+              error: `Unknown arrow endpoint ${missingArrowEndpoint(action, this.adapter)}`
+            }
       }
       case 'update_text': {
         const updated = this.adapter.updateText(action)

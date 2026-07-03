@@ -93,9 +93,11 @@ export class ExcalidrawAdapter implements CanvasAdapter {
     })
   }
 
-  createArrow(input: { fromBlockId: string; toBlockId: string; label?: string }): AdapterCreateResult {
+  createArrow(input: { fromBlockId: string; toBlockId: string; label?: string }): AdapterCreateResult | null {
     const fromBlock = this.blocks.get(input.fromBlockId)
     const toBlock = this.blocks.get(input.toBlockId)
+    if (!fromBlock || !toBlock) return null
+
     const blockId = this.nextId('block')
     const shapeId = this.nextId('element')
     const fromCenter = this.getBlockCenter(fromBlock)

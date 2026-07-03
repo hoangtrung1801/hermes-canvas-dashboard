@@ -13,7 +13,7 @@ export interface CanvasAdapter {
   createTodoBlock(input: { x: number; y: number; name: string; tasks?: TodoTaskInput[]; props?: Record<string, unknown> }): AdapterCreateResult
   createTaskCard(input: { x: number; y: number; name: string; text?: string; props?: Record<string, unknown> }): AdapterCreateResult
   createLinkCard(input: { x: number; y: number; name: string; url: string; props?: Record<string, unknown> }): AdapterCreateResult
-  createArrow(input: { fromBlockId: string; toBlockId: string; label?: string }): AdapterCreateResult
+  createArrow(input: { fromBlockId: string; toBlockId: string; label?: string }): AdapterCreateResult | null
   updateText(input: { blockId: string; text: string }): CanvasBlock | null
   appendTodoTask(input: { blockId: string; text: string; taskId?: string }): { block: CanvasBlock; task: TodoTask } | null
   setTodoTaskDone(input: { blockId: string; taskId: string; done: boolean }): CanvasBlock | null

@@ -94,6 +94,10 @@ function createFakeAdapter(): CanvasAdapter {
       return { block, shapeIds: block.shapeIds }
     },
     createArrow(input) {
+      const fromBlock = blocks.get(input.fromBlockId)
+      const toBlock = blocks.get(input.toBlockId)
+      if (!fromBlock || !toBlock) return null
+
       blockCounter += 1
       const block: CanvasBlock = {
         id: `block_${blockCounter}`,
@@ -352,6 +356,30 @@ describe('CanvasBridge', () => {
     expect(response.result.results[0]).toEqual({
       actionType: 'get_todo_block_data',
       error: 'Unknown block block_missing'
+    })
+  })
+
+  it('returns an action-level error for create_arrow when an endpoint is missing', () => {
+    const bridge = new CanvasBridge(createFakeAdapter())
+
+    const response = bridge.handleActionEnvelope({
+      type: 'canvas.action',
+      requestId: 'req_arrow_missing',
+      canvasId: 'canvas_001',
+      actions: [
+        { type: 'create_task_card', name: 'Source', x: 100, y: 120 },
+        { type: 'create_arrow', fromBlockId: 'block_1', toBlockId: 'block_missing', label: 'Missing' }
+      ]
+    })
+
+    if ('error' in response) {
+      throw new Error('expected bridge response, received error')
+    }
+
+    expect(response.result.ok).toBe(false)
+    expect(response.result.results[1]).toEqual({
+      actionType: 'create_arrow',
+      error: 'Unknown arrow endpoint block_missing'
     })
   })
 
