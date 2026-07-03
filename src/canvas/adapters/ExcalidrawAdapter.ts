@@ -223,8 +223,8 @@ export class ExcalidrawAdapter implements CanvasAdapter {
         .filter(([, selected]) => selected)
         .map(([elementId]) => elementId),
       viewport: {
-        x: -(appState.scrollX ?? 0),
-        y: -(appState.scrollY ?? 0),
+        x: viewportCoordinate(appState.scrollX),
+        y: viewportCoordinate(appState.scrollY),
         w: appState.width ?? 0,
         h: appState.height ?? 0
       },
@@ -533,4 +533,9 @@ export class ExcalidrawAdapter implements CanvasAdapter {
       props: block.props ? structuredClone(block.props) : undefined
     }
   }
+}
+
+function viewportCoordinate(scrollValue: number | undefined): number {
+  const coordinate = -(scrollValue ?? 0)
+  return Object.is(coordinate, -0) ? 0 : coordinate
 }
