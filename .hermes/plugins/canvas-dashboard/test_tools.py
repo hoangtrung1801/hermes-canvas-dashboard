@@ -37,7 +37,8 @@ class CanvasDashboardPluginTests(unittest.TestCase):
         self.assertEqual(ctx.tools[0]["name"], "canvas_action")
         self.assertEqual(ctx.tools[0]["toolset"], "canvas_dashboard")
         self.assertEqual(ctx.skills[0]["name"], "canvas-dashboard")
-        self.assertTrue(ctx.skills[0]["path"].endswith("skills/canvas-dashboard"))
+        self.assertIsInstance(ctx.skills[0]["path"], Path)
+        self.assertEqual(ctx.skills[0]["path"].name, "canvas-dashboard")
 
     def test_build_tool_config_uses_payload_over_environment(self):
         config = build_tool_config(

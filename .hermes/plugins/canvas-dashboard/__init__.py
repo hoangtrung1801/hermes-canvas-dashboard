@@ -17,5 +17,5 @@ def register(ctx):
 
     ctx.register_skill(
         name="canvas-dashboard",
-        path=str(Path(__file__).resolve().parent / "skills" / "canvas-dashboard"),
+        path=Path(__file__).resolve().parent / "skills" / "canvas-dashboard",
     )
