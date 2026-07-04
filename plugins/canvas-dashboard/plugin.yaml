@@ -1,6 +1,6 @@
 name: canvas-dashboard
 version: 0.1.0
-description: Send action batches to a user-managed Canvas Dashboard API.
+description: Send tldraw action batches to a user-managed Hermes Canvas Gateway.
 author: local
 type: general
 entry_point: __init__.py

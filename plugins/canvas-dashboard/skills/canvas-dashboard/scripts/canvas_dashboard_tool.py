@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""CLI helper for sending Hermes canvas action batches."""
+"""CLI helper for sending Hermes tldraw canvas action batches."""
 
 from __future__ import annotations
 
@@ -107,7 +107,7 @@ def format_failure(
 
 def parse_args(argv: list[str]) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Send Hermes canvas action batches to the Canvas Bridge."
+        description="Send Hermes tldraw canvas action batches to the Canvas Gateway."
     )
     parser.add_argument("--actions", help="JSON array of canvas actions")
     parser.add_argument("--url", help="Canvas gateway WebSocket URL")
@@ -212,7 +212,7 @@ def run_bridge_request(config: ToolConfig) -> dict[str, Any]:
             if remaining <= 0:
                 raise CanvasDashboardToolError(
                     f"Timed out after {config.timeout_ms}ms waiting for canvas.observation "
-                    f"from {config.url}. Ensure the frontend bridge is connected as role=bridge."
+                    f"from {config.url}. Ensure the Canvas Gateway is running for this canvasId."
                 )
 
             socket.settimeout(remaining)

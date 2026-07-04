@@ -12,11 +12,11 @@ CANVAS_ACTION_SCHEMA = {
                 "required": ["type"],
                 "additionalProperties": True,
             },
-            "description": "Canvas action objects to send in one canvas.action batch. The plugin automatically prepends read_canvas before any non-read action so Hermes catches up on current canvas state first.",
+            "description": "tldraw canvas action objects to send in one canvas.action batch. The plugin automatically prepends read_canvas before any non-read action so Hermes catches up on current shape state first.",
         },
         "url": {
             "type": "string",
-            "description": "Optional Canvas Dashboard WebSocket URL. Overrides CANVAS_DASHBOARD_URL.",
+            "description": "Optional Hermes Canvas Gateway WebSocket URL. Overrides CANVAS_DASHBOARD_URL.",
         },
         "canvasId": {
             "type": "string",

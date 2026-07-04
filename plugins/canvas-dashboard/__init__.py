@@ -11,7 +11,7 @@ from .tools import handle_canvas_action
 logger = logging.getLogger(__name__)
 
 _CANVAS_DASHBOARD_CONTEXT = """Canvas Dashboard plugin hint:
-This request appears to target the Canvas Dashboard. Load the `canvas-dashboard` skill before acting and prefer the Canvas Bridge API through the `canvas_action` tool instead of Hermes's session `todo` tool unless the user explicitly asks for the in-session todo list. Read canvas state before changes and verify changes from the returned canvas observation. If `canvas-dashboard` is unavailable, load `canvas-dashboard-operations` as the fallback skill."""
+This request appears to target the Hermes tldraw Canvas Gateway. Load the `canvas-dashboard` skill before acting and prefer the Canvas Gateway API through the `canvas_action` tool instead of Hermes's session `todo` tool unless the user explicitly asks for the in-session todo list. Read canvas shape state before changes and verify changes from the returned canvas observation. If `canvas-dashboard` is unavailable, load `canvas-dashboard-operations` as the fallback skill."""
 
 _CANVAS_TRIGGER_RE = re.compile(
     r"(?:\bcanvas\b|\bdashboard\b|\btodo\b|\btask\b|\bchecklist\b|\bnote\b|\bcard\b|\bblock\b|\barrow\b)",
@@ -66,6 +66,6 @@ def register(ctx):
         toolset="canvas_dashboard",
         schema=CANVAS_ACTION_SCHEMA,
         handler=handle_canvas_action,
-        description="Send canvas.action batches to a running Canvas Dashboard API.",
+        description="Send tldraw canvas.action batches to a running Hermes Canvas Gateway.",
     )
     ctx.register_hook("pre_llm_call", _pre_llm_call)
