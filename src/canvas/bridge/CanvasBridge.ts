@@ -1,9 +1,12 @@
 import type { CanvasAction } from '../actions/canvasAction.types'
-import type { CanvasAdapter } from '../adapters/canvasAdapter'
-import type { CanvasObservationState } from '../blocks/block.types'
 import { canvasActionEnvelopeSchema } from '../protocol/canvasMessages'
-import { ActionExecutor, type ActionExecutionResult } from './ActionExecutor'
-import { StateObserver } from './StateObserver'
+import {
+  executeTldrawAction,
+  readTldrawObservation,
+  type TldrawActionResult,
+  type TldrawExecutorTarget
+} from '../tldraw/tldrawActionExecutor'
+import type { CanvasObservationState } from '../tldraw/tldrawObservation'
 
 type ActionEnvelope = {
   type: 'canvas.action'
@@ -17,7 +20,7 @@ type BridgeResponse = {
     type: 'canvas.result'
     requestId: string
     ok: boolean
-    results: ActionExecutionResult[]
+    results: TldrawActionResult[]
   }
   observation: {
     type: 'canvas.observation'
@@ -36,22 +39,14 @@ type BridgeErrorResponse = {
 }
 
 export class CanvasBridge {
-  private readonly executor: ActionExecutor
-  private readonly observer: StateObserver
+  constructor(private readonly target: TldrawExecutorTarget) {}
 
-  constructor(private readonly adapter: CanvasAdapter) {
-    this.executor = new ActionExecutor(adapter)
-    this.observer = new StateObserver(adapter)
-  }
-
-  handleActionEnvelope(
-    envelope: ActionEnvelope
-  ): BridgeResponse | BridgeErrorResponse {
+  handleActionEnvelope(envelope: ActionEnvelope): BridgeResponse | BridgeErrorResponse {
     try {
       const validated = canvasActionEnvelopeSchema.parse(envelope)
-      const results = validated.actions.map((action) => this.executor.execute(action))
+      const results = validated.actions.map((action) => executeTldrawAction(this.target, action))
       const ok = results.every((result) => !result.error)
-      const observationState = this.observer.read()
+      const observationState = readTldrawObservation(this.target)
 
       return {
         result: {
@@ -63,7 +58,7 @@ export class CanvasBridge {
         observation: {
           type: 'canvas.observation',
           requestId: validated.requestId,
-          canvasId: this.adapter.canvasId,
+          canvasId: this.target.canvasId,
           state: observationState
         }
       }
@@ -72,10 +67,7 @@ export class CanvasBridge {
         error: {
           type: 'canvas.error',
           requestId: envelope.requestId,
-          message:
-            error instanceof Error
-              ? error.message
-              : 'Canvas action handling failed'
+          message: error instanceof Error ? error.message : 'Canvas action handling failed'
         }
       }
     }

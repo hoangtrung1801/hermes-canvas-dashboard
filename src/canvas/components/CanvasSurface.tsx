@@ -1,8 +1,15 @@
-import { useEffect } from 'react'
-import { Excalidraw } from '@excalidraw/excalidraw'
-import { ExcalidrawAdapter, type ExcalidrawApiLike, type ExcalidrawElementLike } from '../adapters/ExcalidrawAdapter'
+import { useEffect, useMemo } from 'react'
+import { useSync } from '@tldraw/sync'
+import {
+  Tldraw,
+  defaultBindingUtils,
+  defaultShapeUtils,
+  inlineBase64AssetStore,
+  type Editor
+} from 'tldraw'
+import 'tldraw/tldraw.css'
 import { CanvasBridge } from '../bridge/CanvasBridge'
-import { getCanvasGatewayUrl } from '../bridge/gatewayConfig'
+import { getCanvasGatewayUrl, getTldrawSyncUrl } from '../bridge/gatewayConfig'
 import { BridgeWebSocketClient } from '../bridge/websocketClient'
 import {
   canvasActionEnvelopeSchema,
@@ -10,33 +17,32 @@ import {
   canvasObservationEnvelopeSchema,
   canvasResultEnvelopeSchema
 } from '../protocol/canvasMessages'
-import { createCanvasSnapshot, loadCanvasSnapshot, saveCanvasSnapshot } from '../state/canvasPersistence'
+import { createMemoryTldrawTarget, readTldrawObservation } from '../tldraw/tldrawActionExecutor'
+import { hermesShapeUtils } from '../tldraw/customShapeUtils'
 import { useBridgeStore } from '../state/bridgeStore'
 
 const socket = new BridgeWebSocketClient()
 const CANVAS_ID = 'canvas_001'
 
-async function saveCurrentCanvas(adapter: ExcalidrawAdapter, api: ExcalidrawApiLike): Promise<void> {
-  await saveCanvasSnapshot(
-    createCanvasSnapshot({
-      canvasId: adapter.canvasId,
-      elements: api.getSceneElements(),
-      adapter: adapter.exportSnapshot()
-    })
-  )
-}
-
 export function CanvasSurface() {
   const bridge = useBridgeStore((state) => state.bridge)
-  const adapter = useBridgeStore((state) => state.adapter)
+  const target = useBridgeStore((state) => state.adapter)
   const editor = useBridgeStore((state) => state.editor)
   const setBridge = useBridgeStore((state) => state.setBridge)
   const setObservation = useBridgeStore((state) => state.setObservation)
   const setStatus = useBridgeStore((state) => state.setStatus)
   const addLog = useBridgeStore((state) => state.addLog)
 
+  const syncShapeUtils = useMemo(() => [...defaultShapeUtils, ...hermesShapeUtils], [])
+  const store = useSync({
+    uri: getTldrawSyncUrl(CANVAS_ID),
+    assets: inlineBase64AssetStore,
+    shapeUtils: syncShapeUtils,
+    bindingUtils: defaultBindingUtils
+  })
+
   useEffect(() => {
-    if (!bridge || !(adapter instanceof ExcalidrawAdapter) || !editor) {
+    if (!bridge || !target || !editor) {
       return
     }
 
@@ -58,7 +64,7 @@ export function CanvasSurface() {
         const readyPayload = {
           type: 'canvas.ready' as const,
           canvasId: CANVAS_ID,
-          roomId: 'room_001'
+          roomId: CANVAS_ID
         }
         socket.send(readyPayload)
         addLog('out', 'canvas.ready', readyPayload)
@@ -91,7 +97,6 @@ export function CanvasSurface() {
           }
 
           setObservation(response.observation.state)
-          void saveCurrentCanvas(adapter, editor as ExcalidrawApiLike)
           socket.send(response.result)
           addLog('out', 'canvas.result', response.result)
           socket.send(response.observation)
@@ -119,35 +124,18 @@ export function CanvasSurface() {
         }
       }
     })
-  }, [bridge, adapter, editor, setObservation, setStatus, addLog])
+  }, [bridge, target, editor, setObservation, setStatus, addLog])
 
   return (
-    <Excalidraw
-      onChange={(elements) => {
-        const state = useBridgeStore.getState()
-        if (state.adapter instanceof ExcalidrawAdapter && state.editor) {
-          void saveCanvasSnapshot(
-            createCanvasSnapshot({
-              canvasId: state.adapter.canvasId,
-              elements: elements as readonly ExcalidrawElementLike[],
-              adapter: state.adapter.exportSnapshot()
-            })
-          )
-        }
-      }}
-      excalidrawAPI={(api) => {
-        const excalidrawApi = api as unknown as ExcalidrawApiLike
-        void loadCanvasSnapshot(CANVAS_ID).then((saved) => {
-          if (saved) {
-            excalidrawApi.updateScene({ elements: saved.elements })
-          }
-
-          const adapter = new ExcalidrawAdapter(excalidrawApi, CANVAS_ID, saved?.adapter)
-          const bridgeInstance = new CanvasBridge(adapter)
-          setBridge(bridgeInstance, adapter, api)
-          // Set initial observation state so UI has something to show initially
-          setObservation(adapter.getCanvasState())
-        })
+    <Tldraw
+      store={store}
+      shapeUtils={hermesShapeUtils}
+      onMount={(mountedEditor: Editor) => {
+        const mountedTarget = createMemoryTldrawTarget(CANVAS_ID)
+        mountedTarget.editor = mountedEditor
+        const bridgeInstance = new CanvasBridge(mountedTarget)
+        setBridge(bridgeInstance, mountedTarget, mountedEditor)
+        setObservation(readTldrawObservation(mountedTarget))
       }}
     />
   )

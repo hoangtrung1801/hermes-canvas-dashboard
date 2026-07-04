@@ -5,9 +5,9 @@ import {
   canvasToHermesEnvelopeSchema,
   hermesToCanvasEnvelopeSchema
 } from '../../src/canvas/protocol/canvasMessages'
-import { CanvasFileStore } from './canvasFileStore'
-import { executeHeadlessCanvasAction } from './headlessCanvasExecutor'
 import { RoomManager } from './roomManager'
+import { executeHeadlessTldrawAction } from './tldrawHeadlessExecutor'
+import { TldrawSyncRoomManager } from './tldrawSyncServer'
 
 type UnknownEnvelope = {
   requestId?: unknown
@@ -20,11 +20,34 @@ type CanvasGatewayOptions = {
 
 export function createCanvasGateway(port = 8787, options: CanvasGatewayOptions = {}) {
   const rooms = new RoomManager()
-  const store = new CanvasFileStore(options.dataDir ?? join(process.cwd(), 'data'))
-  const server = createServer((request, response) => {
-    void handleHttpRequest(request, response, store)
+  const dataDir = options.dataDir ?? join(process.cwd(), 'data')
+  const syncRooms = new TldrawSyncRoomManager({ dataDir })
+  const server = createServer((_request, response) => {
+    sendJson(response, 404, { error: 'Not found' })
   })
-  const wss = new WebSocketServer({ server, path: '/canvas' })
+  const wss = new WebSocketServer({ noServer: true })
+  const syncWss = new WebSocketServer({ noServer: true })
+
+  server.on('upgrade', (request, socket, head) => {
+    const url = new URL(request.url ?? '/', 'http://localhost')
+    const syncMatch = /^\/sync\/([^/]+)$/.exec(url.pathname)
+
+    if (url.pathname === '/canvas') {
+      wss.handleUpgrade(request, socket, head, (websocket: WebSocket) => {
+        wss.emit('connection', websocket, request)
+      })
+      return
+    }
+
+    if (syncMatch) {
+      syncWss.handleUpgrade(request, socket, head, (websocket: WebSocket) => {
+        syncWss.emit('connection', websocket, request, decodeURIComponent(syncMatch[1]))
+      })
+      return
+    }
+
+    socket.destroy()
+  })
 
   wss.on('connection', (socket: WebSocket, request: IncomingMessage) => {
     const url = new URL(
@@ -71,7 +94,7 @@ export function createCanvasGateway(port = 8787, options: CanvasGatewayOptions =
           return
         }
 
-        void executeHeadlessCanvasAction(store, validated.data).then((responses) => {
+        void executeHeadlessTldrawAction(syncRooms, validated.data).then((responses) => {
           responses.forEach((responseEnvelope) => {
             socket.send(JSON.stringify(responseEnvelope))
           })
@@ -92,83 +115,30 @@ export function createCanvasGateway(port = 8787, options: CanvasGatewayOptions =
     })
   })
 
+  syncWss.on('connection', (socket: WebSocket, request: IncomingMessage, roomId: string) => {
+    const url = new URL(request.url ?? '/', 'http://localhost')
+    syncRooms.connectSocket(roomId, socket, url.searchParams.get('sessionId') ?? undefined)
+  })
+
   server.listen(port)
 
   return {
     wss,
+    syncWss,
     server,
     rooms,
+    syncRooms,
     close(callback: () => void) {
       wss.close(() => {
-        server.close(() => callback())
+        syncWss.close(() => {
+          server.close(() => {
+            syncRooms.close()
+            callback()
+          })
+        })
       })
     }
   }
-}
-
-async function handleHttpRequest(
-  request: IncomingMessage,
-  response: ServerResponse,
-  store: CanvasFileStore
-): Promise<void> {
-  setCorsHeaders(response)
-
-  if (request.method === 'OPTIONS') {
-    response.writeHead(204)
-    response.end()
-    return
-  }
-
-  const url = new URL(request.url ?? '/', 'http://localhost')
-  const match = /^\/canvas-state\/([^/]+)$/.exec(url.pathname)
-  if (!match) {
-    sendJson(response, 404, { error: 'Not found' })
-    return
-  }
-
-  const canvasId = decodeURIComponent(match[1])
-
-  try {
-    if (request.method === 'GET') {
-      const snapshot = await store.load(canvasId)
-      if (!snapshot) {
-        sendJson(response, 404, { error: 'Canvas snapshot not found' })
-        return
-      }
-
-      sendJson(response, 200, snapshot)
-      return
-    }
-
-    if (request.method === 'PUT') {
-      const snapshot = await readJsonBody(request)
-      await store.save(canvasId, snapshot)
-      response.writeHead(204)
-      response.end()
-      return
-    }
-
-    response.setHeader('Allow', 'GET, PUT, OPTIONS')
-    sendJson(response, 405, { error: 'Method not allowed' })
-  } catch (error) {
-    sendJson(response, 400, { error: formatError(error) })
-  }
-}
-
-function setCorsHeaders(response: ServerResponse): void {
-  response.setHeader('Access-Control-Allow-Origin', '*')
-  response.setHeader('Access-Control-Allow-Methods', 'GET, PUT, OPTIONS')
-  response.setHeader('Access-Control-Allow-Headers', 'Content-Type')
-}
-
-async function readJsonBody(request: IncomingMessage): Promise<unknown> {
-  const chunks: Buffer[] = []
-  for await (const chunk of request) {
-    chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk))
-  }
-
-  const raw = Buffer.concat(chunks).toString('utf8')
-  return raw ? JSON.parse(raw) : null
 }
 
 function sendJson(response: ServerResponse, status: number, payload: unknown): void {

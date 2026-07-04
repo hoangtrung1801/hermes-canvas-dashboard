@@ -2,7 +2,6 @@ import { act, render, screen, waitFor } from '@testing-library/react'
 import { useEffect } from 'react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import App from '../../App'
-import type { ExcalidrawElementLike } from '../adapters/ExcalidrawAdapter'
 import { useBridgeStore } from '../state/bridgeStore'
 
 const socketSpies = vi.hoisted(() => ({
@@ -14,26 +13,55 @@ const gatewayMock = vi.hoisted(() => ({
   url: null as string | null
 }))
 
-const excalidrawMock = vi.hoisted(() => ({
-  elements: [] as ExcalidrawElementLike[],
-  updateSceneCalls: [] as Array<{ elements?: readonly ExcalidrawElementLike[]; appState?: Record<string, unknown> | null }>,
-  onChange: undefined as undefined | ((elements: readonly ExcalidrawElementLike[]) => void),
-  api: {
-    updateScene(scene: { elements?: readonly ExcalidrawElementLike[]; appState?: Record<string, unknown> | null }) {
-      excalidrawMock.updateSceneCalls.push(scene)
-      if (scene.elements) {
-        excalidrawMock.elements = [...scene.elements]
+const syncMock = vi.hoisted(() => ({
+  calls: [] as unknown[],
+  store: { status: 'synced-remote', store: { id: 'mock-store' } }
+}))
+
+const tldrawMock = vi.hoisted(() => {
+  const shapes: any[] = []
+  const editor = {
+    createShape(shape: any) {
+      shapes.push({ ...shape, props: shape.props ?? {}, meta: shape.meta ?? {} })
+    },
+    updateShape(patch: any) {
+      const index = shapes.findIndex((shape) => shape.id === patch.id)
+      if (index >= 0) {
+        shapes[index] = {
+          ...shapes[index],
+          ...patch,
+          props: { ...shapes[index].props, ...(patch.props ?? {}) },
+          meta: { ...shapes[index].meta, ...(patch.meta ?? {}) }
+        }
       }
     },
-    getSceneElements() {
-      return excalidrawMock.elements
+    deleteShapes(ids: string[]) {
+      for (const id of ids) {
+        const index = shapes.findIndex((shape) => shape.id === id)
+        if (index >= 0) shapes.splice(index, 1)
+      }
     },
-    getAppState() {
-      return { scrollX: 0, scrollY: 0, width: 1200, height: 800, selectedElementIds: {} }
+    getCurrentPageShapesSorted() {
+      return shapes
     },
-    scrollToContent() {}
+    getSelectedShapeIds() {
+      return []
+    },
+    getCamera() {
+      return { x: 0, y: 0, z: 1 }
+    },
+    setCamera() {},
+    zoomToFit() {},
+    select() {},
+    selectNone() {}
   }
-}))
+
+  return {
+    editor,
+    shapes,
+    props: null as any
+  }
+})
 
 vi.mock('../bridge/websocketClient', () => ({
   BridgeWebSocketClient: class {
@@ -43,24 +71,34 @@ vi.mock('../bridge/websocketClient', () => ({
 }))
 
 vi.mock('../bridge/gatewayConfig', () => ({
-  getCanvasGatewayUrl: () => gatewayMock.url
+  getCanvasGatewayUrl: () => gatewayMock.url,
+  getTldrawSyncUrl: (canvasId: string) => `ws://localhost:8787/sync/${canvasId}`
 }))
 
-vi.mock('@excalidraw/excalidraw', () => ({
-  Excalidraw: ({
-    excalidrawAPI,
-    onChange
-  }: {
-    excalidrawAPI(api: unknown): void
-    onChange?: (elements: readonly ExcalidrawElementLike[]) => void
-  }) => {
+vi.mock('@tldraw/sync', () => ({
+  useSync: (options: unknown) => {
+    syncMock.calls.push(options)
+    return syncMock.store
+  }
+}))
+
+vi.mock('tldraw', () => ({
+  Tldraw: (props: any) => {
     useEffect(() => {
-      excalidrawMock.onChange = onChange
-      excalidrawAPI(excalidrawMock.api)
+      tldrawMock.props = props
+      props.onMount(tldrawMock.editor)
     }, [])
 
-    return <div data-testid="excalidraw-root">excalidraw mounted</div>
-  }
+    return <div data-testid="tldraw-root">tldraw mounted</div>
+  },
+  defaultShapeUtils: [],
+  defaultBindingUtils: [],
+  inlineBase64AssetStore: {},
+  HTMLContainer: ({ children, ...props }: any) => <div {...props}>{children}</div>,
+  Rectangle2d: class {
+    constructor(public readonly config: unknown) {}
+  },
+  ShapeUtil: class {}
 }))
 
 describe('CanvasSurface', () => {
@@ -68,10 +106,10 @@ describe('CanvasSurface', () => {
     gatewayMock.url = null
     socketSpies.connect.mockClear()
     socketSpies.send.mockClear()
+    syncMock.calls = []
+    tldrawMock.shapes.splice(0)
+    tldrawMock.props = null
     vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response('not found', { status: 404 }))
-    excalidrawMock.elements = []
-    excalidrawMock.updateSceneCalls = []
-    excalidrawMock.onChange = undefined
     useBridgeStore.setState({
       bridge: null,
       adapter: null,
@@ -82,75 +120,26 @@ describe('CanvasSurface', () => {
     })
   })
 
-  it('renders the Excalidraw surface inside the app shell', () => {
+  it('renders the tldraw surface and connects it to tldraw sync', async () => {
     render(<App />)
 
-    expect(screen.getByTestId('excalidraw-root')).toBeInTheDocument()
-    return expect(screen.findByText('Bridge ready')).resolves.toBeInTheDocument()
+    expect(screen.getByTestId('tldraw-root')).toBeInTheDocument()
+    await expect(screen.findByText('Bridge ready')).resolves.toBeInTheDocument()
+    expect(syncMock.calls[0]).toMatchObject({
+      uri: 'ws://localhost:8787/sync/canvas_001'
+    })
+    expect(tldrawMock.props.shapeUtils).toHaveLength(3)
   })
 
-  it('does not connect to a websocket gateway unless a gateway url is configured', async () => {
+  it('does not connect to the Hermes websocket gateway unless a gateway url is configured', async () => {
     render(<App />)
 
     await screen.findByText('Bridge ready')
     expect(socketSpies.connect).not.toHaveBeenCalled()
   })
 
-  it('restores the saved single-session canvas when Excalidraw mounts', async () => {
-    const savedElement: ExcalidrawElementLike = {
-      id: 'element_0001',
-      type: 'rectangle',
-      x: 100,
-      y: 120,
-      width: 200,
-      height: 120
-    }
-    vi.mocked(fetch).mockResolvedValueOnce(
-      new Response(
-        JSON.stringify({
-          version: 1,
-          canvasId: 'canvas_001',
-          elements: [savedElement],
-          adapter: {
-            blocks: [
-              {
-                id: 'block_0001',
-                type: 'task_card',
-                name: 'Saved task',
-                x: 100,
-                y: 120,
-                w: 200,
-                h: 120,
-                text: 'Saved task',
-                props: {},
-                shapeIds: ['element_0001']
-              }
-            ],
-            sequence: 1,
-            todoTaskSequence: 0
-          }
-        }),
-        { status: 200, headers: { 'Content-Type': 'application/json' } }
-      )
-    )
-
-    render(<App />)
-
-    await waitFor(() => {
-      expect(excalidrawMock.updateSceneCalls).toEqual(
-        expect.arrayContaining([
-          expect.objectContaining({ elements: [savedElement] })
-        ])
-      )
-    })
-    expect(useBridgeStore.getState().adapter?.getBlockById('block_0001')).toMatchObject({
-      name: 'Saved task'
-    })
-  })
-
-  it('saves the single-session canvas after handling a canvas action', async () => {
+  it('handles Hermes actions through the mounted tldraw editor without snapshot fetches', async () => {
     gatewayMock.url = 'ws://localhost:8787/canvas?canvasId=canvas_001&role=bridge'
-    vi.mocked(fetch).mockResolvedValue(new Response('not found', { status: 404 }))
     render(<App />)
 
     await waitFor(() => expect(socketSpies.connect).toHaveBeenCalled())
@@ -165,7 +154,9 @@ describe('CanvasSurface', () => {
           actions: [
             {
               type: 'create_task_card',
-              name: 'Saved from Hermes',
+              id: 'shape:task_1',
+              title: 'Saved from Hermes',
+              body: 'Rendered with tldraw',
               x: 100,
               y: 120
             }
@@ -175,28 +166,19 @@ describe('CanvasSurface', () => {
     })
 
     await waitFor(() => {
-      expect(fetch).toHaveBeenCalledWith(
-        'http://localhost:8787/canvas-state/canvas_001',
-        expect.objectContaining({
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' }
-        })
+      expect(useBridgeStore.getState().lastObservation?.shapes).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            id: 'shape:task_1',
+            type: 'task_card',
+            props: expect.objectContaining({ title: 'Saved from Hermes' })
+          })
+        ])
       )
     })
-
-    const putCall = vi.mocked(fetch).mock.calls.find(([, options]) => {
-      return options && typeof options === 'object' && 'method' in options && options.method === 'PUT'
-    })
-    const saved = JSON.parse(String((putCall?.[1] as RequestInit).body))
-    expect(saved.adapter.blocks).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ name: 'Saved from Hermes' })
-      ])
-    )
-    expect(saved.elements).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ id: expect.stringMatching(/^element_/) })
-      ])
+    expect(fetch).not.toHaveBeenCalled()
+    expect(socketSpies.send).toHaveBeenCalledWith(
+      expect.objectContaining({ type: 'canvas.result', ok: true })
     )
   })
 })

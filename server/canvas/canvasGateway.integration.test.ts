@@ -1,4 +1,4 @@
-import { mkdtemp, readFile, rm } from 'node:fs/promises'
+import { mkdtemp, rm } from 'node:fs/promises'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 import { afterEach, describe, expect, it } from 'vitest'
@@ -97,33 +97,34 @@ describe('canvas gateway integration', () => {
     expect(parsed.message).toContain('Invalid bridge message')
   })
 
-  it('persists canvas snapshots through the local http endpoint', async () => {
+  it('does not expose the legacy canvas-state http endpoint', async () => {
     const dataDir = await mkdtemp(join(tmpdir(), 'hermes-canvas-http-'))
     tempDirs.push(dataDir)
     const gateway = createCanvasGateway(8792, { dataDir })
     instances.push(gateway)
 
-    const snapshot = {
-      version: 1,
-      canvasId: 'canvas_001',
-      elements: [{ id: 'element_0001', type: 'rectangle', x: 10, y: 20, width: 100, height: 80 }],
-      adapter: {
-        blocks: [],
-        sequence: 1,
-        todoTaskSequence: 0
-      }
-    }
-
-    const putResponse = await fetch('http://localhost:8792/canvas-state/canvas_001', {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(snapshot)
-    })
     const getResponse = await fetch('http://localhost:8792/canvas-state/canvas_001')
 
-    expect(putResponse.status).toBe(204)
-    expect(getResponse.status).toBe(200)
-    await expect(getResponse.json()).resolves.toEqual(snapshot)
+    expect(getResponse.status).toBe(404)
+  })
+
+  it('hosts tldraw sync websocket rooms', async () => {
+    const dataDir = await mkdtemp(join(tmpdir(), 'hermes-canvas-sync-gateway-'))
+    tempDirs.push(dataDir)
+    const gateway = createCanvasGateway(8794, { dataDir })
+    instances.push(gateway)
+
+    const syncClient = new WebSocket(
+      'ws://localhost:8794/sync/canvas_001?sessionId=session_test'
+    )
+    clients.push(syncClient)
+
+    await new Promise<void>((resolve) => {
+      syncClient.addEventListener('open', () => resolve())
+    })
+
+    expect(gateway.syncRooms.getOrCreateRoom('canvas_001').getNumActiveSessions()).toBe(1)
+    expect(gateway.syncRooms.databasePath).toBe(join(dataDir, 'tldraw-sync.sqlite'))
   })
 
   it('executes Hermes actions headlessly when no bridge client is connected', async () => {
@@ -153,7 +154,14 @@ describe('canvas gateway integration', () => {
         hermesClient.send(
           JSON.stringify(
             createHermesCanvasToolPayload('canvas_001', [
-              { type: 'create_text', text: 'Created without dashboard', x: 80, y: 120 }
+              {
+                type: 'create_task_card',
+                id: 'shape:task_gateway',
+                title: 'Created without dashboard',
+                body: 'Headless tldraw action',
+                x: 80,
+                y: 120
+              }
             ])
           )
         )
@@ -165,27 +173,28 @@ describe('canvas gateway integration', () => {
       ok: true,
       results: [
         {
-          actionType: 'create_text',
-          createdBlockIds: ['block_0001']
+          actionType: 'create_task_card',
+          createdShapeIds: ['shape:task_gateway']
         }
       ]
     })
     expect(responses[1]).toMatchObject({
       type: 'canvas.observation',
       state: {
-        blocks: [
+        shapes: [
           {
-            id: 'block_0001',
-            text: 'Created without dashboard'
+            id: 'shape:task_gateway',
+            type: 'task_card',
+            props: {
+              title: 'Created without dashboard',
+              body: 'Headless tldraw action'
+            }
           }
         ]
       }
     })
 
-    const saved = JSON.parse(await readFile(join(dataDir, 'canvas_001.json'), 'utf8'))
-    expect(saved.adapter.blocks[0]).toMatchObject({
-      id: 'block_0001',
-      text: 'Created without dashboard'
-    })
+    const snapshot = gateway.syncRooms.getOrCreateRoom('canvas_001').getCurrentSnapshot()
+    expect(snapshot.documents.some((entry) => entry.state.id === 'shape:task_gateway')).toBe(true)
   })
 })

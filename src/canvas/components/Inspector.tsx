@@ -1,24 +1,24 @@
 import { useState } from 'react'
 import { useBridgeStore } from '../state/bridgeStore'
-import type { CanvasBlock } from '../blocks/block.types'
+import type { CanvasShapeSummary } from '../blocks/block.types'
 
 export function Inspector() {
-  const { lastObservation, adapter, bridge, setObservation, addLog } = useBridgeStore()
+  const { lastObservation, adapter, bridge, setObservation, addLog, editor } = useBridgeStore()
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedTypeFilter, setSelectedTypeFilter] = useState<string>('all')
-  const [editingBlockId, setEditingBlockId] = useState<string | null>(null)
+  const [editingShapeId, setEditingShapeId] = useState<string | null>(null)
   const [editText, setEditText] = useState('')
 
-  const blocks = lastObservation?.blocks ?? []
+  const shapes = lastObservation?.shapes ?? []
 
-  const handleDelete = (blockId: string) => {
+  const handleDelete = (shapeId: string) => {
     if (!bridge || !adapter) return
 
     const envelope = {
       type: 'canvas.action' as const,
       requestId: 'insp_del_' + Math.random().toString(36).substring(2, 9),
       canvasId: adapter.canvasId,
-      actions: [{ type: 'delete_block' as const, blockId }]
+      actions: [{ type: 'delete_shapes' as const, shapeIds: [shapeId] }]
     }
 
     addLog('in', 'canvas.action (Inspector Delete)', envelope)
@@ -31,19 +31,19 @@ export function Inspector() {
     }
   }
 
-  const handleStartEdit = (block: CanvasBlock) => {
-    setEditingBlockId(block.id)
-    setEditText(block.text ?? block.name ?? '')
+  const handleStartEdit = (shape: CanvasShapeSummary) => {
+    setEditingShapeId(shape.id)
+    setEditText(getShapeTitle(shape))
   }
 
-  const handleSaveEdit = (blockId: string) => {
+  const handleSaveEdit = (shapeId: string) => {
     if (!bridge || !adapter) return
 
     const envelope = {
       type: 'canvas.action' as const,
       requestId: 'insp_edit_' + Math.random().toString(36).substring(2, 9),
       canvasId: adapter.canvasId,
-      actions: [{ type: 'update_text' as const, blockId, text: editText }]
+      actions: [{ type: 'update_shape' as const, shapeId, patch: { props: { title: editText } } }]
     }
 
     addLog('in', 'canvas.action (Inspector Edit)', envelope)
@@ -54,56 +54,44 @@ export function Inspector() {
       setObservation(response.observation.state)
       addLog('out', 'canvas.result', response.result)
     }
-    setEditingBlockId(null)
+    setEditingShapeId(null)
   }
 
-  const handleFocus = (blockId: string) => {
-    if (!adapter) return
-    // Check if our zoomToBlock method is available
-    if (typeof (adapter as any).zoomToBlock === 'function') {
-      ;(adapter as any).zoomToBlock(blockId)
-      addLog('info', 'action_trigger', `Focused view on block: ${blockId}`)
-    } else {
-      // Fallback: select shape
-      const block = adapter.getBlockById(blockId)
-      if (block && block.shapeIds[0] && useBridgeStore.getState().editor) {
-        const editor = useBridgeStore.getState().editor
-        editor.select(block.shapeIds[0])
-        editor.zoomToFit()
-      }
-    }
+  const handleFocus = (shapeId: string) => {
+    editor?.select(shapeId as never)
+    editor?.zoomToFit()
+    addLog('info', 'action_trigger', `Focused view on shape: ${shapeId}`)
   }
 
-  const filteredBlocks = blocks.filter((block) => {
-    const nameMatch = (block.name ?? '').toLowerCase().includes(searchTerm.toLowerCase())
-    const textMatch = (block.text ?? '').toLowerCase().includes(searchTerm.toLowerCase())
-    const idMatch = block.id.toLowerCase().includes(searchTerm.toLowerCase())
-    const termMatches = nameMatch || textMatch || idMatch
+  const filteredShapes = shapes.filter((shape) => {
+    const searchable = [
+      shape.id,
+      shape.type,
+      getShapeTitle(shape),
+      stringProp(shape, 'body'),
+      stringProp(shape, 'description'),
+      stringProp(shape, 'url')
+    ].join(' ').toLowerCase()
+    const termMatches = searchable.includes(searchTerm.toLowerCase())
 
     if (selectedTypeFilter === 'all') {
       return termMatches
     }
-    return termMatches && block.type === selectedTypeFilter
+    return termMatches && shape.type === selectedTypeFilter
   })
-
-  // Group blocks by type for quick statistics
-  const typeCounts = blocks.reduce<Record<string, number>>((acc, block) => {
-    acc[block.type] = (acc[block.type] || 0) + 1
-    return acc
-  }, {})
 
   return (
     <aside className="inspector-panel glassmorphic-panel">
       <div className="inspector-header">
         <h3>Canvas Inspector</h3>
-        <p className="subtitle">{blocks.length} active blocks on canvas</p>
+        <p className="subtitle">{shapes.length} active shapes on canvas</p>
       </div>
 
       <div className="filter-controls">
         <input
           type="text"
           className="search-input"
-          placeholder="Search by ID, Name or Text..."
+          placeholder="Search by ID, title or URL..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
         />
@@ -113,37 +101,35 @@ export function Inspector() {
           className="type-filter-select"
         >
           <option value="all">All Types</option>
-          <option value="text">Text</option>
-          <option value="box">Box</option>
-          <option value="note">Note</option>
           <option value="todo_block">Todo Block</option>
           <option value="task_card">Task Card</option>
           <option value="link_card">Link Card</option>
-          <option value="file_card">File Card</option>
-          <option value="job_panel">Job Panel</option>
+          <option value="geo">Geo</option>
+          <option value="text">Text</option>
+          <option value="note">Note</option>
         </select>
       </div>
 
       <div className="block-list-container">
-        {filteredBlocks.length === 0 ? (
+        {filteredShapes.length === 0 ? (
           <div className="empty-state">
             <p>
-              {blocks.length === 0
-                ? 'Canvas is empty. Create blocks using the Action Simulator or drawn shapes.'
-                : 'No blocks matching search filters.'}
+              {shapes.length === 0
+                ? 'Canvas is empty. Create shapes using the Action Simulator or tldraw tools.'
+                : 'No shapes matching search filters.'}
             </p>
           </div>
         ) : (
           <div className="block-list">
-            {filteredBlocks.map((block) => (
-              <div key={block.id} className="block-card">
+            {filteredShapes.map((shape) => (
+              <div key={shape.id} className="block-card">
                 <div className="block-card-header">
-                  <span className={`block-badge-type type-${block.type}`}>{block.type}</span>
-                  <span className="block-card-id">{block.id}</span>
+                  <span className={`block-badge-type type-${shape.type}`}>{shape.type}</span>
+                  <span className="block-card-id">{shape.id}</span>
                 </div>
 
                 <div className="block-card-body">
-                  {editingBlockId === block.id ? (
+                  {editingShapeId === shape.id ? (
                     <div className="inline-edit">
                       <input
                         type="text"
@@ -152,49 +138,51 @@ export function Inspector() {
                         className="edit-input"
                       />
                       <div className="inline-edit-buttons">
-                        <button className="btn-icon btn-save" onClick={() => handleSaveEdit(block.id)}>
-                          ✓
+                        <button className="btn-icon btn-save" onClick={() => handleSaveEdit(shape.id)}>
+                          Save
                         </button>
-                        <button className="btn-icon btn-cancel" onClick={() => setEditingBlockId(null)}>
-                          ✕
+                        <button className="btn-icon btn-cancel" onClick={() => setEditingShapeId(null)}>
+                          Cancel
                         </button>
                       </div>
                     </div>
                   ) : (
                     <>
-                      <p className="block-title">{block.name || <em>Unnamed</em>}</p>
-                      {block.text && <p className="block-text">{block.text}</p>}
+                      <p className="block-title">{getShapeTitle(shape) || <em>Untitled</em>}</p>
+                      {getShapeDescription(shape) && (
+                        <p className="block-text">{getShapeDescription(shape)}</p>
+                      )}
                     </>
                   )}
 
                   <div className="block-coords">
-                    x: {Math.round(block.x)}, y: {Math.round(block.y)}
-                    {block.w && block.h && ` (${Math.round(block.w)}×${Math.round(block.h)})`}
+                    x: {Math.round(shape.x)}, y: {Math.round(shape.y)}
+                    {shape.w && shape.h && ` (${Math.round(shape.w)}x${Math.round(shape.h)})`}
                   </div>
                 </div>
 
                 <div className="block-card-actions">
                   <button
                     className="btn btn-sm btn-icon-only"
-                    onClick={() => handleFocus(block.id)}
+                    onClick={() => handleFocus(shape.id)}
                     title="Focus on canvas"
                   >
-                    🎯
+                    Focus
                   </button>
                   <button
                     className="btn btn-sm btn-icon-only"
-                    onClick={() => handleStartEdit(block)}
-                    title="Edit block text"
-                    disabled={editingBlockId === block.id}
+                    onClick={() => handleStartEdit(shape)}
+                    title="Edit shape title"
+                    disabled={editingShapeId === shape.id}
                   >
-                    ✏️
+                    Edit
                   </button>
                   <button
                     className="btn btn-sm btn-icon-only btn-danger-hover"
-                    onClick={() => handleDelete(block.id)}
-                    title="Delete block"
+                    onClick={() => handleDelete(shape.id)}
+                    title="Delete shape"
                   >
-                    🗑️
+                    Delete
                   </button>
                 </div>
               </div>
@@ -207,10 +195,10 @@ export function Inspector() {
         <h4>Telemetry Overview</h4>
         <div className="stats-grid">
           <div className="stat-box">
-            <span className="stat-label">Viewport</span>
+            <span className="stat-label">Camera</span>
             <span className="stat-value">
               {lastObservation
-                ? `${Math.round(lastObservation.viewport.x)},${Math.round(lastObservation.viewport.y)}`
+                ? `${Math.round(lastObservation.camera.x)},${Math.round(lastObservation.camera.y)}`
                 : 'N/A'}
             </span>
           </div>
@@ -224,4 +212,17 @@ export function Inspector() {
       </div>
     </aside>
   )
+}
+
+function getShapeTitle(shape: CanvasShapeSummary): string {
+  return stringProp(shape, 'title') || stringProp(shape, 'name')
+}
+
+function getShapeDescription(shape: CanvasShapeSummary): string {
+  return stringProp(shape, 'body') || stringProp(shape, 'description') || stringProp(shape, 'url')
+}
+
+function stringProp(shape: CanvasShapeSummary, key: string): string {
+  const value = shape.props[key]
+  return typeof value === 'string' ? value : ''
 }

@@ -26,13 +26,14 @@ describe('canvasMessages', () => {
       canvasId: 'canvas_001',
       state: {
         canvasId: 'canvas_001',
+        pageId: 'page:page',
         selectedShapeIds: [],
-        viewport: { x: 0, y: 0, w: 1200, h: 800 },
-        blocks: []
+        camera: { x: 0, y: 0, z: 1 },
+        shapes: []
       }
     })
 
-    expect(parsed.state.blocks).toEqual([])
+    expect(parsed.state.shapes).toEqual([])
   })
 
   it('parses canvas.ready and canvas.error envelopes', () => {
@@ -52,34 +53,23 @@ describe('canvasMessages', () => {
     expect(error.message).toBe('Invalid action')
   })
 
-  it('parses todo block data result envelopes', () => {
+  it('parses tldraw shape result envelopes', () => {
     const parsed = canvasResultEnvelopeSchema.parse({
       type: 'canvas.result',
       requestId: 'req_001',
       ok: true,
       results: [
         {
-          actionType: 'get_todo_block_data',
-          matchedBlockIds: ['block_0001'],
-          todoBlock: {
-            id: 'block_0001',
-            name: 'Launch checklist',
-            tasks: [{ id: 'task_docs', text: 'Write docs', done: false }]
-          },
-          createdTaskIds: ['task_new'],
-          updatedTaskIds: ['task_docs'],
-          deletedTaskIds: ['task_old']
+          actionType: 'create_task_card',
+          createdShapeIds: ['shape:task_1'],
+          updatedShapeIds: ['shape:task_2'],
+          deletedShapeIds: ['shape:task_3'],
+          createdBindingIds: ['binding:arrow_1'],
+          deletedBindingIds: ['binding:arrow_2']
         }
       ]
     })
 
-    expect(parsed.results[0].todoBlock).toEqual({
-      id: 'block_0001',
-      name: 'Launch checklist',
-      tasks: [{ id: 'task_docs', text: 'Write docs', done: false }]
-    })
-    expect(parsed.results[0].createdTaskIds).toEqual(['task_new'])
-    expect(parsed.results[0].updatedTaskIds).toEqual(['task_docs'])
-    expect(parsed.results[0].deletedTaskIds).toEqual(['task_old'])
+    expect(parsed.results[0].createdShapeIds).toEqual(['shape:task_1'])
   })
 })

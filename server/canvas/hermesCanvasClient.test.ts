@@ -2,18 +2,18 @@ import { describe, expect, it } from 'vitest'
 import { buildDefaultHermesActions, parseHermesClientArgs } from './hermesCanvasClient'
 
 describe('hermesCanvasClient', () => {
-  it('builds a Hermes demo payload that writes visible blocks into the canvas', () => {
+  it('builds a Hermes demo payload that writes tldraw shapes into the canvas', () => {
     const actions = buildDefaultHermesActions()
 
     expect(actions).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
-          type: 'create_box',
-          text: expect.stringContaining('Hermes')
+          type: 'create_shape',
+          shape: expect.objectContaining({ type: 'geo' })
         }),
         expect.objectContaining({
           type: 'create_task_card',
-          text: expect.stringContaining('inside this block')
+          body: expect.stringContaining('inside this shape')
         }),
         expect.objectContaining({ type: 'zoom_to_fit' })
       ])
@@ -29,7 +29,7 @@ describe('hermesCanvasClient', () => {
       '--timeoutMs',
       '250',
       '--actions',
-      '[{"type":"create_text","text":"Hello","x":10,"y":20}]'
+      '[{"type":"create_task_card","title":"Hello","body":"World","x":10,"y":20}]'
     ])
 
     expect(config).toEqual({
@@ -37,7 +37,7 @@ describe('hermesCanvasClient', () => {
       canvasId: 'demo_canvas',
       requestId: 'req_custom',
       timeoutMs: 250,
-      actions: [{ type: 'create_text', text: 'Hello', x: 10, y: 20 }]
+      actions: [{ type: 'create_task_card', title: 'Hello', body: 'World', x: 10, y: 20 }]
     })
   })
 

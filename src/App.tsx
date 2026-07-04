@@ -79,7 +79,7 @@ export default function App() {
           <div className="canvas-header-bar">
             <span className="canvas-title">Interactive Canvas Surface</span>
             <div className="canvas-header-actions">
-              <span className="canvas-engine-badge">Excalidraw engine</span>
+              <span className="canvas-engine-badge">tldraw sync</span>
               <a className="canvas-action-link" href="?view=canvas">
                 Fullscreen
               </a>

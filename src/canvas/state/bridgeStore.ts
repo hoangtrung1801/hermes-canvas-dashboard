@@ -1,7 +1,8 @@
 import { create } from 'zustand'
+import type { Editor } from 'tldraw'
 import type { CanvasBridge } from '../bridge/CanvasBridge'
-import type { CanvasAdapter } from '../adapters/canvasAdapter'
 import type { CanvasObservationState } from '../blocks/block.types'
+import type { TldrawExecutorTarget } from '../tldraw/tldrawActionExecutor'
 
 export type BridgeStatus = 'disconnected' | 'ready' | 'error'
 
@@ -15,12 +16,12 @@ export type LogEntry = {
 
 type BridgeStore = {
   bridge: CanvasBridge | null
-  adapter: CanvasAdapter | null
-  editor: any | null
+  adapter: TldrawExecutorTarget | null
+  editor: Editor | null
   status: BridgeStatus
   lastObservation: CanvasObservationState | null
   logs: LogEntry[]
-  setBridge(bridge: CanvasBridge, adapter: CanvasAdapter, editor: any): void
+  setBridge(bridge: CanvasBridge, adapter: TldrawExecutorTarget, editor: Editor): void
   setStatus(status: BridgeStatus): void
   setObservation(state: CanvasObservationState): void
   addLog(direction: LogEntry['direction'], type: string, payload: unknown): void

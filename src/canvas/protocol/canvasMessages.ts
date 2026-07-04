@@ -1,50 +1,30 @@
 import { z } from 'zod'
 import { canvasActionBatchSchema } from '../actions/canvasAction.schema'
-import { canvasBlockTypes } from '../blocks/block.types'
 
-const viewportSchema = z.object({
+const cameraSchema = z.object({
   x: z.number(),
   y: z.number(),
-  w: z.number(),
-  h: z.number()
+  z: z.number()
 })
 
-const blockSchema = z.object({
+const shapeSummarySchema = z.object({
   id: z.string(),
-  name: z.string().optional(),
-  type: z.enum(canvasBlockTypes),
+  type: z.string(),
   x: z.number(),
   y: z.number(),
   w: z.number().optional(),
   h: z.number().optional(),
-  text: z.string().optional(),
-  props: z.record(z.unknown()).optional(),
-  shapeIds: z.array(z.string())
-})
-
-const todoTaskSchema = z.object({
-  id: z.string(),
-  text: z.string(),
-  done: z.boolean()
-})
-
-const todoBlockResultSchema = z.object({
-  id: z.string(),
-  name: z.string().optional(),
-  tasks: z.array(todoTaskSchema)
+  props: z.record(z.unknown()),
+  meta: z.record(z.unknown())
 })
 
 const resultItemSchema = z.object({
   actionType: z.string(),
-  createdBlockIds: z.array(z.string()).optional(),
-  updatedBlockIds: z.array(z.string()).optional(),
-  deletedBlockIds: z.array(z.string()).optional(),
   createdShapeIds: z.array(z.string()).optional(),
-  createdTaskIds: z.array(z.string()).optional(),
-  updatedTaskIds: z.array(z.string()).optional(),
-  deletedTaskIds: z.array(z.string()).optional(),
-  matchedBlockIds: z.array(z.string()).optional(),
-  todoBlock: todoBlockResultSchema.optional(),
+  updatedShapeIds: z.array(z.string()).optional(),
+  deletedShapeIds: z.array(z.string()).optional(),
+  createdBindingIds: z.array(z.string()).optional(),
+  deletedBindingIds: z.array(z.string()).optional(),
   error: z.string().optional()
 })
 
@@ -74,9 +54,10 @@ export const canvasObservationEnvelopeSchema = z.object({
   canvasId: z.string(),
   state: z.object({
     canvasId: z.string(),
+    pageId: z.string(),
     selectedShapeIds: z.array(z.string()),
-    viewport: viewportSchema,
-    blocks: z.array(blockSchema)
+    camera: cameraSchema,
+    shapes: z.array(shapeSummarySchema)
   })
 })
 

@@ -13,9 +13,12 @@
     "lint:types": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
-    "@excalidraw/excalidraw": "^0.18.1",
+    "@tldraw/sync": "^5.2.2",
+    "@tldraw/sync-core": "^5.2.2",
+    "@tldraw/tlschema": "^5.2.2",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
+    "tldraw": "^5.2.2",
     "zod": "^3.23.8",
     "zustand": "^5.0.0"
   },

@@ -1,9 +1,24 @@
 import { z } from 'zod'
 
-const basePosition = {
+const position = {
   x: z.number(),
   y: z.number()
 }
+
+const shapeId = z.string().min(1)
+const shapeIdList = z.array(shapeId).min(1)
+const record = z.record(z.unknown())
+
+const tldrawShapePayloadSchema = z.object({
+  id: z.string().min(1).optional(),
+  type: z.string().min(1),
+  x: z.number().optional(),
+  y: z.number().optional(),
+  rotation: z.number().optional(),
+  opacity: z.number().min(0).max(1).optional(),
+  props: record.optional(),
+  meta: record.optional()
+})
 
 const todoTaskInputSchema = z.union([
   z.string().min(1),
@@ -14,98 +29,86 @@ const todoTaskInputSchema = z.union([
   })
 ])
 
-export const canvasActionSchema = z.discriminatedUnion('type', [
+export const canvasActionSchema = z.union([
+  z.object({ type: z.literal('create_shape'), shape: tldrawShapePayloadSchema }),
   z.object({
-    type: z.literal('create_text'),
-    text: z.string().min(1),
-    name: z.string().optional(),
-    ...basePosition
+    type: z.literal('update_shape'),
+    shapeId,
+    patch: tldrawShapePayloadSchema.partial().refine((value) => Object.keys(value).length > 0, {
+      message: 'patch must contain at least one field'
+    })
   }),
+  z.object({ type: z.literal('delete_shapes'), shapeIds: shapeIdList }),
   z.object({
-    type: z.literal('create_box'),
-    name: z.string().optional(),
-    text: z.string().optional(),
-    w: z.number().positive().optional(),
-    h: z.number().positive().optional(),
-    ...basePosition
-  }),
-  z.object({
-    type: z.literal('create_note'),
-    text: z.string().min(1),
-    name: z.string().optional(),
-    ...basePosition
-  }),
+    type: z.literal('move_shapes'),
+    shapeIds: shapeIdList,
+    x: z.number().optional(),
+    y: z.number().optional(),
+    dx: z.number().optional(),
+    dy: z.number().optional()
+  }).refine(
+    (value) =>
+      value.x !== undefined ||
+      value.y !== undefined ||
+      value.dx !== undefined ||
+      value.dy !== undefined,
+    {
+      message: 'move_shapes requires x, y, dx, or dy'
+    }
+  ),
+  z.object({ type: z.literal('create_binding'), binding: record }),
+  z.object({ type: z.literal('delete_bindings'), bindingIds: z.array(z.string().min(1)).min(1) }),
+  z.object({ type: z.literal('set_camera'), x: z.number(), y: z.number(), z: z.number().positive().optional() }),
+  z.object({ type: z.literal('zoom_to_fit') }),
+  z.object({ type: z.literal('select_shapes'), shapeIds: shapeIdList }),
+  z.object({ type: z.literal('clear_selection') }),
+  z.object({ type: z.literal('read_canvas') }),
   z.object({
     type: z.literal('create_todo_block'),
-    name: z.string().min(1),
+    id: z.string().min(1).optional(),
+    title: z.string().min(1),
     tasks: z.array(todoTaskInputSchema).optional(),
-    props: z.record(z.unknown()).optional(),
-    ...basePosition
-  }),
-  z.object({
-    type: z.literal('create_task_card'),
-    name: z.string().min(1),
-    text: z.string().optional(),
-    props: z.record(z.unknown()).optional(),
-    ...basePosition
-  }),
-  z.object({
-    type: z.literal('create_link_card'),
-    name: z.string().min(1),
-    url: z.string().url(),
-    props: z.record(z.unknown()).optional(),
-    ...basePosition
-  }),
-  z.object({
-    type: z.literal('create_arrow'),
-    fromBlockId: z.string().min(1),
-    toBlockId: z.string().min(1),
-    label: z.string().optional()
-  }),
-  z.object({
-    type: z.literal('update_text'),
-    blockId: z.string().min(1),
-    text: z.string().min(1)
+    w: z.number().positive().optional(),
+    h: z.number().positive().optional(),
+    ...position
   }),
   z.object({
     type: z.literal('append_todo_task'),
-    blockId: z.string().min(1),
+    shapeId,
     text: z.string().min(1),
     taskId: z.string().min(1).optional()
   }),
   z.object({
     type: z.literal('set_todo_task_done'),
-    blockId: z.string().min(1),
+    shapeId,
     taskId: z.string().min(1),
     done: z.boolean()
   }),
   z.object({
     type: z.literal('remove_todo_task'),
-    blockId: z.string().min(1),
+    shapeId,
     taskId: z.string().min(1)
   }),
   z.object({
-    type: z.literal('move_block'),
-    blockId: z.string().min(1),
-    ...basePosition
+    type: z.literal('create_task_card'),
+    id: z.string().min(1).optional(),
+    title: z.string().min(1),
+    body: z.string().optional(),
+    status: z.string().min(1).optional(),
+    priority: z.string().min(1).optional(),
+    w: z.number().positive().optional(),
+    h: z.number().positive().optional(),
+    ...position
   }),
   z.object({
-    type: z.literal('delete_block'),
-    blockId: z.string().min(1)
-  }),
-  z.object({
-    type: z.literal('read_canvas')
-  }),
-  z.object({
-    type: z.literal('get_block_by_name'),
-    name: z.string().min(1)
-  }),
-  z.object({
-    type: z.literal('get_todo_block_data'),
-    blockId: z.string().min(1)
-  }),
-  z.object({
-    type: z.literal('zoom_to_fit')
+    type: z.literal('create_link_card'),
+    id: z.string().min(1).optional(),
+    title: z.string().min(1),
+    url: z.string().url(),
+    description: z.string().optional(),
+    w: z.number().positive().optional(),
+    h: z.number().positive().optional(),
+    ...position
   })
 ])
 

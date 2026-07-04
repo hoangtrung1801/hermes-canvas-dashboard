@@ -3,10 +3,11 @@ import { useBridgeStore } from '../state/bridgeStore'
 
 const PRESETS = [
   {
-    name: '✅ Todo Block',
+    name: 'Todo Block',
     value: {
       type: 'create_todo_block',
-      name: 'Launch Checklist',
+      id: 'shape:launch_checklist',
+      title: 'Launch Checklist',
       x: 100,
       y: 150,
       tasks: [
@@ -16,122 +17,75 @@ const PRESETS = [
     }
   },
   {
-    name: '➕ Todo Actions Batch',
+    name: 'Todo Actions Batch',
     value: [
       {
         type: 'create_todo_block',
-        name: 'Release Tasks',
+        id: 'shape:release_tasks',
+        title: 'Release Tasks',
         x: 100,
         y: 150,
         tasks: [{ id: 'task_review', text: 'Review release notes' }]
       },
       {
         type: 'append_todo_task',
-        blockId: 'block_0001',
+        shapeId: 'shape:release_tasks',
         taskId: 'task_ship',
         text: 'Ship feature'
       },
       {
         type: 'set_todo_task_done',
-        blockId: 'block_0001',
+        shapeId: 'shape:release_tasks',
         taskId: 'task_review',
         done: true
       }
     ]
   },
   {
-    name: '📋 Todo Data by Block ID',
-    value: {
-      type: 'get_todo_block_data',
-      blockId: 'block_0001'
-    }
-  },
-  {
-    name: '🎯 Sprint Task Card',
+    name: 'Sprint Task Card',
     value: {
       type: 'create_task_card',
-      name: 'Design New UI System',
-      text: 'Task: Create modern dark-themed glassmorphism layout with Outfit font.',
+      id: 'shape:sprint_task',
+      title: 'Design New UI System',
+      body: 'Create the tldraw-powered Hermes canvas workflow.',
+      status: 'in_progress',
+      priority: 'high',
       x: 100,
-      y: 150,
-      props: { status: 'in_progress', priority: 'high', assignee: 'Antigravity' }
-    }
-  },
-  {
-    name: '📝 Yellow Note Card',
-    value: {
-      type: 'create_note',
-      text: 'Architecture Note:\nCanvas bridge receives action envelopes via WebSocket and updates Excalidraw state.',
-      x: 450,
       y: 150
     }
   },
   {
-    name: '🔗 Documentation Link',
+    name: 'Documentation Link',
     value: {
       type: 'create_link_card',
-      name: 'Excalidraw Documentation',
-      url: 'https://docs.excalidraw.com',
+      id: 'shape:tldraw_docs',
+      title: 'tldraw Sync Documentation',
+      url: 'https://tldraw.dev/docs/sync',
+      description: 'Sync server and client setup',
       x: 100,
       y: 350
     }
   },
   {
-    name: '📦 Layout Box Section',
+    name: 'Geo Shape',
     value: {
-      type: 'create_box',
-      name: 'Dashboard Container',
-      text: 'LAYOUT AREA',
-      x: 80,
-      y: 80,
-      w: 650,
-      h: 420
-    }
-  },
-  {
-    name: '⚡️ Batch: Full Sprint Board',
-    value: [
-      {
-        type: 'create_box',
-        name: 'TODO',
-        text: 'TODO COLUMN',
-        x: 50,
-        y: 50,
-        w: 300,
-        h: 550
-      },
-      {
-        type: 'create_box',
-        name: 'IN PROGRESS',
-        text: 'IN PROGRESS COLUMN',
-        x: 400,
-        y: 50,
-        w: 300,
-        h: 550
-      },
-      {
-        type: 'create_task_card',
-        name: 'Task 1',
-        text: 'Setup Zustand Bridge Store State',
-        x: 80,
-        y: 120,
-        props: { status: 'todo' }
-      },
-      {
-        type: 'create_task_card',
-        name: 'Task 2',
-        text: 'Refine visual glassmorphic css tokens',
-        x: 80,
-        y: 300,
-        props: { status: 'todo' }
-      },
-      {
-        type: 'create_note',
-        text: 'In progress note:\nTesting socket server responses and simulated latency.',
-        x: 430,
-        y: 120
+      type: 'create_shape',
+      shape: {
+        id: 'shape:geo_box',
+        type: 'geo',
+        x: 450,
+        y: 160,
+        props: {
+          geo: 'rectangle',
+          w: 260,
+          h: 140,
+          color: 'blue',
+          fill: 'solid',
+          dash: 'draw',
+          size: 'm'
+        }
       }
-    ]
+    }
   }
 ]
 
@@ -184,22 +138,17 @@ export function Simulator() {
 
   const clearCanvas = () => {
     if (!adapter || !bridge) return
-    const currentState = adapter.getCanvasState()
-    if (currentState.blocks.length === 0) {
+    const shapeIds = [...adapter.shapes.keys()]
+    if (shapeIds.length === 0) {
       alert('Canvas is already empty.')
       return
     }
-
-    const deleteActions = currentState.blocks.map((block) => ({
-      type: 'delete_block' as const,
-      blockId: block.id
-    }))
 
     const envelope = {
       type: 'canvas.action' as const,
       requestId: 'clear_' + Math.random().toString(36).substring(2, 9),
       canvasId: adapter.canvasId,
-      actions: deleteActions
+      actions: [{ type: 'delete_shapes' as const, shapeIds }]
     }
 
     addLog('in', 'canvas.action (Clear Canvas)', envelope)
@@ -213,9 +162,18 @@ export function Simulator() {
   }
 
   const zoomToFit = () => {
-    if (!adapter) return
-    adapter.zoomToFit()
-    addLog('info', 'action_trigger', 'Triggered zoomToFit()')
+    if (!bridge || !adapter) return
+    const envelope = {
+      type: 'canvas.action' as const,
+      requestId: 'fit_' + Math.random().toString(36).substring(2, 9),
+      canvasId: adapter.canvasId,
+      actions: [{ type: 'zoom_to_fit' as const }]
+    }
+    const response = bridge.handleActionEnvelope(envelope)
+    if (!('error' in response)) {
+      setObservation(response.observation.state)
+    }
+    addLog('info', 'action_trigger', 'Triggered zoom_to_fit')
   }
 
   return (
@@ -225,13 +183,13 @@ export function Simulator() {
           className={`tab-btn ${activeTab === 'simulator' ? 'active' : ''}`}
           onClick={() => setActiveTab('simulator')}
         >
-          ⚡️ Action Simulator
+          Action Simulator
         </button>
         <button
           className={`tab-btn ${activeTab === 'logs' ? 'active' : ''}`}
           onClick={() => setActiveTab('logs')}
         >
-          📜 Logs ({logs.length})
+          Logs ({logs.length})
         </button>
       </div>
 
@@ -245,9 +203,9 @@ export function Simulator() {
                 value={selectedPresetIndex}
                 onChange={(e) => handleSelectPreset(Number(e.target.value))}
               >
-                {PRESETS.map((p, idx) => (
-                  <option key={idx} value={idx}>
-                    {p.name}
+                {PRESETS.map((preset, index) => (
+                  <option key={index} value={index}>
+                    {preset.name}
                   </option>
                 ))}
               </select>
@@ -266,19 +224,22 @@ export function Simulator() {
 
             <div className="actions-bar">
               <button className="btn btn-primary" onClick={executeAction}>
-                Execute Action ⚡️
+                Execute Action
               </button>
               <button className="btn btn-secondary" onClick={zoomToFit}>
-                Fit 🔍
+                Fit
               </button>
               <button className="btn btn-danger" onClick={clearCanvas}>
-                Clear 🗑️
+                Clear
               </button>
             </div>
 
             <div className="simulator-info">
               <h4>Quick Guide</h4>
-              <p>Choose an action template, tweak its parameters (like position coordinates <code>x</code>, <code>y</code> or content <code>text</code>) and press execute to view changes instantly on the canvas.</p>
+              <p>
+                Choose an action template, tweak shape ids, positions, or props, then execute it
+                against the mounted tldraw editor.
+              </p>
             </div>
           </div>
         ) : (

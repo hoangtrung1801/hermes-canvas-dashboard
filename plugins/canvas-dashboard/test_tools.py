@@ -143,12 +143,12 @@ class CanvasDashboardPluginTests(unittest.TestCase):
 
     def test_build_tool_config_prepends_read_canvas_before_non_read_actions(self):
         config = build_tool_config(
-            {"actions": [{"type": "create_text", "text": "Hello"}]}
+            {"actions": [{"type": "create_task_card", "title": "Hello", "body": "World"}]}
         )
 
         self.assertEqual(
             config.actions,
-            [{"type": "read_canvas"}, {"type": "create_text", "text": "Hello"}],
+            [{"type": "read_canvas"}, {"type": "create_task_card", "title": "Hello", "body": "World"}],
         )
 
     def test_build_tool_config_does_not_duplicate_existing_leading_read_canvas(self):
@@ -156,14 +156,14 @@ class CanvasDashboardPluginTests(unittest.TestCase):
             {
                 "actions": [
                     {"type": "read_canvas"},
-                    {"type": "create_text", "text": "Hello"},
+                    {"type": "create_task_card", "title": "Hello", "body": "World"},
                 ]
             }
         )
 
         self.assertEqual(
             config.actions,
-            [{"type": "read_canvas"}, {"type": "create_text", "text": "Hello"}],
+            [{"type": "read_canvas"}, {"type": "create_task_card", "title": "Hello", "body": "World"}],
         )
 
     def test_handle_canvas_action_returns_runner_result(self):
@@ -181,7 +181,7 @@ class CanvasDashboardPluginTests(unittest.TestCase):
 
         result = handle_canvas_action(
             {
-                "actions": [{"type": "create_text", "text": "Hello"}],
+                "actions": [{"type": "create_task_card", "title": "Hello", "body": "World"}],
                 "requestId": "req_plugin",
             },
             runner=fake_runner,
@@ -191,7 +191,7 @@ class CanvasDashboardPluginTests(unittest.TestCase):
         self.assertEqual(result["request"]["requestId"], "req_plugin")
         self.assertEqual(
             result["request"]["actions"],
-            [{"type": "read_canvas"}, {"type": "create_text", "text": "Hello"}],
+            [{"type": "read_canvas"}, {"type": "create_task_card", "title": "Hello", "body": "World"}],
         )
 
     def test_handle_canvas_action_returns_structured_validation_error(self):
