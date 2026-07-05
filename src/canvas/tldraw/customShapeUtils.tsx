@@ -1,5 +1,14 @@
-import { HTMLContainer, Rectangle2d, ShapeUtil, type TLShape } from 'tldraw'
+import {
+  HTMLContainer,
+  Rectangle2d,
+  ShapeUtil,
+  resizeBox,
+  useEditor,
+  type TLResizeInfo,
+  type TLShape
+} from 'tldraw'
 import { T } from '@tldraw/validate'
+import type { ChangeEvent, PointerEvent } from 'react'
 import {
   LINK_CARD_TYPE,
   TASK_CARD_TYPE,
@@ -38,6 +47,18 @@ abstract class BaseHermesCardUtil<Shape extends TLShape> extends ShapeUtil<Shape
   getIndicatorPath() {
     return undefined
   }
+
+  override onResize(shape: Shape, info: TLResizeInfo<Shape>) {
+    const { id: _id, type: _type, ...patch } = resizeBox(shape as any, info as any, {
+      minWidth: 180,
+      minHeight: 96
+    })
+    return patch
+  }
+}
+
+function markCanvasEventHandled(editor: ReturnType<typeof useEditor>, event: PointerEvent<HTMLElement>) {
+  editor.markEventAsHandled(event)
 }
 
 export class TodoBlockShapeUtil extends BaseHermesCardUtil<TodoBlockShape> {
@@ -60,15 +81,35 @@ export class TodoBlockShapeUtil extends BaseHermesCardUtil<TodoBlockShape> {
   }
 
   component(shape: TodoBlockShape) {
+    const editor = useEditor()
+
+    const updateTaskDone = (taskId: string, event: ChangeEvent<HTMLInputElement>) => {
+      const tasks = shape.props.tasks.map((task) =>
+        task.id === taskId ? { ...task, done: event.currentTarget.checked } : task
+      )
+
+      editor.updateShape({
+        id: shape.id,
+        type: TODO_BLOCK_TYPE,
+        props: { tasks }
+      })
+    }
+
     return (
       <HTMLContainer className="hermes-shape hermes-todo-block" style={{ width: shape.props.w, height: shape.props.h }}>
         <strong>{shape.props.title}</strong>
         <div className="hermes-task-list">
           {shape.props.tasks.map((task) => (
-            <div key={task.id} className="hermes-task-row">
-              <span>{task.done ? '[x]' : '[ ]'}</span>
+            <label key={task.id} className="hermes-task-row">
+              <input
+                type="checkbox"
+                checked={task.done}
+                onChange={(event) => updateTaskDone(task.id, event)}
+                onPointerDown={(event) => markCanvasEventHandled(editor, event)}
+                onPointerUp={(event) => markCanvasEventHandled(editor, event)}
+              />
               <span>{task.text}</span>
-            </div>
+            </label>
           ))}
         </div>
       </HTMLContainer>
@@ -119,10 +160,21 @@ export class LinkCardShapeUtil extends BaseHermesCardUtil<LinkCardShape> {
   }
 
   component(shape: LinkCardShape) {
+    const editor = useEditor()
+
     return (
       <HTMLContainer className="hermes-shape hermes-link-card" style={{ width: shape.props.w, height: shape.props.h }}>
         <strong>{shape.props.title}</strong>
-        <span>{shape.props.url}</span>
+        <a
+          href={shape.props.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          draggable={false}
+          onPointerDown={(event) => markCanvasEventHandled(editor, event)}
+          onPointerUp={(event) => markCanvasEventHandled(editor, event)}
+        >
+          {shape.props.url}
+        </a>
         {shape.props.description && <p>{shape.props.description}</p>}
       </HTMLContainer>
     )

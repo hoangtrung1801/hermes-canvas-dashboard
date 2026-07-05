@@ -1051,13 +1051,15 @@ body {
   box-sizing: border-box;
   width: 100%;
   height: 100%;
-  overflow: hidden;
+  overflow: auto;
   border: 1px solid #1f2937;
   border-radius: 8px;
   background: #ffffff;
   color: #111827;
   font: 14px/1.35 system-ui, sans-serif;
   padding: 12px;
+  pointer-events: all;
+  overflow-wrap: anywhere;
 }
 
 .hermes-todo-block {
@@ -1086,5 +1088,19 @@ body {
 
 .hermes-task-row {
   display: flex;
+  align-items: flex-start;
   gap: 6px;
+  cursor: pointer;
+}
+
+.hermes-task-row input {
+  flex: 0 0 auto;
+  margin-top: 2px;
+}
+
+.hermes-link-card a {
+  display: block;
+  color: #047857;
+  text-decoration: underline;
+  text-underline-offset: 2px;
 }
