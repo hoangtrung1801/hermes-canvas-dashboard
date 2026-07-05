@@ -1,7 +1,7 @@
 import { mkdtemp, rm } from 'node:fs/promises'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { WebSocket } from 'ws'
 import { createCanvasGateway } from './canvasGateway'
 import { createHermesCanvasToolPayload } from './hermesCanvasTool'
@@ -68,6 +68,44 @@ describe('canvas gateway integration', () => {
     })
 
     expect(JSON.parse(received).type).toBe('canvas.action')
+  })
+
+  it('logs Hermes websocket action batches before routing them', async () => {
+    const logger = { log: vi.fn() }
+    const gateway = createCanvasGateway(8795, { logger })
+    instances.push(gateway)
+
+    const bridgeClient = new WebSocket(
+      'ws://localhost:8795/canvas?canvasId=canvas_001&role=bridge'
+    )
+    const hermesClient = new WebSocket(
+      'ws://localhost:8795/canvas?canvasId=canvas_001&role=hermes'
+    )
+    clients.push(bridgeClient, hermesClient)
+
+    await new Promise<void>((resolve) => {
+      bridgeClient.addEventListener('message', () => resolve(), { once: true })
+      hermesClient.addEventListener('open', () => {
+        hermesClient.send(
+          JSON.stringify(
+            createHermesCanvasToolPayload('canvas_001', [
+              { type: 'read_canvas' },
+              { type: 'zoom_to_fit' }
+            ])
+          )
+        )
+      })
+    })
+
+    expect(logger.log).toHaveBeenCalledWith(
+      '[canvas:ws-action]',
+      expect.objectContaining({
+        canvasId: 'canvas_001',
+        requestId: expect.any(String),
+        route: 'bridge',
+        actionTypes: ['read_canvas', 'zoom_to_fit']
+      })
+    )
   })
 
   it('does not crash when a bridge connection sends a Hermes action payload', async () => {

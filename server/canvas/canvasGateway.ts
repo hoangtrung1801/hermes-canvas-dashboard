@@ -14,13 +14,19 @@ type UnknownEnvelope = {
   type?: unknown
 }
 
+type CanvasGatewayLogger = {
+  log(message?: unknown, ...optionalParams: unknown[]): void
+}
+
 type CanvasGatewayOptions = {
   dataDir?: string
+  logger?: CanvasGatewayLogger
 }
 
 export function createCanvasGateway(port = 8787, options: CanvasGatewayOptions = {}) {
   const rooms = new RoomManager()
   const dataDir = options.dataDir ?? join(process.cwd(), 'data')
+  const logger = options.logger ?? console
   const syncRooms = new TldrawSyncRoomManager({ dataDir })
   const server = createServer((_request, response) => {
     sendJson(response, 404, { error: 'Not found' })
@@ -89,7 +95,10 @@ export function createCanvasGateway(port = 8787, options: CanvasGatewayOptions =
           )
           return
         }
-        if (rooms.hasBridge(canvasId)) {
+        const route = rooms.hasBridge(canvasId) ? 'bridge' : 'headless'
+        logHermesActionBatch(logger, validated.data, route)
+
+        if (route === 'bridge') {
           rooms.forwardToBridge(canvasId, payload)
           return
         }
@@ -158,6 +167,23 @@ function sendCanvasError(socket: WebSocket, requestId: string, message: string) 
       message
     })
   )
+}
+
+function logHermesActionBatch(
+  logger: CanvasGatewayLogger,
+  envelope: {
+    requestId: string
+    canvasId: string
+    actions: Array<{ type: string }>
+  },
+  route: 'bridge' | 'headless'
+): void {
+  logger.log('[canvas:ws-action]', {
+    canvasId: envelope.canvasId,
+    requestId: envelope.requestId,
+    route,
+    actionTypes: envelope.actions.map((action) => action.type)
+  })
 }
 
 function formatError(error: unknown): string {
