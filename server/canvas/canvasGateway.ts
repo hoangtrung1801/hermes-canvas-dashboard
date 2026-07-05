@@ -33,6 +33,8 @@ export function createCanvasGateway(port = 8787, options: CanvasGatewayOptions =
   })
   const wss = new WebSocketServer({ noServer: true })
   const syncWss = new WebSocketServer({ noServer: true })
+  let closeState: 'open' | 'closing' | 'closed' = 'open'
+  const closeCallbacks: Array<() => void> = []
 
   server.on('upgrade', (request, socket, head) => {
     const url = new URL(request.url ?? '/', 'http://localhost')
@@ -138,11 +140,21 @@ export function createCanvasGateway(port = 8787, options: CanvasGatewayOptions =
     rooms,
     syncRooms,
     close(callback: () => void) {
+      if (closeState === 'closed') {
+        queueMicrotask(callback)
+        return
+      }
+
+      closeCallbacks.push(callback)
+      if (closeState === 'closing') return
+      closeState = 'closing'
+
       wss.close(() => {
         syncWss.close(() => {
           server.close(() => {
             syncRooms.close()
-            callback()
+            closeState = 'closed'
+            closeCallbacks.splice(0).forEach((closeCallback) => closeCallback())
           })
         })
       })

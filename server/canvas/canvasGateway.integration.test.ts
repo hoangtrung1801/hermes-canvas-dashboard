@@ -146,6 +146,50 @@ describe('canvas gateway integration', () => {
     expect(getResponse.status).toBe(404)
   })
 
+  it('coalesces repeated close requests during shutdown', async () => {
+    const dataDir = await mkdtemp(join(tmpdir(), 'hermes-canvas-close-'))
+    tempDirs.push(dataDir)
+    const gateway = createCanvasGateway(0, { dataDir })
+
+    await new Promise<void>((resolve) => {
+      gateway.server.once('listening', () => resolve())
+    })
+
+    const maxListenerWarnings: string[] = []
+    const onWarning = (warning: Error) => {
+      if (
+        warning.name === 'MaxListenersExceededWarning' &&
+        warning.message.includes('[WebSocketServer]')
+      ) {
+        maxListenerWarnings.push(warning.message)
+      }
+    }
+    process.on('warning', onWarning)
+
+    try {
+      let closeCallbackCount = 0
+
+      await Promise.all(
+        Array.from(
+          { length: 11 },
+          () =>
+            new Promise<void>((resolve) => {
+              gateway.close(() => {
+                closeCallbackCount += 1
+                resolve()
+              })
+            })
+        )
+      )
+      await new Promise<void>((resolve) => setImmediate(resolve))
+
+      expect(closeCallbackCount).toBe(11)
+      expect(maxListenerWarnings).toEqual([])
+    } finally {
+      process.off('warning', onWarning)
+    }
+  })
+
   it('hosts tldraw sync websocket rooms', async () => {
     const dataDir = await mkdtemp(join(tmpdir(), 'hermes-canvas-sync-gateway-'))
     tempDirs.push(dataDir)
