@@ -52,6 +52,42 @@ class FakeContext:
 
 
 class CanvasDashboardPluginTests(unittest.TestCase):
+    def test_bundled_skill_uses_hermes_skill_format(self):
+        skill_text = (PLUGIN_DIR / "skills" / "canvas-dashboard" / "SKILL.md").read_text(
+            encoding="utf-8"
+        )
+
+        self.assertIn("version: 0.1.0", skill_text)
+        self.assertIn("metadata:\n  hermes:", skill_text)
+        self.assertLess(
+            skill_text.index("## When to Use"),
+            skill_text.index("## Procedure"),
+        )
+        self.assertLess(
+            skill_text.index("## Procedure"),
+            skill_text.index("## Pitfalls"),
+        )
+        self.assertLess(
+            skill_text.index("## Pitfalls"),
+            skill_text.index("## Verification"),
+        )
+        for action_name in ("set_camera", "select_shapes", "clear_selection"):
+            self.assertIn(f"### {action_name}", skill_text)
+
+    def test_bundled_skill_handles_link_only_requests_with_metadata(self):
+        skill_text = (PLUGIN_DIR / "skills" / "canvas-dashboard" / "SKILL.md").read_text(
+            encoding="utf-8"
+        )
+
+        self.assertIn("link-only", skill_text)
+        self.assertIn("browsing skill", skill_text)
+        self.assertIn("metadata", skill_text)
+        self.assertIn("create_link_card", skill_text)
+        self.assertLess(
+            skill_text.index("Use the browsing skill"),
+            skill_text.index("### create_link_card"),
+        )
+
     def test_register_adds_tool_and_hook_and_installs_skill(self):
         ctx = FakeContext()
         plugin = load_plugin_entrypoint()
