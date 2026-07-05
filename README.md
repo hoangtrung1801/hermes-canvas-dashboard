@@ -33,6 +33,7 @@ The repository includes systemd templates for running the gateway and frontend a
 Included files:
 
 - `scripts/linux/install-systemd-services.sh`: installs the systemd unit files and creates `/etc/hermes-canvas/hermes-canvas.env` when missing.
+- `scripts/linux/uninstall-systemd-services.sh`: stops, disables, and removes installed Hermes Canvas systemd unit files.
 - `scripts/serve-dist.mjs`: serves the production `dist/` frontend for `hermes-canvas-app.service`.
 - `systemd/hermes-canvas-server.service`: production gateway service.
 - `systemd/hermes-canvas-app.service`: production frontend service.
@@ -58,6 +59,20 @@ To install both dev and production service units:
 
 ```bash
 sudo scripts/linux/install-systemd-services.sh all --enable --start
+```
+
+To uninstall services:
+
+```bash
+sudo scripts/linux/uninstall-systemd-services.sh dev
+sudo scripts/linux/uninstall-systemd-services.sh prod
+sudo scripts/linux/uninstall-systemd-services.sh all
+```
+
+The uninstall script keeps `/etc/hermes-canvas/hermes-canvas.env` by default. To remove that environment file too:
+
+```bash
+sudo scripts/linux/uninstall-systemd-services.sh all --purge-env
 ```
 
 The installer creates `/etc/hermes-canvas/hermes-canvas.env` if it does not already exist. Edit that file to change the checkout path, ports, or Vite WebSocket URLs:

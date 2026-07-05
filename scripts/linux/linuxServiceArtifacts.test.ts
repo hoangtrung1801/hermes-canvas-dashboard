@@ -43,6 +43,21 @@ describe('linux service artifacts', () => {
     expect(installer).toContain('if [[ ! -f "${ENV_FILE}" ]]')
     expect(installer).toContain('s|__HERMES_CANVAS_ROOT__|${INSTALL_ROOT}|g')
   })
+
+  test('uninstaller exposes dev, prod, and all modes and preserves env file by default', async () => {
+    const uninstaller = await readRepoFile('scripts/linux/uninstall-systemd-services.sh')
+
+    expect(uninstaller).toContain('MODE="${1:-all}"')
+    expect(uninstaller).toContain('dev)')
+    expect(uninstaller).toContain('prod)')
+    expect(uninstaller).toContain('all)')
+    expect(uninstaller).toContain('--purge-env')
+    expect(uninstaller).toContain('systemctl stop "${existing_units[@]}"')
+    expect(uninstaller).toContain('systemctl disable "${existing_units[@]}"')
+    expect(uninstaller).toContain('rm -f "${UNIT_DIR}/${unit}"')
+    expect(uninstaller).toContain('systemctl daemon-reload')
+    expect(uninstaller).toContain('Keeping ${ENV_FILE}')
+  })
 })
 
 describe('static dist server', () => {
