@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -p tsconfig.json && vite build",
+    "serve:app": "node scripts/serve-dist.mjs",
     "server": "tsx server/index.ts",
     "hermes:demo": "tsx server/canvas/hermesCanvasClient.ts",
     "test": "vitest run",

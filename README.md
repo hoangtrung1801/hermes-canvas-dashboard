@@ -26,6 +26,67 @@ CANVAS_GATEWAY_PORT=8788 npm run server
 VITE_CANVAS_GATEWAY_URL="ws://localhost:8788/canvas?canvasId=canvas_001&role=bridge" VITE_TLDRAW_SYNC_URL="ws://localhost:8788/sync" npm run dev
 ```
 
+## Linux Services
+
+The repository includes systemd templates for running the gateway and frontend as Linux services. Run the installer from the repository checkout on the target machine.
+
+Included files:
+
+- `scripts/linux/install-systemd-services.sh`: installs the systemd unit files and creates `/etc/hermes-canvas/hermes-canvas.env` when missing.
+- `scripts/serve-dist.mjs`: serves the production `dist/` frontend for `hermes-canvas-app.service`.
+- `systemd/hermes-canvas-server.service`: production gateway service.
+- `systemd/hermes-canvas-app.service`: production frontend service.
+- `systemd/hermes-canvas-server-dev.service`: development gateway service.
+- `systemd/hermes-canvas-app-dev.service`: development Vite frontend service.
+- `systemd/hermes-canvas.env.example`: default environment file template.
+
+Development services run the same commands used locally:
+
+```bash
+sudo scripts/linux/install-systemd-services.sh dev --enable --start
+```
+
+Production-style services run the gateway and serve the built frontend from `dist/`:
+
+```bash
+npm install
+npm run build
+sudo scripts/linux/install-systemd-services.sh prod --enable --start
+```
+
+To install both dev and production service units:
+
+```bash
+sudo scripts/linux/install-systemd-services.sh all --enable --start
+```
+
+The installer creates `/etc/hermes-canvas/hermes-canvas.env` if it does not already exist. Edit that file to change the checkout path, ports, or Vite WebSocket URLs:
+
+```bash
+sudo editor /etc/hermes-canvas/hermes-canvas.env
+sudo systemctl restart hermes-canvas-server.service hermes-canvas-app.service
+```
+
+Useful service commands:
+
+```bash
+sudo systemctl status hermes-canvas-server.service
+sudo systemctl status hermes-canvas-app.service
+sudo systemctl restart hermes-canvas-server.service hermes-canvas-app.service
+journalctl -u hermes-canvas-server.service -f
+journalctl -u hermes-canvas-app.service -f
+```
+
+Development units use `hermes-canvas-server-dev.service` and `hermes-canvas-app-dev.service`:
+
+```bash
+sudo systemctl status hermes-canvas-server-dev.service
+sudo systemctl status hermes-canvas-app-dev.service
+sudo systemctl restart hermes-canvas-server-dev.service hermes-canvas-app-dev.service
+journalctl -u hermes-canvas-server-dev.service -f
+journalctl -u hermes-canvas-app-dev.service -f
+```
+
 ## Hermes Demo Client
 
 With the gateway running:

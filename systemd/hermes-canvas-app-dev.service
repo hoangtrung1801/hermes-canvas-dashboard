@@ -1,0 +1,16 @@
+[Unit]
+Description=Hermes Canvas frontend (development)
+After=network.target hermes-canvas-server-dev.service
+Wants=hermes-canvas-server-dev.service
+
+[Service]
+Type=simple
+EnvironmentFile=/etc/hermes-canvas/hermes-canvas.env
+WorkingDirectory=__HERMES_CANVAS_ROOT__
+ExecStart=/usr/bin/npm run dev -- --host ${APP_HOST} --port ${APP_PORT}
+Restart=on-failure
+RestartSec=5
+SyslogIdentifier=hermes-canvas-app-dev
+
+[Install]
+WantedBy=multi-user.target

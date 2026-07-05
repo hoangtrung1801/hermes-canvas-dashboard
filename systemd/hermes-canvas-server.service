@@ -1,0 +1,15 @@
+[Unit]
+Description=Hermes Canvas gateway
+After=network.target
+
+[Service]
+Type=simple
+EnvironmentFile=/etc/hermes-canvas/hermes-canvas.env
+WorkingDirectory=__HERMES_CANVAS_ROOT__
+ExecStart=/usr/bin/npm run server
+Restart=on-failure
+RestartSec=5
+SyslogIdentifier=hermes-canvas-server
+
+[Install]
+WantedBy=multi-user.target
