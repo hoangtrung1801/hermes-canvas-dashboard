@@ -27,10 +27,18 @@ describe('linux service artifacts', () => {
       expect(unit).toContain('Restart=on-failure')
     }
 
-    expect(prodServer).toContain('ExecStart=/usr/bin/npm run server')
-    expect(prodApp).toContain('ExecStart=/usr/bin/npm run serve:app')
-    expect(devServer).toContain('ExecStart=/usr/bin/npm run server')
-    expect(devApp).toContain('ExecStart=/usr/bin/npm run dev -- --host ${APP_HOST} --port ${APP_PORT}')
+    for (const unit of [prodServer, prodApp, devServer, devApp]) {
+      expect(unit).toContain(
+        'Environment=PATH=__HERMES_CANVAS_NODE_BIN_DIR__:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'
+      )
+    }
+
+    expect(prodServer).toContain('ExecStart=__HERMES_CANVAS_PACKAGE_MANAGER__ run server')
+    expect(prodApp).toContain('ExecStart=__HERMES_CANVAS_PACKAGE_MANAGER__ run serve:app')
+    expect(devServer).toContain('ExecStart=__HERMES_CANVAS_PACKAGE_MANAGER__ run server')
+    expect(devApp).toContain(
+      'ExecStart=__HERMES_CANVAS_PACKAGE_MANAGER__ run dev -- --host ${APP_HOST} --port ${APP_PORT}'
+    )
   })
 
   test('installer exposes dev, prod, and all modes without overwriting an existing env file', async () => {
@@ -41,7 +49,11 @@ describe('linux service artifacts', () => {
     expect(installer).toContain('prod)')
     expect(installer).toContain('all)')
     expect(installer).toContain('if [[ ! -f "${ENV_FILE}" ]]')
-    expect(installer).toContain('s|__HERMES_CANVAS_ROOT__|${INSTALL_ROOT}|g')
+    expect(installer).toContain('s|__HERMES_CANVAS_ROOT__|${INSTALL_ROOT_ESCAPED}|g')
+    expect(installer).toContain('PACKAGE_MANAGER_BIN="$(lookup_command "${PACKAGE_MANAGER}")"')
+    expect(installer).toContain('NODE_BIN="$(lookup_command node)"')
+    expect(installer).toContain('s|__HERMES_CANVAS_PACKAGE_MANAGER__|${PACKAGE_MANAGER_BIN_ESCAPED}|g')
+    expect(installer).toContain('s|__HERMES_CANVAS_NODE_BIN_DIR__|${NODE_BIN_DIR_ESCAPED}|g')
   })
 
   test('uninstaller exposes dev, prod, and all modes and preserves env file by default', async () => {

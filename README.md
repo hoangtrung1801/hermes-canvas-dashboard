@@ -47,6 +47,13 @@ Development services run the same commands used locally:
 sudo scripts/linux/install-systemd-services.sh dev --enable --start
 ```
 
+The installer resolves the package manager and Node paths on the target machine, then writes those absolute paths into the installed unit files. If `pnpm-lock.yaml` is present and `pnpm` is available, it uses `pnpm`; otherwise it uses `npm`. Override that choice when needed:
+
+```bash
+sudo HERMES_CANVAS_PACKAGE_MANAGER=pnpm scripts/linux/install-systemd-services.sh dev --enable --start
+sudo HERMES_CANVAS_PACKAGE_MANAGER=npm scripts/linux/install-systemd-services.sh dev --enable --start
+```
+
 Production-style services run the gateway and serve the built frontend from `dist/`:
 
 ```bash

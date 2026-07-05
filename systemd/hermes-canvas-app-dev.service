@@ -6,8 +6,9 @@ Wants=hermes-canvas-server-dev.service
 [Service]
 Type=simple
 EnvironmentFile=/etc/hermes-canvas/hermes-canvas.env
+Environment=PATH=__HERMES_CANVAS_NODE_BIN_DIR__:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 WorkingDirectory=__HERMES_CANVAS_ROOT__
-ExecStart=/usr/bin/npm run dev -- --host ${APP_HOST} --port ${APP_PORT}
+ExecStart=__HERMES_CANVAS_PACKAGE_MANAGER__ run dev -- --host ${APP_HOST} --port ${APP_PORT}
 Restart=on-failure
 RestartSec=5
 SyslogIdentifier=hermes-canvas-app-dev
