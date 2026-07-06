@@ -68,6 +68,14 @@ const tldrawMock = vi.hoisted(() => {
 
   return {
     editor,
+    defaultColorStyle: { id: 'tldraw:color', defaultValue: 'black' },
+    defaultTheme: {
+      colors: {
+        light: {
+          red: { noteFill: '#FC8282' }
+        }
+      }
+    },
     shapes,
     selectedShapeIds,
     props: null as any
@@ -106,6 +114,9 @@ vi.mock('tldraw', () => ({
   defaultBindingUtils: [],
   inlineBase64AssetStore: {},
   HTMLContainer: ({ children, ...props }: any) => <div {...props}>{children}</div>,
+  DefaultColorStyle: tldrawMock.defaultColorStyle,
+  DEFAULT_THEME: tldrawMock.defaultTheme,
+  getColorValue: (colors: any, color: string, variant: string) => colors[color]?.[variant] ?? color,
   Rectangle2d: class {
     constructor(public readonly config: unknown) {}
   },

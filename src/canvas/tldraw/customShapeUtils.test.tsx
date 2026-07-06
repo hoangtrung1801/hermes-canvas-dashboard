@@ -1,8 +1,17 @@
 import { fireEvent, render, screen } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { DefaultColorStyle } from 'tldraw'
 import { LinkCardShapeUtil, TaskCardShapeUtil, TodoBlockShapeUtil } from './customShapeUtils'
 
 const tldrawMock = vi.hoisted(() => ({
+  defaultColorStyle: { id: 'tldraw:color', defaultValue: 'black' },
+  defaultTheme: {
+    colors: {
+      light: {
+        red: { noteFill: '#FC8282' }
+      }
+    }
+  },
   editor: {
     updateShape: vi.fn(),
     markEventAsHandled: vi.fn(),
@@ -21,6 +30,9 @@ vi.mock('tldraw', () => {
       constructor(public props: unknown) {}
     },
     ShapeUtil: class {},
+    DefaultColorStyle: tldrawMock.defaultColorStyle,
+    DEFAULT_THEME: tldrawMock.defaultTheme,
+    getColorValue: (colors: any, color: string, variant: string) => colors[color]?.[variant] ?? color,
     resizeBox: tldrawMock.resizeBox,
     useEditor: () => tldrawMock.editor,
     useIsEditing: (shapeId: string) => tldrawMock.editingShapeId === shapeId
@@ -248,7 +260,43 @@ describe('custom tldraw ShapeUtils', () => {
     expect(screen.queryByLabelText('Link title')).not.toBeInTheDocument()
   })
 
-  it('renders custom card background colors from shape props', () => {
+  it('registers tldraw color style for custom card shape toolbar controls', () => {
+    expect(TodoBlockShapeUtil.props.color).toBe(DefaultColorStyle)
+    expect(TaskCardShapeUtil.props.color).toBe(DefaultColorStyle)
+    expect(LinkCardShapeUtil.props.color).toBe(DefaultColorStyle)
+  })
+
+  it('renders custom card background colors from tldraw color props', () => {
+    const util = new TaskCardShapeUtil({} as any)
+
+    render(
+      util.component({
+        id: 'shape:task_1',
+        type: 'task_card',
+        x: 0,
+        y: 0,
+        rotation: 0,
+        index: 'a1',
+        parentId: 'page:page',
+        isLocked: false,
+        opacity: 1,
+        meta: {},
+        props: {
+          w: 280,
+          h: 160,
+          title: 'Design',
+          body: 'Build UI',
+          status: 'todo',
+          priority: 'high',
+          color: 'red'
+        }
+      } as any)
+    )
+
+    expect(screen.getByText('Design').closest('.hermes-shape')).toHaveStyle({ backgroundColor: '#FC8282' })
+  })
+
+  it('keeps explicit backgroundColor as a fallback for API-created cards', () => {
     const util = new TaskCardShapeUtil({} as any)
 
     render(
@@ -324,7 +372,7 @@ describe('custom tldraw ShapeUtils', () => {
     })
   })
 
-  it('updates task card background color from editable controls', () => {
+  it('does not show custom background color controls in edit mode', () => {
     tldrawMock.editingShapeId = 'shape:task_1'
     const util = new TaskCardShapeUtil({} as any)
     render(
@@ -345,19 +393,13 @@ describe('custom tldraw ShapeUtils', () => {
           title: 'Design',
           body: 'Build UI',
           status: 'todo',
-          priority: 'high',
-          backgroundColor: '#dbeafe'
+          priority: 'high'
         }
       } as any)
     )
 
-    fireEvent.change(screen.getByLabelText('Background color'), { target: { value: '#fef3c7' } })
-
-    expect(tldrawMock.editor.updateShape).toHaveBeenCalledWith({
-      id: 'shape:task_1',
-      type: 'task_card',
-      props: { backgroundColor: '#fef3c7' }
-    })
+    expect(screen.queryByLabelText('Background color')).not.toBeInTheDocument()
+    expect(screen.queryByLabelText('Background color picker')).not.toBeInTheDocument()
   })
 
   it('updates link card fields while keeping an external link', () => {

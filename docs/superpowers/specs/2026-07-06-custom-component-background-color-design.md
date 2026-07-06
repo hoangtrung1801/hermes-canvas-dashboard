@@ -2,7 +2,7 @@
 
 ## Goal
 
-Allow Hermes custom canvas components to use a configurable background color from both the canvas API and the in-canvas edit UI.
+Allow Hermes custom canvas components to use a configurable background color from both the canvas API and the built-in tldraw dashboard style toolbar.
 
 The change applies to the existing custom tldraw shape types:
 
@@ -55,16 +55,13 @@ The generic `update_shape` action can update an existing custom component with:
 
 ## UI Behavior
 
-Each custom component edit view gets a background color control.
+Custom components expose tldraw's built-in `DefaultColorStyle` through `props.color`.
 
-The control includes:
+When a card is selected on the canvas dashboard, the built-in tldraw style toolbar can change the selected card's color. That toolbar writes to `props.color`, matching tldraw's standard shape color behavior.
 
-- A native color input for picking hex colors.
-- A text input for editing or pasting the same value.
+The custom component edit views do not include separate background color controls.
 
-Both inputs update `props.backgroundColor` with the entered value.
-
-The rendered shape applies `backgroundColor` inline when the prop is present. If the prop is absent, the existing CSS class color is used.
+The rendered shape applies the tldraw palette color from `props.color` first. If `props.color` is absent, it applies `backgroundColor` when present. If neither prop is present, the existing CSS class color is used.
 
 ## Validation
 
@@ -78,12 +75,14 @@ Add or update tests to cover:
 - Prop helpers preserve an explicit `backgroundColor`.
 - Create action schema accepts `backgroundColor` for all custom component create actions.
 - The tldraw executor persists `backgroundColor` into created shape props.
-- Rendered custom components apply the configured background color.
-- Edit controls update `props.backgroundColor`.
+- Custom shape utils register `DefaultColorStyle` so the built-in toolbar can change card colors.
+- Rendered custom components apply `props.color` from the tldraw toolbar.
+- Rendered custom components keep `backgroundColor` as a fallback for API-created cards.
+- Edit views do not show custom background color controls.
 
 ## Out of Scope
 
 - Foreground/text color customization.
 - Per-task row or per-field color styling.
-- Global themes or named color palettes.
+- Custom color palettes beyond tldraw's built-in color toolbar.
 - Automatic contrast adjustment.

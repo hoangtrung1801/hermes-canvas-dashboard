@@ -2,9 +2,9 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
-**Goal:** Add configurable background colors to Hermes custom canvas components through both API actions and in-canvas edit controls.
+**Goal:** Add configurable background colors to Hermes custom canvas components through API actions and the built-in tldraw dashboard style toolbar.
 
-**Architecture:** Store `backgroundColor?: string` on each existing custom shape prop object. The create helpers and action schema accept the value, the tldraw executor persists it, and the React shape utilities render and edit it.
+**Architecture:** Store `backgroundColor?: string` on each existing custom shape prop object for API compatibility, and expose tldraw's built-in `DefaultColorStyle` as `props.color` for dashboard toolbar changes. The React shape utilities render `props.color` first, fall back to `backgroundColor`, and do not include custom edit-mode color controls.
 
 **Tech Stack:** TypeScript, React, tldraw custom `ShapeUtil`, Zod, Vitest, Testing Library.
 
@@ -15,11 +15,11 @@
 - Modify `src/canvas/tldraw/customShape.types.ts` to add `backgroundColor` to custom prop types and create helpers.
 - Modify `src/canvas/actions/canvasAction.types.ts` to add `backgroundColor` to typed create actions.
 - Modify `src/canvas/actions/canvasAction.schema.ts` to validate optional `backgroundColor`.
-- Modify `src/canvas/tldraw/customShapeUtils.tsx` to render inline background colors and expose edit controls.
+- Modify `src/canvas/tldraw/customShapeUtils.tsx` to render tldraw toolbar colors and remove custom edit controls.
 - Modify `src/canvas/tldraw/customShape.types.test.ts` for helper defaults and explicit colors.
 - Modify `src/canvas/actions/canvasAction.schema.test.ts` for create-action schema coverage.
 - Modify `src/canvas/tldraw/tldrawActionExecutor.test.ts` for executor persistence.
-- Modify `src/canvas/tldraw/customShapeUtils.test.tsx` for rendering and edit controls.
+- Modify `src/canvas/tldraw/customShapeUtils.test.tsx` for toolbar color registration, rendering, and edit-control removal.
 - Modify `CANVAS_API.md` examples to document `backgroundColor`.
 
 ## Task 1: Prop Helpers And Action Schema
@@ -169,5 +169,43 @@ Expected: PASS.
 - [x] **Step 4: Run full test suite**
 
 Run: `npm test`
+
+Expected: PASS.
+
+## Task 5: Built-In Tldraw Toolbar Color Follow-Up
+
+**Files:**
+- Test: `src/canvas/tldraw/customShapeUtils.test.tsx`
+- Modify: `src/canvas/tldraw/customShapeUtils.tsx`
+- Modify: `src/canvas/tldraw/customShape.types.ts`
+- Modify: `src/styles.css`
+- Modify: `docs/superpowers/specs/2026-07-06-custom-component-background-color-design.md`
+- Modify: `docs/superpowers/plans/2026-07-06-custom-component-background-color.md`
+
+- [x] **Step 1: Write failing toolbar registration and render tests**
+
+Assert that all custom shape utils expose `DefaultColorStyle` as `props.color`, and that `props.color: 'red'` renders the tldraw red note-fill background.
+
+- [x] **Step 2: Write failing edit-control removal test**
+
+Render a task card in edit mode and assert `Background color` and `Background color picker` controls are absent.
+
+- [x] **Step 3: Run tests to verify red**
+
+Run: `npm test -- src/canvas/tldraw/customShapeUtils.test.tsx`
+
+Expected: FAIL because the shape utils do not yet expose `DefaultColorStyle`, `props.color` does not render, and the custom edit controls still exist.
+
+- [x] **Step 4: Implement toolbar color support**
+
+Import `DefaultColorStyle`, `DEFAULT_THEME`, and `getColorValue` from `tldraw`. Add `color: DefaultColorStyle` to each custom shape util's prop schema. Render `props.color` through `getColorValue(DEFAULT_THEME.colors.light, props.color, 'noteFill')`, falling back to `backgroundColor`.
+
+- [x] **Step 5: Remove custom edit-mode color controls**
+
+Delete the shared `BackgroundColorField` component and its CSS rules. Leave the existing title/body/task/link edit controls unchanged.
+
+- [x] **Step 6: Run focused verification**
+
+Run: `npm test -- src/canvas/tldraw/customShapeUtils.test.tsx`
 
 Expected: PASS.

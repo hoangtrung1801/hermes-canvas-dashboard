@@ -237,6 +237,8 @@ Move shapes by absolute coordinates or a delta.
 }
 ```
 
+Cards can also be recolored directly in the canvas dashboard by selecting the card and using tldraw's built-in color toolbar. API-created cards may still set `backgroundColor` for an explicit initial background.
+
 ### set_camera
 
 ```json
