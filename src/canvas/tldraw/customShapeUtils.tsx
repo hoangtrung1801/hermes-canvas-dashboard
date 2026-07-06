@@ -9,7 +9,7 @@ import {
   type TLShape
 } from 'tldraw'
 import { T } from '@tldraw/validate'
-import type { ChangeEvent, MouseEvent, PointerEvent } from 'react'
+import type { CSSProperties, ChangeEvent, MouseEvent, PointerEvent } from 'react'
 import {
   LINK_CARD_TYPE,
   TASK_CARD_TYPE,
@@ -91,6 +91,59 @@ function updateShapeProps<Shape extends HermesCardShape>(
   } as any)
 }
 
+function cardStyle(props: { w: number; h: number; backgroundColor?: string }): CSSProperties {
+  return {
+    width: props.w,
+    height: props.h,
+    ...(props.backgroundColor ? { backgroundColor: props.backgroundColor } : {})
+  }
+}
+
+function colorPickerValue(backgroundColor: string | undefined) {
+  return backgroundColor && /^#[0-9a-fA-F]{6}$/.test(backgroundColor) ? backgroundColor : '#ffffff'
+}
+
+function BackgroundColorField<Shape extends HermesCardShape>({
+  editor,
+  handlers,
+  shape
+}: {
+  editor: ReturnType<typeof useEditor>
+  handlers: ReturnType<typeof controlHandlers>
+  shape: Shape
+}) {
+  const backgroundColor =
+    typeof shape.props.backgroundColor === 'string' ? shape.props.backgroundColor : ''
+  const updateBackgroundColor = (event: ChangeEvent<HTMLInputElement>) => {
+    updateShapeProps(editor, shape, { backgroundColor: event.currentTarget.value } as Partial<Shape['props']>)
+  }
+
+  return (
+    <div className="hermes-background-field">
+      <label className="hermes-field hermes-color-picker-field">
+        <span>Background</span>
+        <input
+          aria-label="Background color picker"
+          type="color"
+          value={colorPickerValue(backgroundColor)}
+          onChange={updateBackgroundColor}
+          {...handlers}
+        />
+      </label>
+      <label className="hermes-field">
+        <span>Background color</span>
+        <input
+          aria-label="Background color"
+          value={backgroundColor}
+          placeholder="#ffffff"
+          onChange={updateBackgroundColor}
+          {...handlers}
+        />
+      </label>
+    </div>
+  )
+}
+
 function createNextTodoTaskId(tasks: TodoBlockProps['tasks']) {
   const usedIds = new Set(tasks.map((task) => task.id))
 
@@ -112,7 +165,8 @@ export class TodoBlockShapeUtil extends BaseHermesCardUtil<TodoBlockShape> {
         text: T.string,
         done: T.boolean
       })
-    )
+    ),
+    backgroundColor: T.string.optional()
   }
 
   getDefaultProps(): TodoBlockProps {
@@ -154,7 +208,7 @@ export class TodoBlockShapeUtil extends BaseHermesCardUtil<TodoBlockShape> {
       return (
         <HTMLContainer
           className="hermes-shape hermes-todo-block"
-          style={{ width: shape.props.w, height: shape.props.h }}
+          style={cardStyle(shape.props)}
           onDoubleClick={(event) => enterShapeEditMode(editor, shape, event)}
         >
           <strong>{shape.props.title}</strong>
@@ -176,7 +230,8 @@ export class TodoBlockShapeUtil extends BaseHermesCardUtil<TodoBlockShape> {
     }
 
     return (
-      <HTMLContainer className="hermes-shape hermes-todo-block" style={{ width: shape.props.w, height: shape.props.h }}>
+      <HTMLContainer className="hermes-shape hermes-todo-block" style={cardStyle(shape.props)}>
+        <BackgroundColorField editor={editor} handlers={handlers} shape={shape} />
         <label className="hermes-field hermes-field-title">
           <span>Todo title</span>
           <input
@@ -228,7 +283,8 @@ export class TaskCardShapeUtil extends BaseHermesCardUtil<TaskCardShape> {
     title: T.string,
     body: T.string,
     status: T.string,
-    priority: T.string
+    priority: T.string,
+    backgroundColor: T.string.optional()
   }
 
   getDefaultProps(): TaskCardProps {
@@ -244,7 +300,7 @@ export class TaskCardShapeUtil extends BaseHermesCardUtil<TaskCardShape> {
       return (
         <HTMLContainer
           className="hermes-shape hermes-task-card"
-          style={{ width: shape.props.w, height: shape.props.h }}
+          style={cardStyle(shape.props)}
           onDoubleClick={(event) => enterShapeEditMode(editor, shape, event)}
         >
           <div className="hermes-card-kicker">
@@ -257,7 +313,8 @@ export class TaskCardShapeUtil extends BaseHermesCardUtil<TaskCardShape> {
     }
 
     return (
-      <HTMLContainer className="hermes-shape hermes-task-card" style={{ width: shape.props.w, height: shape.props.h }}>
+      <HTMLContainer className="hermes-shape hermes-task-card" style={cardStyle(shape.props)}>
+        <BackgroundColorField editor={editor} handlers={handlers} shape={shape} />
         <div className="hermes-inline-fields">
           <label className="hermes-field">
             <span>Task status</span>
@@ -308,7 +365,8 @@ export class LinkCardShapeUtil extends BaseHermesCardUtil<LinkCardShape> {
     h: T.number,
     title: T.string,
     url: T.string,
-    description: T.string
+    description: T.string,
+    backgroundColor: T.string.optional()
   }
 
   getDefaultProps(): LinkCardProps {
@@ -324,7 +382,7 @@ export class LinkCardShapeUtil extends BaseHermesCardUtil<LinkCardShape> {
       return (
         <HTMLContainer
           className="hermes-shape hermes-link-card"
-          style={{ width: shape.props.w, height: shape.props.h }}
+          style={cardStyle(shape.props)}
           onDoubleClick={(event) => enterShapeEditMode(editor, shape, event)}
         >
           <strong>{shape.props.title}</strong>
@@ -344,7 +402,8 @@ export class LinkCardShapeUtil extends BaseHermesCardUtil<LinkCardShape> {
     }
 
     return (
-      <HTMLContainer className="hermes-shape hermes-link-card" style={{ width: shape.props.w, height: shape.props.h }}>
+      <HTMLContainer className="hermes-shape hermes-link-card" style={cardStyle(shape.props)}>
+        <BackgroundColorField editor={editor} handlers={handlers} shape={shape} />
         <label className="hermes-field hermes-field-title">
           <span>Link title</span>
           <input

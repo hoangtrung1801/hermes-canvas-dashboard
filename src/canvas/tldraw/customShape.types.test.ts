@@ -45,4 +45,16 @@ describe('custom tldraw shape types', () => {
       description: ''
     })
   })
+
+  it('preserves explicit background colors for custom component props', () => {
+    expect(createTodoBlockProps({ title: 'Launch', backgroundColor: '#fee2e2' })).toMatchObject({
+      backgroundColor: '#fee2e2'
+    })
+    expect(createTaskCardProps({ title: 'Design', backgroundColor: '#fef3c7' })).toMatchObject({
+      backgroundColor: '#fef3c7'
+    })
+    expect(createLinkCardProps({ title: 'Docs', url: 'https://tldraw.dev', backgroundColor: '#ecfccb' })).toMatchObject({
+      backgroundColor: '#ecfccb'
+    })
+  })
 })

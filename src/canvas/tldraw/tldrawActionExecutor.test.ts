@@ -6,7 +6,15 @@ describe('tldraw action executor', () => {
   it('creates, updates, moves, deletes, and reads shapes', () => {
     const target = createMemoryTldrawTarget('canvas_001')
     const actions: CanvasAction[] = [
-      { type: 'create_task_card', id: 'shape:task_1', title: 'Task', body: 'Body', x: 100, y: 120 },
+      {
+        type: 'create_task_card',
+        id: 'shape:task_1',
+        title: 'Task',
+        body: 'Body',
+        backgroundColor: '#fef3c7',
+        x: 100,
+        y: 120
+      },
       { type: 'update_shape', shapeId: 'shape:task_1', patch: { props: { priority: 'high' } } },
       { type: 'move_shapes', shapeIds: ['shape:task_1'], dx: 20, dy: 10 },
       { type: 'read_canvas' }
@@ -28,7 +36,7 @@ describe('tldraw action executor', () => {
           type: 'task_card',
           x: 120,
           y: 130,
-          props: { title: 'Task', body: 'Body', priority: 'high' }
+          props: { title: 'Task', body: 'Body', priority: 'high', backgroundColor: '#fef3c7' }
         }
       ]
     })

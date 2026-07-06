@@ -79,6 +79,7 @@ export type CreateTodoBlockAction = {
   tasks?: TodoTaskInput[]
   w?: number
   h?: number
+  backgroundColor?: string
 }
 
 export type AppendTodoTaskAction = {
@@ -112,6 +113,7 @@ export type CreateTaskCardAction = {
   priority?: string
   w?: number
   h?: number
+  backgroundColor?: string
 }
 
 export type CreateLinkCardAction = {
@@ -124,6 +126,7 @@ export type CreateLinkCardAction = {
   description?: string
   w?: number
   h?: number
+  backgroundColor?: string
 }
 
 export type CanvasAction =

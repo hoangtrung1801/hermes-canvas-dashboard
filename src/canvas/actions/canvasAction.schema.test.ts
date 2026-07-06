@@ -36,9 +36,33 @@ describe('tldraw canvas action schema', () => {
         x: 80,
         y: 100,
         title: 'Launch',
+        backgroundColor: '#fee2e2',
         tasks: [{ id: 'task_copy', text: 'Write copy', done: false }]
       })
-    ).toMatchObject({ type: 'create_todo_block', title: 'Launch' })
+    ).toMatchObject({ type: 'create_todo_block', title: 'Launch', backgroundColor: '#fee2e2' })
+
+    expect(
+      canvasActionSchema.parse({
+        type: 'create_task_card',
+        id: 'shape:task_1',
+        x: 120,
+        y: 140,
+        title: 'Design',
+        backgroundColor: '#fef3c7'
+      })
+    ).toMatchObject({ type: 'create_task_card', title: 'Design', backgroundColor: '#fef3c7' })
+
+    expect(
+      canvasActionSchema.parse({
+        type: 'create_link_card',
+        id: 'shape:link_1',
+        x: 120,
+        y: 320,
+        title: 'Docs',
+        url: 'https://tldraw.dev',
+        backgroundColor: '#ecfccb'
+      })
+    ).toMatchObject({ type: 'create_link_card', title: 'Docs', backgroundColor: '#ecfccb' })
   })
 
   it('rejects empty action batches and malformed urls', () => {

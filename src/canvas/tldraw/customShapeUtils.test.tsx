@@ -248,6 +248,36 @@ describe('custom tldraw ShapeUtils', () => {
     expect(screen.queryByLabelText('Link title')).not.toBeInTheDocument()
   })
 
+  it('renders custom card background colors from shape props', () => {
+    const util = new TaskCardShapeUtil({} as any)
+
+    render(
+      util.component({
+        id: 'shape:task_1',
+        type: 'task_card',
+        x: 0,
+        y: 0,
+        rotation: 0,
+        index: 'a1',
+        parentId: 'page:page',
+        isLocked: false,
+        opacity: 1,
+        meta: {},
+        props: {
+          w: 280,
+          h: 160,
+          title: 'Design',
+          body: 'Build UI',
+          status: 'todo',
+          priority: 'high',
+          backgroundColor: '#fef3c7'
+        }
+      } as any)
+    )
+
+    expect(screen.getByText('Design').closest('.hermes-shape')).toHaveStyle({ backgroundColor: '#fef3c7' })
+  })
+
   it('updates task card fields from editable controls', () => {
     tldrawMock.editingShapeId = 'shape:task_1'
     const util = new TaskCardShapeUtil({} as any)
@@ -291,6 +321,42 @@ describe('custom tldraw ShapeUtils', () => {
       id: 'shape:task_1',
       type: 'task_card',
       props: { priority: 'medium' }
+    })
+  })
+
+  it('updates task card background color from editable controls', () => {
+    tldrawMock.editingShapeId = 'shape:task_1'
+    const util = new TaskCardShapeUtil({} as any)
+    render(
+      util.component({
+        id: 'shape:task_1',
+        type: 'task_card',
+        x: 0,
+        y: 0,
+        rotation: 0,
+        index: 'a1',
+        parentId: 'page:page',
+        isLocked: false,
+        opacity: 1,
+        meta: {},
+        props: {
+          w: 280,
+          h: 160,
+          title: 'Design',
+          body: 'Build UI',
+          status: 'todo',
+          priority: 'high',
+          backgroundColor: '#dbeafe'
+        }
+      } as any)
+    )
+
+    fireEvent.change(screen.getByLabelText('Background color'), { target: { value: '#fef3c7' } })
+
+    expect(tldrawMock.editor.updateShape).toHaveBeenCalledWith({
+      id: 'shape:task_1',
+      type: 'task_card',
+      props: { backgroundColor: '#fef3c7' }
     })
   })
 

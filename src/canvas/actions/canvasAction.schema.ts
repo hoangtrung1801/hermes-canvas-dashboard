@@ -8,6 +8,7 @@ const position = {
 const shapeId = z.string().min(1)
 const shapeIdList = z.array(shapeId).min(1)
 const record = z.record(z.unknown())
+const backgroundColor = z.string().min(1).optional()
 
 const tldrawShapePayloadSchema = z.object({
   id: z.string().min(1).optional(),
@@ -70,6 +71,7 @@ export const canvasActionSchema = z.union([
     tasks: z.array(todoTaskInputSchema).optional(),
     w: z.number().positive().optional(),
     h: z.number().positive().optional(),
+    backgroundColor,
     ...position
   }),
   z.object({
@@ -98,6 +100,7 @@ export const canvasActionSchema = z.union([
     priority: z.string().min(1).optional(),
     w: z.number().positive().optional(),
     h: z.number().positive().optional(),
+    backgroundColor,
     ...position
   }),
   z.object({
@@ -108,6 +111,7 @@ export const canvasActionSchema = z.union([
     description: z.string().optional(),
     w: z.number().positive().optional(),
     h: z.number().positive().optional(),
+    backgroundColor,
     ...position
   })
 ])

@@ -21,6 +21,7 @@ export type TodoBlockProps = {
   h: number
   title: string
   tasks: TodoTask[]
+  backgroundColor?: string
 }
 
 export type TaskCardProps = {
@@ -30,6 +31,7 @@ export type TaskCardProps = {
   body: string
   status: string
   priority: string
+  backgroundColor?: string
 }
 
 export type LinkCardProps = {
@@ -38,6 +40,7 @@ export type LinkCardProps = {
   title: string
   url: string
   description: string
+  backgroundColor?: string
 }
 
 export type HermesCustomShapeType =
@@ -71,12 +74,14 @@ export function createTodoBlockProps(input: {
   tasks?: TodoTaskInput[]
   w?: number
   h?: number
+  backgroundColor?: string
 }): TodoBlockProps {
   return {
     w: input.w ?? 320,
     h: input.h ?? 220,
     title: input.title,
-    tasks: normalizeTodoTasks(input.tasks ?? [])
+    tasks: normalizeTodoTasks(input.tasks ?? []),
+    ...(input.backgroundColor ? { backgroundColor: input.backgroundColor } : {})
   }
 }
 
@@ -87,6 +92,7 @@ export function createTaskCardProps(input: {
   priority?: string
   w?: number
   h?: number
+  backgroundColor?: string
 }): TaskCardProps {
   return {
     w: input.w ?? 280,
@@ -94,7 +100,8 @@ export function createTaskCardProps(input: {
     title: input.title,
     body: input.body ?? '',
     status: input.status ?? 'todo',
-    priority: input.priority ?? 'medium'
+    priority: input.priority ?? 'medium',
+    ...(input.backgroundColor ? { backgroundColor: input.backgroundColor } : {})
   }
 }
 
@@ -104,12 +111,14 @@ export function createLinkCardProps(input: {
   description?: string
   w?: number
   h?: number
+  backgroundColor?: string
 }): LinkCardProps {
   return {
     w: input.w ?? 300,
     h: input.h ?? 120,
     title: input.title,
     url: input.url,
-    description: input.description ?? ''
+    description: input.description ?? '',
+    ...(input.backgroundColor ? { backgroundColor: input.backgroundColor } : {})
   }
 }

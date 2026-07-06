@@ -166,6 +166,7 @@ Move shapes by absolute coordinates or a delta.
   "title": "Launch Checklist",
   "x": 100,
   "y": 150,
+  "backgroundColor": "#fff8cc",
   "tasks": [
     { "id": "task_copy", "text": "Write launch copy" },
     { "id": "task_assets", "text": "Prepare screenshots", "done": true }
@@ -215,6 +216,7 @@ Move shapes by absolute coordinates or a delta.
   "body": "Build the tldraw-powered Hermes canvas workflow.",
   "status": "in_progress",
   "priority": "high",
+  "backgroundColor": "#dbeafe",
   "x": 100,
   "y": 150
 }
@@ -229,6 +231,7 @@ Move shapes by absolute coordinates or a delta.
   "title": "tldraw Sync Docs",
   "url": "https://tldraw.dev/docs/sync",
   "description": "Sync server and client setup",
+  "backgroundColor": "#dcfce7",
   "x": 100,
   "y": 350
 }
