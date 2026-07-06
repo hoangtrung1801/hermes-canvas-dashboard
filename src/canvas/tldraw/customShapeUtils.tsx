@@ -17,9 +17,13 @@ import {
   LINK_CARD_TYPE,
   TASK_CARD_TYPE,
   TODO_BLOCK_TYPE,
+  DEFAULT_CUSTOM_CARD_COLOR,
   type LinkCardProps,
   type TaskCardProps,
-  type TodoBlockProps
+  type TodoBlockProps,
+  linkCardMigrations,
+  taskCardMigrations,
+  todoBlockMigrations
 } from './customShape.types'
 
 declare module 'tldraw' {
@@ -117,6 +121,7 @@ function createNextTodoTaskId(tasks: TodoBlockProps['tasks']) {
 
 export class TodoBlockShapeUtil extends BaseHermesCardUtil<TodoBlockShape> {
   static override type = TODO_BLOCK_TYPE
+  static override migrations = todoBlockMigrations
   static override props = {
     w: T.number,
     h: T.number,
@@ -133,7 +138,7 @@ export class TodoBlockShapeUtil extends BaseHermesCardUtil<TodoBlockShape> {
   }
 
   getDefaultProps(): TodoBlockProps {
-    return { w: 320, h: 220, title: 'Todo', tasks: [] }
+    return { w: 320, h: 220, title: 'Todo', tasks: [], color: DEFAULT_CUSTOM_CARD_COLOR }
   }
 
   component(shape: TodoBlockShape) {
@@ -239,6 +244,7 @@ export class TodoBlockShapeUtil extends BaseHermesCardUtil<TodoBlockShape> {
 
 export class TaskCardShapeUtil extends BaseHermesCardUtil<TaskCardShape> {
   static override type = TASK_CARD_TYPE
+  static override migrations = taskCardMigrations
   static override props = {
     w: T.number,
     h: T.number,
@@ -251,7 +257,7 @@ export class TaskCardShapeUtil extends BaseHermesCardUtil<TaskCardShape> {
   }
 
   getDefaultProps(): TaskCardProps {
-    return { w: 280, h: 160, title: 'Task', body: '', status: 'todo', priority: 'medium' }
+    return { w: 280, h: 160, title: 'Task', body: '', status: 'todo', priority: 'medium', color: DEFAULT_CUSTOM_CARD_COLOR }
   }
 
   component(shape: TaskCardShape) {
@@ -322,6 +328,7 @@ export class TaskCardShapeUtil extends BaseHermesCardUtil<TaskCardShape> {
 
 export class LinkCardShapeUtil extends BaseHermesCardUtil<LinkCardShape> {
   static override type = LINK_CARD_TYPE
+  static override migrations = linkCardMigrations
   static override props = {
     w: T.number,
     h: T.number,
@@ -333,7 +340,7 @@ export class LinkCardShapeUtil extends BaseHermesCardUtil<LinkCardShape> {
   }
 
   getDefaultProps(): LinkCardProps {
-    return { w: 300, h: 120, title: 'Link', url: '', description: '' }
+    return { w: 300, h: 120, title: 'Link', url: '', description: '', color: DEFAULT_CUSTOM_CARD_COLOR }
   }
 
   component(shape: LinkCardShape) {

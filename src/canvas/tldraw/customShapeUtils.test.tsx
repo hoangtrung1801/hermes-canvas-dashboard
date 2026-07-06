@@ -266,6 +266,12 @@ describe('custom tldraw ShapeUtils', () => {
     expect(LinkCardShapeUtil.props.color).toBe(DefaultColorStyle)
   })
 
+  it('defaults custom card props to a valid tldraw toolbar color', () => {
+    expect(new TodoBlockShapeUtil({} as any).getDefaultProps()).toMatchObject({ color: 'black' })
+    expect(new TaskCardShapeUtil({} as any).getDefaultProps()).toMatchObject({ color: 'black' })
+    expect(new LinkCardShapeUtil({} as any).getDefaultProps()).toMatchObject({ color: 'black' })
+  })
+
   it('renders custom card background colors from tldraw color props', () => {
     const util = new TaskCardShapeUtil({} as any)
 

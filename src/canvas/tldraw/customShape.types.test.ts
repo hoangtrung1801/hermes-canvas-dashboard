@@ -3,8 +3,17 @@ import {
   createLinkCardProps,
   createTaskCardProps,
   createTodoBlockProps,
-  normalizeTodoTasks
+  linkCardMigrations,
+  normalizeTodoTasks,
+  taskCardMigrations,
+  todoBlockMigrations
 } from './customShape.types'
+
+function runFirstMigration(migrations: typeof todoBlockMigrations, props: Record<string, unknown>) {
+  const migration = migrations.sequence[0]
+  if (!('up' in migration)) throw new Error('Expected first migration to include an up migration')
+  migration.up(props)
+}
 
 describe('custom tldraw shape types', () => {
   it('normalizes todo tasks with generated ids and done defaults', () => {
@@ -24,6 +33,7 @@ describe('custom tldraw shape types', () => {
       w: 320,
       h: 220,
       title: 'Launch',
+      color: 'black',
       tasks: [{ id: 'task_0001', text: 'Ship', done: false }]
     })
   })
@@ -35,14 +45,16 @@ describe('custom tldraw shape types', () => {
       title: 'Design',
       body: 'Build UI',
       status: 'todo',
-      priority: 'medium'
+      priority: 'medium',
+      color: 'black'
     })
     expect(createLinkCardProps({ title: 'Docs', url: 'https://tldraw.dev' })).toEqual({
       w: 300,
       h: 120,
       title: 'Docs',
       url: 'https://tldraw.dev',
-      description: ''
+      description: '',
+      color: 'black'
     })
   })
 
@@ -56,5 +68,19 @@ describe('custom tldraw shape types', () => {
     expect(createLinkCardProps({ title: 'Docs', url: 'https://tldraw.dev', backgroundColor: '#ecfccb' })).toMatchObject({
       backgroundColor: '#ecfccb'
     })
+  })
+
+  it('migrates existing custom component props to include a tldraw color', () => {
+    const todoProps = { w: 320, h: 220, title: 'Todo', tasks: [] } as Record<string, unknown>
+    const taskProps = { w: 280, h: 160, title: 'Task', body: '', status: 'todo', priority: 'medium' } as Record<string, unknown>
+    const linkProps = { w: 300, h: 120, title: 'Link', url: 'https://tldraw.dev', description: '' } as Record<string, unknown>
+
+    runFirstMigration(todoBlockMigrations, todoProps)
+    runFirstMigration(taskCardMigrations, taskProps)
+    runFirstMigration(linkCardMigrations, linkProps)
+
+    expect(todoProps.color).toBe('black')
+    expect(taskProps.color).toBe('black')
+    expect(linkProps.color).toBe('black')
   })
 })
