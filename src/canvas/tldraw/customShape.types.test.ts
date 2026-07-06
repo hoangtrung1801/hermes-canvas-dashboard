@@ -33,7 +33,7 @@ describe('custom tldraw shape types', () => {
       w: 320,
       h: 220,
       title: 'Launch',
-      color: 'black',
+      color: 'yellow',
       tasks: [{ id: 'task_0001', text: 'Ship', done: false }]
     })
   })
@@ -46,7 +46,7 @@ describe('custom tldraw shape types', () => {
       body: 'Build UI',
       status: 'todo',
       priority: 'medium',
-      color: 'black'
+      color: 'light-blue'
     })
     expect(createLinkCardProps({ title: 'Docs', url: 'https://tldraw.dev' })).toEqual({
       w: 300,
@@ -54,7 +54,7 @@ describe('custom tldraw shape types', () => {
       title: 'Docs',
       url: 'https://tldraw.dev',
       description: '',
-      color: 'black'
+      color: 'light-green'
     })
   })
 
@@ -79,8 +79,8 @@ describe('custom tldraw shape types', () => {
     runFirstMigration(taskCardMigrations, taskProps)
     runFirstMigration(linkCardMigrations, linkProps)
 
-    expect(todoProps.color).toBe('black')
-    expect(taskProps.color).toBe('black')
-    expect(linkProps.color).toBe('black')
+    expect(todoProps.color).toBe('yellow')
+    expect(taskProps.color).toBe('light-blue')
+    expect(linkProps.color).toBe('light-green')
   })
 })

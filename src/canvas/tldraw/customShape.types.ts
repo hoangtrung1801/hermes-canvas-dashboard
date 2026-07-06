@@ -3,7 +3,9 @@ import { createShapePropsMigrationIds, createShapePropsMigrationSequence } from 
 export const TODO_BLOCK_TYPE = 'todo_block'
 export const TASK_CARD_TYPE = 'task_card'
 export const LINK_CARD_TYPE = 'link_card'
-export const DEFAULT_CUSTOM_CARD_COLOR = 'black'
+export const DEFAULT_TODO_BLOCK_COLOR = 'yellow'
+export const DEFAULT_TASK_CARD_COLOR = 'light-blue'
+export const DEFAULT_LINK_CARD_COLOR = 'light-green'
 
 export type TodoTask = {
   id: string
@@ -66,10 +68,6 @@ const linkCardVersions = createShapePropsMigrationIds(LINK_CARD_TYPE, {
   AddColorProp: 1
 })
 
-function addDefaultColorProp(props: Record<string, unknown>) {
-  props.color ??= DEFAULT_CUSTOM_CARD_COLOR
-}
-
 function removeColorProp(props: Record<string, unknown>) {
   delete props.color
 }
@@ -78,7 +76,9 @@ export const todoBlockMigrations = createShapePropsMigrationSequence({
   sequence: [
     {
       id: todoBlockVersions.AddColorProp,
-      up: addDefaultColorProp,
+      up: (props) => {
+        props.color ??= DEFAULT_TODO_BLOCK_COLOR
+      },
       down: removeColorProp
     }
   ]
@@ -88,7 +88,9 @@ export const taskCardMigrations = createShapePropsMigrationSequence({
   sequence: [
     {
       id: taskCardVersions.AddColorProp,
-      up: addDefaultColorProp,
+      up: (props) => {
+        props.color ??= DEFAULT_TASK_CARD_COLOR
+      },
       down: removeColorProp
     }
   ]
@@ -98,7 +100,9 @@ export const linkCardMigrations = createShapePropsMigrationSequence({
   sequence: [
     {
       id: linkCardVersions.AddColorProp,
-      up: addDefaultColorProp,
+      up: (props) => {
+        props.color ??= DEFAULT_LINK_CARD_COLOR
+      },
       down: removeColorProp
     }
   ]
@@ -138,7 +142,7 @@ export function createTodoBlockProps(input: {
     h: input.h ?? 220,
     title: input.title,
     tasks: normalizeTodoTasks(input.tasks ?? []),
-    color: input.color ?? DEFAULT_CUSTOM_CARD_COLOR,
+    color: input.color ?? DEFAULT_TODO_BLOCK_COLOR,
     ...(input.backgroundColor ? { backgroundColor: input.backgroundColor } : {})
   }
 }
@@ -160,7 +164,7 @@ export function createTaskCardProps(input: {
     body: input.body ?? '',
     status: input.status ?? 'todo',
     priority: input.priority ?? 'medium',
-    color: input.color ?? DEFAULT_CUSTOM_CARD_COLOR,
+    color: input.color ?? DEFAULT_TASK_CARD_COLOR,
     ...(input.backgroundColor ? { backgroundColor: input.backgroundColor } : {})
   }
 }
@@ -180,7 +184,7 @@ export function createLinkCardProps(input: {
     title: input.title,
     url: input.url,
     description: input.description ?? '',
-    color: input.color ?? DEFAULT_CUSTOM_CARD_COLOR,
+    color: input.color ?? DEFAULT_LINK_CARD_COLOR,
     ...(input.backgroundColor ? { backgroundColor: input.backgroundColor } : {})
   }
 }

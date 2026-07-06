@@ -17,7 +17,9 @@ import {
   LINK_CARD_TYPE,
   TASK_CARD_TYPE,
   TODO_BLOCK_TYPE,
-  DEFAULT_CUSTOM_CARD_COLOR,
+  DEFAULT_LINK_CARD_COLOR,
+  DEFAULT_TASK_CARD_COLOR,
+  DEFAULT_TODO_BLOCK_COLOR,
   type LinkCardProps,
   type TaskCardProps,
   type TodoBlockProps,
@@ -138,7 +140,7 @@ export class TodoBlockShapeUtil extends BaseHermesCardUtil<TodoBlockShape> {
   }
 
   getDefaultProps(): TodoBlockProps {
-    return { w: 320, h: 220, title: 'Todo', tasks: [], color: DEFAULT_CUSTOM_CARD_COLOR }
+    return { w: 320, h: 220, title: 'Todo', tasks: [], color: DEFAULT_TODO_BLOCK_COLOR }
   }
 
   component(shape: TodoBlockShape) {
@@ -257,7 +259,7 @@ export class TaskCardShapeUtil extends BaseHermesCardUtil<TaskCardShape> {
   }
 
   getDefaultProps(): TaskCardProps {
-    return { w: 280, h: 160, title: 'Task', body: '', status: 'todo', priority: 'medium', color: DEFAULT_CUSTOM_CARD_COLOR }
+    return { w: 280, h: 160, title: 'Task', body: '', status: 'todo', priority: 'medium', color: DEFAULT_TASK_CARD_COLOR }
   }
 
   component(shape: TaskCardShape) {
@@ -340,7 +342,7 @@ export class LinkCardShapeUtil extends BaseHermesCardUtil<LinkCardShape> {
   }
 
   getDefaultProps(): LinkCardProps {
-    return { w: 300, h: 120, title: 'Link', url: '', description: '', color: DEFAULT_CUSTOM_CARD_COLOR }
+    return { w: 300, h: 120, title: 'Link', url: '', description: '', color: DEFAULT_LINK_CARD_COLOR }
   }
 
   component(shape: LinkCardShape) {
