@@ -131,6 +131,7 @@ export function CanvasSurface() {
       store={store}
       shapeUtils={hermesShapeUtils}
       onMount={(mountedEditor: Editor) => {
+        mountedEditor.updateInstanceState({ isGridMode: true })
         const mountedTarget = createMemoryTldrawTarget(CANVAS_ID)
         mountedTarget.editor = mountedEditor
         const bridgeInstance = new CanvasBridge(mountedTarget)

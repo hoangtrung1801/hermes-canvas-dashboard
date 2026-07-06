@@ -55,6 +55,7 @@ const tldrawMock = vi.hoisted(() => {
     getViewportPageBounds() {
       return { x: 0, y: 0, w: 1200, h: 800 }
     },
+    updateInstanceState: vi.fn(),
     setCamera() {},
     zoomToFit() {},
     select(...ids: string[]) {
@@ -120,6 +121,7 @@ describe('CanvasSurface', () => {
     tldrawMock.shapes.splice(0)
     tldrawMock.selectedShapeIds.splice(0)
     tldrawMock.props = null
+    tldrawMock.editor.updateInstanceState.mockClear()
     window.history.pushState({}, '', '/')
     vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response('not found', { status: 404 }))
     useBridgeStore.setState({
@@ -148,6 +150,13 @@ describe('CanvasSurface', () => {
 
     await screen.findByText('Bridge ready')
     expect(socketSpies.connect).not.toHaveBeenCalled()
+  })
+
+  it('enables the built-in tldraw grid on mount', async () => {
+    render(<App />)
+
+    await screen.findByText('Bridge ready')
+    expect(tldrawMock.editor.updateInstanceState).toHaveBeenCalledWith({ isGridMode: true })
   })
 
   it('handles Hermes actions through the mounted tldraw editor without snapshot fetches', async () => {
