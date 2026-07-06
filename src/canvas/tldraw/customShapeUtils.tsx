@@ -1,5 +1,4 @@
 import {
-  DEFAULT_THEME,
   DefaultColorStyle,
   HTMLContainer,
   Rectangle2d,
@@ -100,9 +99,13 @@ function updateShapeProps<Shape extends HermesCardShape>(
   } as any)
 }
 
-function cardStyle(props: { w: number; h: number; color?: string; backgroundColor?: string }): CSSProperties {
+function cardStyle(
+  editor: ReturnType<typeof useEditor>,
+  props: { w: number; h: number; color?: string; backgroundColor?: string }
+): CSSProperties {
+  const colors = editor.getCurrentTheme().colors[editor.getColorMode()]
   const backgroundColor = props.color
-    ? getColorValue(DEFAULT_THEME.colors.light, props.color, 'noteFill')
+    ? getColorValue(colors, props.color, 'noteFill')
     : props.backgroundColor
 
   return {
@@ -178,7 +181,7 @@ export class TodoBlockShapeUtil extends BaseHermesCardUtil<TodoBlockShape> {
       return (
         <HTMLContainer
           className="hermes-shape hermes-todo-block"
-          style={cardStyle(shape.props)}
+          style={cardStyle(editor, shape.props)}
           onDoubleClick={(event) => enterShapeEditMode(editor, shape, event)}
         >
           <strong>{shape.props.title}</strong>
@@ -200,7 +203,7 @@ export class TodoBlockShapeUtil extends BaseHermesCardUtil<TodoBlockShape> {
     }
 
     return (
-      <HTMLContainer className="hermes-shape hermes-todo-block" style={cardStyle(shape.props)}>
+      <HTMLContainer className="hermes-shape hermes-todo-block" style={cardStyle(editor, shape.props)}>
         <label className="hermes-field hermes-field-title">
           <span>Todo title</span>
           <input
@@ -271,7 +274,7 @@ export class TaskCardShapeUtil extends BaseHermesCardUtil<TaskCardShape> {
       return (
         <HTMLContainer
           className="hermes-shape hermes-task-card"
-          style={cardStyle(shape.props)}
+          style={cardStyle(editor, shape.props)}
           onDoubleClick={(event) => enterShapeEditMode(editor, shape, event)}
         >
           <div className="hermes-card-kicker">
@@ -284,7 +287,7 @@ export class TaskCardShapeUtil extends BaseHermesCardUtil<TaskCardShape> {
     }
 
     return (
-      <HTMLContainer className="hermes-shape hermes-task-card" style={cardStyle(shape.props)}>
+      <HTMLContainer className="hermes-shape hermes-task-card" style={cardStyle(editor, shape.props)}>
         <div className="hermes-inline-fields">
           <label className="hermes-field">
             <span>Task status</span>
@@ -354,7 +357,7 @@ export class LinkCardShapeUtil extends BaseHermesCardUtil<LinkCardShape> {
       return (
         <HTMLContainer
           className="hermes-shape hermes-link-card"
-          style={cardStyle(shape.props)}
+          style={cardStyle(editor, shape.props)}
           onDoubleClick={(event) => enterShapeEditMode(editor, shape, event)}
         >
           <strong>{shape.props.title}</strong>
@@ -374,7 +377,7 @@ export class LinkCardShapeUtil extends BaseHermesCardUtil<LinkCardShape> {
     }
 
     return (
-      <HTMLContainer className="hermes-shape hermes-link-card" style={cardStyle(shape.props)}>
+      <HTMLContainer className="hermes-shape hermes-link-card" style={cardStyle(editor, shape.props)}>
         <label className="hermes-field hermes-field-title">
           <span>Link title</span>
           <input

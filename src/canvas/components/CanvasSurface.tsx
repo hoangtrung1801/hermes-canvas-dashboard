@@ -19,6 +19,7 @@ import {
 } from '../protocol/canvasMessages'
 import { createMemoryTldrawTarget, readTldrawObservation } from '../tldraw/tldrawActionExecutor'
 import { hermesShapeUtils } from '../tldraw/customShapeUtils'
+import { HERMES_PASTEL_THEME_ID, hermesPastelTheme } from '../tldraw/pastelTheme'
 import { useBridgeStore } from '../state/bridgeStore'
 
 const socket = new BridgeWebSocketClient()
@@ -131,6 +132,8 @@ export function CanvasSurface() {
       store={store}
       shapeUtils={hermesShapeUtils}
       onMount={(mountedEditor: Editor) => {
+        mountedEditor.updateTheme(hermesPastelTheme)
+        mountedEditor.setCurrentTheme(HERMES_PASTEL_THEME_ID)
         mountedEditor.updateInstanceState({ isGridMode: true })
         const mountedTarget = createMemoryTldrawTarget(CANVAS_ID)
         mountedTarget.editor = mountedEditor

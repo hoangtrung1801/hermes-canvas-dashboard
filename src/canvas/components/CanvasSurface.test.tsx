@@ -22,6 +22,37 @@ const syncMock = vi.hoisted(() => ({
 const tldrawMock = vi.hoisted(() => {
   const shapes: any[] = []
   const selectedShapeIds: string[] = []
+  const createDefaultThemeColors = () => {
+    const paletteColor = { noteFill: '#ffffff' }
+    return {
+      text: '#111827',
+      background: '#ffffff',
+      negativeSpace: '#ffffff',
+      solid: '#ffffff',
+      cursor: '#111827',
+      noteBorder: '#e5e7eb',
+      snap: '#3b82f6',
+      selectionStroke: '#3b82f6',
+      selectionFill: '#ffffff',
+      brushFill: '#bfdbfe',
+      brushStroke: '#3b82f6',
+      selectedContrast: '#ffffff',
+      laser: '#ef4444',
+      black: paletteColor,
+      grey: paletteColor,
+      'light-violet': paletteColor,
+      violet: paletteColor,
+      blue: paletteColor,
+      'light-blue': paletteColor,
+      yellow: paletteColor,
+      orange: paletteColor,
+      green: paletteColor,
+      'light-green': paletteColor,
+      'light-red': paletteColor,
+      red: { noteFill: '#FC8282' },
+      white: paletteColor
+    }
+  }
   const editor = {
     createShape(shape: any) {
       shapes.push({ ...shape, props: shape.props ?? {}, meta: shape.meta ?? {} })
@@ -55,6 +86,8 @@ const tldrawMock = vi.hoisted(() => {
     getViewportPageBounds() {
       return { x: 0, y: 0, w: 1200, h: 800 }
     },
+    updateTheme: vi.fn(),
+    setCurrentTheme: vi.fn(),
     updateInstanceState: vi.fn(),
     setCamera() {},
     zoomToFit() {},
@@ -70,10 +103,14 @@ const tldrawMock = vi.hoisted(() => {
     editor,
     defaultColorStyle: { id: 'tldraw:color', defaultValue: 'black' },
     defaultTheme: {
+      id: 'default',
+      fontSize: 16,
+      lineHeight: 1.35,
+      strokeWidth: 2,
+      fonts: {},
       colors: {
-        light: {
-          red: { noteFill: '#FC8282' }
-        }
+        light: createDefaultThemeColors(),
+        dark: createDefaultThemeColors()
       }
     },
     shapes,
@@ -132,6 +169,8 @@ describe('CanvasSurface', () => {
     tldrawMock.shapes.splice(0)
     tldrawMock.selectedShapeIds.splice(0)
     tldrawMock.props = null
+    tldrawMock.editor.updateTheme.mockClear()
+    tldrawMock.editor.setCurrentTheme.mockClear()
     tldrawMock.editor.updateInstanceState.mockClear()
     window.history.pushState({}, '', '/')
     vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response('not found', { status: 404 }))
@@ -168,6 +207,16 @@ describe('CanvasSurface', () => {
 
     await screen.findByText('Bridge ready')
     expect(tldrawMock.editor.updateInstanceState).toHaveBeenCalledWith({ isGridMode: true })
+  })
+
+  it('registers the pastel tldraw theme as the active toolbar palette on mount', async () => {
+    render(<App />)
+
+    await screen.findByText('Bridge ready')
+    expect(tldrawMock.editor.updateTheme).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'hermes-pastel' })
+    )
+    expect(tldrawMock.editor.setCurrentTheme).toHaveBeenCalledWith('hermes-pastel')
   })
 
   it('handles Hermes actions through the mounted tldraw editor without snapshot fetches', async () => {

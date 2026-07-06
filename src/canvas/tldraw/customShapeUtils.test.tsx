@@ -17,7 +17,15 @@ const tldrawMock = vi.hoisted(() => ({
     markEventAsHandled: vi.fn(),
     setEditingShape: vi.fn((shapeId: string | null) => {
       tldrawMock.editingShapeId = shapeId
-    })
+    }),
+    getCurrentTheme: vi.fn(() => ({
+      colors: {
+        light: {
+          red: { noteFill: '#fecaca' }
+        }
+      }
+    })),
+    getColorMode: vi.fn(() => 'light')
   },
   editingShapeId: null as string | null,
   resizeBox: vi.fn((shape: any) => ({ ...shape, props: { ...shape.props, w: 480, h: 260 } }))
@@ -299,7 +307,7 @@ describe('custom tldraw ShapeUtils', () => {
       } as any)
     )
 
-    expect(screen.getByText('Design').closest('.hermes-shape')).toHaveStyle({ backgroundColor: '#FC8282' })
+    expect(screen.getByText('Design').closest('.hermes-shape')).toHaveStyle({ backgroundColor: '#fecaca' })
   })
 
   it('keeps explicit backgroundColor as a fallback for API-created cards', () => {
