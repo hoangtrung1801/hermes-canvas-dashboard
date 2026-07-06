@@ -1062,6 +1062,47 @@ body {
   overflow-wrap: anywhere;
 }
 
+.hermes-field {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.hermes-field span {
+  color: #4b5563;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.hermes-field input,
+.hermes-field textarea,
+.hermes-task-text-input {
+  width: 100%;
+  min-width: 0;
+  border: 1px solid rgba(17, 24, 39, 0.22);
+  border-radius: 5px;
+  background: rgba(255, 255, 255, 0.74);
+  color: #111827;
+  font: inherit;
+  padding: 4px 6px;
+}
+
+.hermes-field textarea {
+  min-height: 48px;
+  resize: vertical;
+}
+
+.hermes-field-title input {
+  font-weight: 700;
+}
+
+.hermes-inline-fields {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 6px;
+}
+
 .hermes-todo-block {
   background: #fff8cc;
 }
@@ -1082,7 +1123,7 @@ body {
 
 .hermes-task-list {
   display: grid;
-  gap: 4px;
+  gap: 6px;
   margin-top: 8px;
 }
 
@@ -1090,12 +1131,19 @@ body {
   display: flex;
   align-items: flex-start;
   gap: 6px;
+  min-width: 0;
   cursor: pointer;
 }
 
-.hermes-task-row input {
+.hermes-task-row input[type='checkbox'] {
   flex: 0 0 auto;
+  width: 14px;
   margin-top: 2px;
+}
+
+.hermes-task-row .hermes-task-text-input {
+  flex: 1 1 auto;
+  width: auto;
 }
 
 .hermes-link-card a {
@@ -1103,4 +1151,5 @@ body {
   color: #047857;
   text-decoration: underline;
   text-underline-offset: 2px;
+  margin: 6px 0;
 }

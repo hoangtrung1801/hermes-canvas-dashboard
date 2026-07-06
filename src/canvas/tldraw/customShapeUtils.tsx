@@ -4,11 +4,12 @@ import {
   ShapeUtil,
   resizeBox,
   useEditor,
+  useIsEditing,
   type TLResizeInfo,
   type TLShape
 } from 'tldraw'
 import { T } from '@tldraw/validate'
-import type { ChangeEvent, PointerEvent } from 'react'
+import type { ChangeEvent, MouseEvent, PointerEvent } from 'react'
 import {
   LINK_CARD_TYPE,
   TASK_CARD_TYPE,
@@ -29,9 +30,10 @@ declare module 'tldraw' {
 export type TodoBlockShape = TLShape<typeof TODO_BLOCK_TYPE>
 export type TaskCardShape = TLShape<typeof TASK_CARD_TYPE>
 export type LinkCardShape = TLShape<typeof LINK_CARD_TYPE>
+type HermesCardShape = TodoBlockShape | TaskCardShape | LinkCardShape
 
-abstract class BaseHermesCardUtil<Shape extends TLShape> extends ShapeUtil<Shape> {
-  override canEdit = () => false
+abstract class BaseHermesCardUtil<Shape extends HermesCardShape> extends ShapeUtil<Shape> {
+  override canEdit = () => true
   override canResize = () => true
   override isAspectRatioLocked = () => false
 
@@ -61,6 +63,34 @@ function markCanvasEventHandled(editor: ReturnType<typeof useEditor>, event: Poi
   editor.markEventAsHandled(event)
 }
 
+function enterShapeEditMode<Shape extends HermesCardShape>(
+  editor: ReturnType<typeof useEditor>,
+  shape: Shape,
+  event: MouseEvent<HTMLElement>
+) {
+  editor.setEditingShape(shape.id)
+  editor.markEventAsHandled(event)
+}
+
+function controlHandlers(editor: ReturnType<typeof useEditor>) {
+  return {
+    onPointerDown: (event: PointerEvent<HTMLElement>) => markCanvasEventHandled(editor, event),
+    onPointerUp: (event: PointerEvent<HTMLElement>) => markCanvasEventHandled(editor, event)
+  }
+}
+
+function updateShapeProps<Shape extends HermesCardShape>(
+  editor: ReturnType<typeof useEditor>,
+  shape: Shape,
+  props: Partial<Shape['props']>
+) {
+  editor.updateShape({
+    id: shape.id,
+    type: shape.type,
+    props
+  } as any)
+}
+
 export class TodoBlockShapeUtil extends BaseHermesCardUtil<TodoBlockShape> {
   static override type = TODO_BLOCK_TYPE
   static override props = {
@@ -82,22 +112,61 @@ export class TodoBlockShapeUtil extends BaseHermesCardUtil<TodoBlockShape> {
 
   component(shape: TodoBlockShape) {
     const editor = useEditor()
+    const isEditing = useIsEditing(shape.id)
+    const handlers = controlHandlers(editor)
 
     const updateTaskDone = (taskId: string, event: ChangeEvent<HTMLInputElement>) => {
       const tasks = shape.props.tasks.map((task) =>
         task.id === taskId ? { ...task, done: event.currentTarget.checked } : task
       )
 
-      editor.updateShape({
-        id: shape.id,
-        type: TODO_BLOCK_TYPE,
-        props: { tasks }
-      })
+      updateShapeProps(editor, shape, { tasks })
+    }
+
+    const updateTaskText = (taskId: string, event: ChangeEvent<HTMLInputElement>) => {
+      const tasks = shape.props.tasks.map((task) =>
+        task.id === taskId ? { ...task, text: event.currentTarget.value } : task
+      )
+
+      updateShapeProps(editor, shape, { tasks })
+    }
+
+    if (!isEditing) {
+      return (
+        <HTMLContainer
+          className="hermes-shape hermes-todo-block"
+          style={{ width: shape.props.w, height: shape.props.h }}
+          onDoubleClick={(event) => enterShapeEditMode(editor, shape, event)}
+        >
+          <strong>{shape.props.title}</strong>
+          <div className="hermes-task-list">
+            {shape.props.tasks.map((task) => (
+              <label key={task.id} className="hermes-task-row">
+                <input
+                  type="checkbox"
+                  checked={task.done}
+                  onChange={(event) => updateTaskDone(task.id, event)}
+                  {...handlers}
+                />
+                <span>{task.text}</span>
+              </label>
+            ))}
+          </div>
+        </HTMLContainer>
+      )
     }
 
     return (
       <HTMLContainer className="hermes-shape hermes-todo-block" style={{ width: shape.props.w, height: shape.props.h }}>
-        <strong>{shape.props.title}</strong>
+        <label className="hermes-field hermes-field-title">
+          <span>Todo title</span>
+          <input
+            aria-label="Todo title"
+            value={shape.props.title}
+            onChange={(event) => updateShapeProps(editor, shape, { title: event.currentTarget.value })}
+            {...handlers}
+          />
+        </label>
         <div className="hermes-task-list">
           {shape.props.tasks.map((task) => (
             <label key={task.id} className="hermes-task-row">
@@ -105,10 +174,15 @@ export class TodoBlockShapeUtil extends BaseHermesCardUtil<TodoBlockShape> {
                 type="checkbox"
                 checked={task.done}
                 onChange={(event) => updateTaskDone(task.id, event)}
-                onPointerDown={(event) => markCanvasEventHandled(editor, event)}
-                onPointerUp={(event) => markCanvasEventHandled(editor, event)}
+                {...handlers}
               />
-              <span>{task.text}</span>
+              <input
+                aria-label={`Task text: ${task.text}`}
+                className="hermes-task-text-input"
+                value={task.text}
+                onChange={(event) => updateTaskText(task.id, event)}
+                {...handlers}
+              />
             </label>
           ))}
         </div>
@@ -133,13 +207,66 @@ export class TaskCardShapeUtil extends BaseHermesCardUtil<TaskCardShape> {
   }
 
   component(shape: TaskCardShape) {
+    const editor = useEditor()
+    const isEditing = useIsEditing(shape.id)
+    const handlers = controlHandlers(editor)
+
+    if (!isEditing) {
+      return (
+        <HTMLContainer
+          className="hermes-shape hermes-task-card"
+          style={{ width: shape.props.w, height: shape.props.h }}
+          onDoubleClick={(event) => enterShapeEditMode(editor, shape, event)}
+        >
+          <div className="hermes-card-kicker">
+            {shape.props.status} - {shape.props.priority}
+          </div>
+          <strong>{shape.props.title}</strong>
+          {shape.props.body && <p>{shape.props.body}</p>}
+        </HTMLContainer>
+      )
+    }
+
     return (
       <HTMLContainer className="hermes-shape hermes-task-card" style={{ width: shape.props.w, height: shape.props.h }}>
-        <div className="hermes-card-kicker">
-          {shape.props.status} - {shape.props.priority}
+        <div className="hermes-inline-fields">
+          <label className="hermes-field">
+            <span>Task status</span>
+            <input
+              aria-label="Task status"
+              value={shape.props.status}
+              onChange={(event) => updateShapeProps(editor, shape, { status: event.currentTarget.value })}
+              {...handlers}
+            />
+          </label>
+          <label className="hermes-field">
+            <span>Task priority</span>
+            <input
+              aria-label="Task priority"
+              value={shape.props.priority}
+              onChange={(event) => updateShapeProps(editor, shape, { priority: event.currentTarget.value })}
+              {...handlers}
+            />
+          </label>
         </div>
-        <strong>{shape.props.title}</strong>
-        {shape.props.body && <p>{shape.props.body}</p>}
+        <label className="hermes-field hermes-field-title">
+          <span>Task title</span>
+          <input
+            aria-label="Task title"
+            value={shape.props.title}
+            onChange={(event) => updateShapeProps(editor, shape, { title: event.currentTarget.value })}
+            {...handlers}
+          />
+        </label>
+        <label className="hermes-field">
+          <span>Task body</span>
+          <textarea
+            aria-label="Task body"
+            value={shape.props.body}
+            onChange={(event) => updateShapeProps(editor, shape, { body: event.currentTarget.value })}
+            {...handlers}
+          />
+        </label>
       </HTMLContainer>
     )
   }
@@ -161,21 +288,71 @@ export class LinkCardShapeUtil extends BaseHermesCardUtil<LinkCardShape> {
 
   component(shape: LinkCardShape) {
     const editor = useEditor()
+    const isEditing = useIsEditing(shape.id)
+    const handlers = controlHandlers(editor)
+
+    if (!isEditing) {
+      return (
+        <HTMLContainer
+          className="hermes-shape hermes-link-card"
+          style={{ width: shape.props.w, height: shape.props.h }}
+          onDoubleClick={(event) => enterShapeEditMode(editor, shape, event)}
+        >
+          <strong>{shape.props.title}</strong>
+          <a
+            href={shape.props.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            draggable={false}
+            onPointerDown={(event) => markCanvasEventHandled(editor, event)}
+            onPointerUp={(event) => markCanvasEventHandled(editor, event)}
+          >
+            {shape.props.url}
+          </a>
+          {shape.props.description && <p>{shape.props.description}</p>}
+        </HTMLContainer>
+      )
+    }
 
     return (
       <HTMLContainer className="hermes-shape hermes-link-card" style={{ width: shape.props.w, height: shape.props.h }}>
-        <strong>{shape.props.title}</strong>
+        <label className="hermes-field hermes-field-title">
+          <span>Link title</span>
+          <input
+            aria-label="Link title"
+            value={shape.props.title}
+            onChange={(event) => updateShapeProps(editor, shape, { title: event.currentTarget.value })}
+            {...handlers}
+          />
+        </label>
+        <label className="hermes-field">
+          <span>Link URL</span>
+          <input
+            aria-label="Link URL"
+            value={shape.props.url}
+            onChange={(event) => updateShapeProps(editor, shape, { url: event.currentTarget.value })}
+            {...handlers}
+          />
+        </label>
         <a
+          aria-label="Open link"
           href={shape.props.url}
           target="_blank"
           rel="noopener noreferrer"
           draggable={false}
-          onPointerDown={(event) => markCanvasEventHandled(editor, event)}
-          onPointerUp={(event) => markCanvasEventHandled(editor, event)}
+          {...handlers}
         >
-          {shape.props.url}
+          Open link
         </a>
-        {shape.props.description && <p>{shape.props.description}</p>}
+        <label className="hermes-field">
+          <span>Link description</span>
+          <textarea
+            aria-label="Link description"
+            value={shape.props.description}
+            onChange={(event) => updateShapeProps(editor, shape, { description: event.currentTarget.value })}
+            {...handlers}
+          />
+        </label>
       </HTMLContainer>
     )
   }
