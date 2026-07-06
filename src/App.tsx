@@ -1,4 +1,5 @@
 import { CanvasSurface } from './canvas/components/CanvasSurface'
+import { CanvasInsertMenu } from './canvas/components/CanvasInsertMenu'
 import { Simulator } from './canvas/components/Simulator'
 import { Inspector } from './canvas/components/Inspector'
 import { useBridgeStore } from './canvas/state/bridgeStore'
@@ -51,6 +52,7 @@ export default function App() {
         </header>
 
         <section className="fullscreen-canvas-container" aria-label="Fullscreen canvas surface">
+          <CanvasInsertMenu />
           <CanvasSurface />
         </section>
       </main>
@@ -86,6 +88,7 @@ export default function App() {
             </div>
           </div>
           <div className="canvas-container">
+            <CanvasInsertMenu />
             <CanvasSurface />
           </div>
         </section>

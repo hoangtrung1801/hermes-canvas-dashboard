@@ -1,4 +1,4 @@
-# Canvas Header Insert Menu Design
+# Canvas Floating Insert Menu Design
 
 ## Context
 
@@ -8,16 +8,16 @@ The canvas dashboard already supports three Hermes custom tldraw shapes:
 - `task_card`
 - `link_card`
 
-Users can currently create these components through the Action Simulator JSON presets or through Hermes bridge actions. That path is useful for debugging and agent workflows, but it is too indirect for a person working in the dashboard. The dashboard should expose a direct insert control in the canvas header.
+Users can currently create these components through the Action Simulator JSON presets or through Hermes bridge actions. That path is useful for debugging and agent workflows, but it is too indirect for a person working in the dashboard. The dashboard should expose a direct insert control floating on the canvas.
 
 ## Goals
 
-- Add an icon-first insert control to the canvas dashboard header.
+- Add an icon-first insert control that floats on the canvas dashboard.
 - Let users insert the existing custom components: Todo Block, Task Card, and Link Card.
 - Reuse the current tldraw custom shape types and existing `CanvasBridge` action execution path.
 - Insert shapes near the current viewport center when the tldraw editor is mounted.
 - Select the inserted shape after creation so the user can move, resize, or double-click edit it immediately.
-- Keep the control available in both the standard dashboard canvas header and the fullscreen canvas header.
+- Keep the control available in both the standard dashboard canvas and the fullscreen canvas.
 - Update observation and logs after insertion, matching existing simulator behavior.
 
 ## Non-Goals
@@ -30,9 +30,9 @@ Users can currently create these components through the Action Simulator JSON pr
 
 ## Recommended Approach
 
-Add a reusable `CanvasInsertMenu` React component and render it in the existing canvas header action areas.
+Add a reusable `CanvasInsertMenu` React component and render it inside the standard and fullscreen canvas containers.
 
-The visible header control should be an icon button with an accessible label such as `Insert component`. Clicking it opens a compact menu with three icon-labeled options:
+The visible floating control should be an icon button with an accessible label such as `Insert component`. Clicking it opens a compact menu with three icon-labeled options:
 
 - Todo Block
 - Task Card
@@ -42,7 +42,7 @@ Each option creates the corresponding custom shape through a `canvas.action` env
 
 ## UI Behavior
 
-The header control is icon-first. The icon button should fit next to the existing `tldraw sync` badge and `Fullscreen`/`Back` actions without resizing the header.
+The floating control is icon-first. The icon button should sit at the bottom-right of the canvas area without resizing the canvas or header.
 
 The menu opens on click and closes when:
 

@@ -91,6 +91,15 @@ function updateShapeProps<Shape extends HermesCardShape>(
   } as any)
 }
 
+function createNextTodoTaskId(tasks: TodoBlockProps['tasks']) {
+  const usedIds = new Set(tasks.map((task) => task.id))
+
+  for (let index = tasks.length + 1; ; index += 1) {
+    const id = `task_${String(index).padStart(4, '0')}`
+    if (!usedIds.has(id)) return id
+  }
+}
+
 export class TodoBlockShapeUtil extends BaseHermesCardUtil<TodoBlockShape> {
   static override type = TODO_BLOCK_TYPE
   static override props = {
@@ -129,6 +138,16 @@ export class TodoBlockShapeUtil extends BaseHermesCardUtil<TodoBlockShape> {
       )
 
       updateShapeProps(editor, shape, { tasks })
+    }
+
+    const addTask = (event: MouseEvent<HTMLButtonElement>) => {
+      editor.markEventAsHandled(event)
+      updateShapeProps(editor, shape, {
+        tasks: [
+          ...shape.props.tasks,
+          { id: createNextTodoTaskId(shape.props.tasks), text: 'New task', done: false }
+        ]
+      })
     }
 
     if (!isEditing) {
@@ -186,6 +205,16 @@ export class TodoBlockShapeUtil extends BaseHermesCardUtil<TodoBlockShape> {
             </label>
           ))}
         </div>
+        <button
+          type="button"
+          aria-label="Add task"
+          title="Add task"
+          className="hermes-add-task-button"
+          onClick={addTask}
+          {...handlers}
+        >
+          +
+        </button>
       </HTMLContainer>
     )
   }

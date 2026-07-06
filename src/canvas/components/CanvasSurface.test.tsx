@@ -1,4 +1,5 @@
 import { act, render, screen, waitFor } from '@testing-library/react'
+import { readFileSync } from 'node:fs'
 import { useEffect } from 'react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import App from '../../App'
@@ -20,6 +21,7 @@ const syncMock = vi.hoisted(() => ({
 
 const tldrawMock = vi.hoisted(() => {
   const shapes: any[] = []
+  const selectedShapeIds: string[] = []
   const editor = {
     createShape(shape: any) {
       shapes.push({ ...shape, props: shape.props ?? {}, meta: shape.meta ?? {} })
@@ -45,20 +47,28 @@ const tldrawMock = vi.hoisted(() => {
       return shapes
     },
     getSelectedShapeIds() {
-      return []
+      return selectedShapeIds
     },
     getCamera() {
       return { x: 0, y: 0, z: 1 }
     },
+    getViewportPageBounds() {
+      return { x: 0, y: 0, w: 1200, h: 800 }
+    },
     setCamera() {},
     zoomToFit() {},
-    select() {},
-    selectNone() {}
+    select(...ids: string[]) {
+      selectedShapeIds.splice(0, selectedShapeIds.length, ...ids)
+    },
+    selectNone() {
+      selectedShapeIds.splice(0)
+    }
   }
 
   return {
     editor,
     shapes,
+    selectedShapeIds,
     props: null as any
   }
 })
@@ -108,7 +118,9 @@ describe('CanvasSurface', () => {
     socketSpies.send.mockClear()
     syncMock.calls = []
     tldrawMock.shapes.splice(0)
+    tldrawMock.selectedShapeIds.splice(0)
     tldrawMock.props = null
+    window.history.pushState({}, '', '/')
     vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response('not found', { status: 404 }))
     useBridgeStore.setState({
       bridge: null,
@@ -180,5 +192,113 @@ describe('CanvasSurface', () => {
     expect(socketSpies.send).toHaveBeenCalledWith(
       expect.objectContaining({ type: 'canvas.result', ok: true })
     )
+  })
+
+  it('opens a floating canvas insert menu with existing custom components', async () => {
+    render(<App />)
+
+    const insertButton = await screen.findByRole('button', { name: 'Insert component' })
+    expect(insertButton).toBeInTheDocument()
+    expect(insertButton.closest('.canvas-container')).toBeInTheDocument()
+
+    act(() => {
+      insertButton.click()
+    })
+
+    expect(screen.getByRole('menuitem', { name: /Todo Block/ })).toBeInTheDocument()
+    expect(screen.getByRole('menuitem', { name: /Task Card/ })).toBeInTheDocument()
+    expect(screen.getByRole('menuitem', { name: /Link Card/ })).toBeInTheDocument()
+  })
+
+  it('inserts a task card from the floating canvas menu and selects it', async () => {
+    render(<App />)
+
+    const insertButton = await screen.findByRole('button', { name: 'Insert component' })
+    act(() => {
+      insertButton.click()
+    })
+
+    act(() => {
+      screen.getByRole('menuitem', { name: /Task Card/ }).click()
+    })
+
+    await waitFor(() => {
+      expect(useBridgeStore.getState().lastObservation?.shapes).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            type: 'task_card',
+            props: expect.objectContaining({ title: 'New Task' })
+          })
+        ])
+      )
+    })
+
+    expect(tldrawMock.editor.getSelectedShapeIds()).toHaveLength(1)
+  })
+
+  it('inserts todo and link cards from the floating canvas menu', async () => {
+    render(<App />)
+
+    const insertButton = await screen.findByRole('button', { name: 'Insert component' })
+    act(() => {
+      insertButton.click()
+    })
+    act(() => {
+      screen.getByRole('menuitem', { name: /Todo Block/ }).click()
+    })
+
+    act(() => {
+      insertButton.click()
+    })
+    act(() => {
+      screen.getByRole('menuitem', { name: /Link Card/ }).click()
+    })
+
+    await waitFor(() => {
+      expect(useBridgeStore.getState().lastObservation?.shapes).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ type: 'todo_block', props: expect.objectContaining({ title: 'Todo' }) }),
+          expect.objectContaining({ type: 'link_card', props: expect.objectContaining({ title: 'New Link' }) })
+        ])
+      )
+    })
+  })
+
+  it('shows the floating insert icon control in fullscreen canvas view', async () => {
+    window.history.pushState({}, '', '/?view=canvas')
+
+    render(<App />)
+
+    const insertButton = await screen.findByRole('button', { name: 'Insert component' })
+    expect(insertButton).toBeInTheDocument()
+    expect(insertButton.closest('.fullscreen-canvas-container')).toBeInTheDocument()
+  })
+
+  it('layers the floating insert control above tldraw header and menu panels', () => {
+    const styles = readFileSync('src/styles.css', 'utf8')
+    const floatingRule = styles.match(
+      /\.canvas-container > \.canvas-insert-menu,\n\.fullscreen-canvas-container > \.canvas-insert-menu \{(?<body>[\s\S]*?)\n\}/
+    )
+
+    expect(floatingRule?.groups?.body).toMatch(/z-index:\s*(?:1\d{3}|[2-9]\d{3});/)
+  })
+
+  it('anchors the floating insert control to the canvas bottom-right corner', () => {
+    const styles = readFileSync('src/styles.css', 'utf8')
+    const floatingRule = styles.match(
+      /\.canvas-container > \.canvas-insert-menu,\n\.fullscreen-canvas-container > \.canvas-insert-menu \{(?<body>[\s\S]*?)\n\}/
+    )
+
+    expect(floatingRule?.groups?.body).toMatch(/bottom:\s*14px;/)
+    expect(floatingRule?.groups?.body).toMatch(/right:\s*14px;/)
+    expect(floatingRule?.groups?.body).not.toMatch(/top:\s*14px;/)
+  })
+
+  it('opens the floating insert popover above the bottom-right button', () => {
+    const styles = readFileSync('src/styles.css', 'utf8')
+    const popoverRule = styles.match(/\.canvas-insert-popover \{(?<body>[\s\S]*?)\n\}/)
+
+    expect(popoverRule?.groups?.body).toMatch(/bottom:\s*calc\(100% \+ 8px\);/)
+    expect(popoverRule?.groups?.body).not.toMatch(/top:\s*calc\(100% \+ 8px\);/)
   })
 })

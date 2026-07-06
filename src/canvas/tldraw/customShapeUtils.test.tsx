@@ -167,6 +167,44 @@ describe('custom tldraw ShapeUtils', () => {
     })
   })
 
+  it('adds a task from the todo edit controls', () => {
+    tldrawMock.editingShapeId = 'shape:todo_1'
+    const util = new TodoBlockShapeUtil({} as any)
+    render(
+      util.component({
+        id: 'shape:todo_1',
+        type: 'todo_block',
+        x: 0,
+        y: 0,
+        rotation: 0,
+        index: 'a1',
+        parentId: 'page:page',
+        isLocked: false,
+        opacity: 1,
+        meta: {},
+        props: {
+          w: 320,
+          h: 220,
+          title: 'Launch',
+          tasks: [{ id: 'task_0001', text: 'Write copy', done: false }]
+        }
+      } as any)
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: 'Add task' }))
+
+    expect(tldrawMock.editor.updateShape).toHaveBeenCalledWith({
+      id: 'shape:todo_1',
+      type: 'todo_block',
+      props: {
+        tasks: [
+          { id: 'task_0001', text: 'Write copy', done: false },
+          { id: 'task_0002', text: 'New task', done: false }
+        ]
+      }
+    })
+  })
+
   it('renders task and link cards', () => {
     const taskUtil = new TaskCardShapeUtil({} as any)
     const linkUtil = new LinkCardShapeUtil({} as any)

@@ -1,0 +1,190 @@
+import { useEffect, useRef, useState } from 'react'
+import type { CanvasAction } from '../actions/canvasAction.types'
+import { useBridgeStore } from '../state/bridgeStore'
+
+type ComponentKind = 'todo' | 'task' | 'link'
+
+type InsertOption = {
+  kind: ComponentKind
+  label: string
+  icon: 'todo' | 'task' | 'link'
+}
+
+const INSERT_OPTIONS: InsertOption[] = [
+  { kind: 'todo', label: 'Todo Block', icon: 'todo' },
+  { kind: 'task', label: 'Task Card', icon: 'task' },
+  { kind: 'link', label: 'Link Card', icon: 'link' }
+]
+
+function nextInsertId(kind: ComponentKind) {
+  return `shape:${kind}_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 7)}`
+}
+
+function getInsertPoint(editor: unknown) {
+  const editorWithBounds = editor as {
+    getViewportPageBounds?: () => { x: number; y: number; w: number; h: number }
+  }
+  const bounds = editorWithBounds.getViewportPageBounds?.()
+  if (!bounds) return { x: 160, y: 160 }
+
+  return {
+    x: Math.round(bounds.x + bounds.w / 2 - 140),
+    y: Math.round(bounds.y + bounds.h / 2 - 80)
+  }
+}
+
+function buildCreateAction(kind: ComponentKind, id: string, x: number, y: number): CanvasAction {
+  if (kind === 'todo') {
+    return { type: 'create_todo_block', id, title: 'Todo', tasks: [], x, y }
+  }
+
+  if (kind === 'task') {
+    return {
+      type: 'create_task_card',
+      id,
+      title: 'New Task',
+      body: '',
+      status: 'todo',
+      priority: 'medium',
+      x,
+      y
+    }
+  }
+
+  return {
+    type: 'create_link_card',
+    id,
+    title: 'New Link',
+    url: 'https://example.com',
+    description: '',
+    x,
+    y
+  }
+}
+
+function ComponentIcon({ icon }: { icon: InsertOption['icon'] }) {
+  if (icon === 'todo') {
+    return (
+      <svg viewBox="0 0 20 20" aria-hidden="true">
+        <rect x="3" y="3" width="14" height="14" rx="3" />
+        <path d="m7 10 2 2 4-5" />
+      </svg>
+    )
+  }
+
+  if (icon === 'task') {
+    return (
+      <svg viewBox="0 0 20 20" aria-hidden="true">
+        <rect x="4" y="5" width="12" height="10" rx="2" />
+        <path d="M7 8h6M7 11h4" />
+      </svg>
+    )
+  }
+
+  return (
+    <svg viewBox="0 0 20 20" aria-hidden="true">
+      <path d="M8 12 12 8" />
+      <path d="M10 5h5v5" />
+      <path d="M14 6 8 12" />
+      <rect x="4" y="8" width="8" height="8" rx="2" />
+    </svg>
+  )
+}
+
+export function CanvasInsertMenu() {
+  const bridge = useBridgeStore((state) => state.bridge)
+  const adapter = useBridgeStore((state) => state.adapter)
+  const editor = useBridgeStore((state) => state.editor)
+  const setObservation = useBridgeStore((state) => state.setObservation)
+  const addLog = useBridgeStore((state) => state.addLog)
+  const [isOpen, setIsOpen] = useState(false)
+  const menuRef = useRef<HTMLDivElement | null>(null)
+  const isReady = Boolean(bridge && adapter && editor)
+
+  useEffect(() => {
+    if (!isOpen) return
+
+    const closeOnOutsideClick = (event: MouseEvent) => {
+      if (!menuRef.current?.contains(event.target as Node)) {
+        setIsOpen(false)
+      }
+    }
+
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setIsOpen(false)
+    }
+
+    document.addEventListener('mousedown', closeOnOutsideClick)
+    document.addEventListener('keydown', closeOnEscape)
+    return () => {
+      document.removeEventListener('mousedown', closeOnOutsideClick)
+      document.removeEventListener('keydown', closeOnEscape)
+    }
+  }, [isOpen])
+
+  const insertComponent = (kind: ComponentKind) => {
+    if (!bridge || !adapter || !editor) return
+
+    const point = getInsertPoint(editor)
+    const shapeId = nextInsertId(kind)
+    const createAction = buildCreateAction(kind, shapeId, point.x, point.y)
+    const envelope = {
+      type: 'canvas.action' as const,
+      requestId: 'insert_' + Math.random().toString(36).substring(2, 9),
+      canvasId: adapter.canvasId,
+      actions: [createAction, { type: 'select_shapes' as const, shapeIds: [shapeId] }]
+    }
+
+    addLog('in', 'canvas.action (Insert Component)', envelope)
+    const response = bridge.handleActionEnvelope(envelope)
+    setIsOpen(false)
+
+    if ('error' in response) {
+      addLog('error', 'canvas.error (Insert Component)', response.error)
+      alert(`Error inserting component: ${response.error.message}`)
+      return
+    }
+
+    setObservation(response.observation.state)
+    addLog('out', 'canvas.result (Insert Component)', response.result)
+    addLog('out', 'canvas.observation (Insert Component)', response.observation)
+  }
+
+  return (
+    <div className="canvas-insert-menu" ref={menuRef}>
+      <button
+        type="button"
+        className="canvas-icon-button"
+        aria-label="Insert component"
+        aria-haspopup="menu"
+        aria-expanded={isOpen}
+        disabled={!isReady}
+        title={isReady ? 'Insert component' : 'Canvas is still loading'}
+        onClick={() => setIsOpen((value) => !value)}
+      >
+        <svg viewBox="0 0 20 20" aria-hidden="true">
+          <path d="M10 4v12M4 10h12" />
+        </svg>
+      </button>
+
+      {isOpen && (
+        <div className="canvas-insert-popover" role="menu" aria-label="Insert component menu">
+          {INSERT_OPTIONS.map((option) => (
+            <button
+              key={option.kind}
+              type="button"
+              className="canvas-insert-option"
+              role="menuitem"
+              onClick={() => insertComponent(option.kind)}
+            >
+              <span className="canvas-insert-option-icon">
+                <ComponentIcon icon={option.icon} />
+              </span>
+              <span>{option.label}</span>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
