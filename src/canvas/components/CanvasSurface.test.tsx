@@ -293,6 +293,7 @@ describe('CanvasSurface', () => {
     expect(screen.getByRole('menuitem', { name: /Todo Block/ })).toBeInTheDocument()
     expect(screen.getByRole('menuitem', { name: /Task Card/ })).toBeInTheDocument()
     expect(screen.getByRole('menuitem', { name: /Link Card/ })).toBeInTheDocument()
+    expect(screen.getByRole('menuitem', { name: /Note Card/ })).toBeInTheDocument()
   })
 
   it('inserts a task card from the floating canvas menu and selects it', async () => {
@@ -347,6 +348,34 @@ describe('CanvasSurface', () => {
         ])
       )
     })
+  })
+
+  it('inserts a native note card from the floating canvas menu and selects it', async () => {
+    render(<App />)
+
+    const insertButton = await screen.findByRole('button', { name: 'Insert component' })
+    act(() => {
+      insertButton.click()
+    })
+
+    act(() => {
+      screen.getByRole('menuitem', { name: /Note Card/ }).click()
+    })
+
+    await waitFor(() => {
+      expect(useBridgeStore.getState().lastObservation?.shapes).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            type: 'note',
+            props: expect.objectContaining({
+              richText: expect.objectContaining({ type: 'doc' })
+            })
+          })
+        ])
+      )
+    })
+
+    expect(tldrawMock.editor.getSelectedShapeIds()).toHaveLength(1)
   })
 
   it('shows the floating insert icon control in fullscreen canvas view', async () => {

@@ -2,18 +2,19 @@ import { useEffect, useRef, useState } from 'react'
 import type { CanvasAction } from '../actions/canvasAction.types'
 import { useBridgeStore } from '../state/bridgeStore'
 
-type ComponentKind = 'todo' | 'task' | 'link'
+type ComponentKind = 'todo' | 'task' | 'link' | 'note'
 
 type InsertOption = {
   kind: ComponentKind
   label: string
-  icon: 'todo' | 'task' | 'link'
+  icon: 'todo' | 'task' | 'link' | 'note'
 }
 
 const INSERT_OPTIONS: InsertOption[] = [
   { kind: 'todo', label: 'Todo Block', icon: 'todo' },
   { kind: 'task', label: 'Task Card', icon: 'task' },
-  { kind: 'link', label: 'Link Card', icon: 'link' }
+  { kind: 'link', label: 'Link Card', icon: 'link' },
+  { kind: 'note', label: 'Note Card', icon: 'note' }
 ]
 
 function nextInsertId(kind: ComponentKind) {
@@ -51,6 +52,18 @@ function buildCreateAction(kind: ComponentKind, id: string, x: number, y: number
     }
   }
 
+  if (kind === 'note') {
+    return {
+      type: 'create_note_card',
+      id,
+      title: 'New Note',
+      tag: 'Idea',
+      content: '',
+      x,
+      y
+    }
+  }
+
   return {
     type: 'create_link_card',
     id,
@@ -77,6 +90,15 @@ function ComponentIcon({ icon }: { icon: InsertOption['icon'] }) {
       <svg viewBox="0 0 20 20" aria-hidden="true">
         <rect x="4" y="5" width="12" height="10" rx="2" />
         <path d="M7 8h6M7 11h4" />
+      </svg>
+    )
+  }
+
+  if (icon === 'note') {
+    return (
+      <svg viewBox="0 0 20 20" aria-hidden="true">
+        <rect x="4" y="3" width="12" height="14" rx="2" />
+        <path d="M7 7h6M7 10h5M7 13h3" />
       </svg>
     )
   }
