@@ -65,6 +65,73 @@ describe('tldraw canvas action schema', () => {
     ).toMatchObject({ type: 'create_link_card', title: 'Docs', backgroundColor: '#ecfccb' })
   })
 
+  it('accepts native note card helper actions', () => {
+    expect(
+      canvasActionSchema.parse({
+        type: 'create_note_card',
+        id: 'shape:note_1',
+        x: 180,
+        y: 220,
+        title: 'Offline Sync',
+        tag: 'Idea',
+        content: 'Queue writes locally\nFlush when online',
+        color: 'yellow',
+        size: 'm'
+      })
+    ).toMatchObject({
+      type: 'create_note_card',
+      title: 'Offline Sync',
+      tag: 'Idea',
+      content: 'Queue writes locally\nFlush when online',
+      color: 'yellow',
+      size: 'm'
+    })
+  })
+
+  it('rejects invalid note card helper actions', () => {
+    expect(() =>
+      canvasActionSchema.parse({
+        type: 'create_note_card',
+        x: 0,
+        y: 0,
+        title: '',
+        tag: 'Idea'
+      })
+    ).toThrow()
+
+    expect(() =>
+      canvasActionSchema.parse({
+        type: 'create_note_card',
+        x: 0,
+        y: 0,
+        title: 'Draft',
+        tag: ''
+      })
+    ).toThrow()
+
+    expect(() =>
+      canvasActionSchema.parse({
+        type: 'create_note_card',
+        x: 0,
+        y: 0,
+        title: 'Draft',
+        tag: 'Idea',
+        color: 'magenta'
+      })
+    ).toThrow()
+
+    expect(() =>
+      canvasActionSchema.parse({
+        type: 'create_note_card',
+        x: 0,
+        y: 0,
+        title: 'Draft',
+        tag: 'Idea',
+        size: 'xxl'
+      })
+    ).toThrow()
+  })
+
   it('rejects empty action batches and malformed urls', () => {
     expect(() => canvasActionBatchSchema.parse([])).toThrow()
     expect(() =>

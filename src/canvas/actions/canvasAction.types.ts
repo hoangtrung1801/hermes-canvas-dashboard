@@ -129,6 +129,18 @@ export type CreateLinkCardAction = {
   backgroundColor?: string
 }
 
+export type CreateNoteCardAction = {
+  type: 'create_note_card'
+  id?: string
+  x: number
+  y: number
+  title: string
+  tag: string
+  content?: string
+  color?: string
+  size?: 's' | 'm' | 'l' | 'xl'
+}
+
 export type CanvasAction =
   | CreateShapeAction
   | UpdateShapeAction
@@ -147,3 +159,4 @@ export type CanvasAction =
   | RemoveTodoTaskAction
   | CreateTaskCardAction
   | CreateLinkCardAction
+  | CreateNoteCardAction

@@ -9,6 +9,22 @@ const shapeId = z.string().min(1)
 const shapeIdList = z.array(shapeId).min(1)
 const record = z.record(z.unknown())
 const backgroundColor = z.string().min(1).optional()
+const tldrawDefaultColor = z.enum([
+  'black',
+  'grey',
+  'light-violet',
+  'violet',
+  'blue',
+  'light-blue',
+  'yellow',
+  'orange',
+  'green',
+  'light-green',
+  'light-red',
+  'red',
+  'white'
+])
+const tldrawNoteSize = z.enum(['s', 'm', 'l', 'xl'])
 
 const tldrawShapePayloadSchema = z.object({
   id: z.string().min(1).optional(),
@@ -112,6 +128,16 @@ export const canvasActionSchema = z.union([
     w: z.number().positive().optional(),
     h: z.number().positive().optional(),
     backgroundColor,
+    ...position
+  }),
+  z.object({
+    type: z.literal('create_note_card'),
+    id: z.string().min(1).optional(),
+    title: z.string().min(1),
+    tag: z.string().min(1),
+    content: z.string().optional(),
+    color: tldrawDefaultColor.optional(),
+    size: tldrawNoteSize.optional(),
     ...position
   })
 ])
