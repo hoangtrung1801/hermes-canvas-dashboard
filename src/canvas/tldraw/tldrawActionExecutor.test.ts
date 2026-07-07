@@ -81,7 +81,7 @@ describe('tldraw action executor', () => {
     })
   })
 
-  it('creates native tldraw note cards with formatted rich text', () => {
+  it('creates built-in rectangle note cards with formatted rich text', () => {
     const target = createMemoryTldrawTarget('canvas_001')
 
     expect(
@@ -103,10 +103,11 @@ describe('tldraw action executor', () => {
       shapes: [
         {
           id: 'shape:note_1',
-          type: 'note',
+          type: 'geo',
           x: 240,
           y: 260,
           props: {
+            geo: 'rectangle',
             color: 'light-blue',
             size: 'l',
             richText: {

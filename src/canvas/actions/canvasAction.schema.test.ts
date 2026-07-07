@@ -54,7 +54,7 @@ describe('tldraw canvas action schema', () => {
     ).toMatchObject({ type: 'create_link_card', title: 'Docs', backgroundColor: '#ecfccb' })
   })
 
-  it('accepts native note card helper actions', () => {
+  it('accepts note card helper actions', () => {
     expect(
       canvasActionSchema.parse({
         type: 'create_note_card',

@@ -92,6 +92,8 @@ Use this for URLs and link-only user requests after fetching browsing metadata w
 
 ### create_note_card
 
+Creates a built-in tldraw rectangle with rich text.
+
 ```json
 {"type":"create_note_card","id":"shape:plan","title":"Plan","tag":"Note","content":"Dashboard plan","x":80,"y":80}
 ```

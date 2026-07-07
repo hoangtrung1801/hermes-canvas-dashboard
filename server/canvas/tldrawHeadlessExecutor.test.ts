@@ -57,10 +57,11 @@ describe('executeHeadlessTldrawAction', () => {
         shapes: [
           {
             id: 'shape:note_1',
-            type: 'note',
+            type: 'geo',
             x: 100,
             y: 120,
             props: {
+              geo: 'rectangle',
               color: 'yellow'
             }
           }

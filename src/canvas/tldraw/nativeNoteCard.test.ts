@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import { createNoteCardProps } from './nativeNoteCard'
 
-describe('native note card props', () => {
-  it('creates default tldraw note props with bold title and tag paragraphs', () => {
+describe('note card rectangle props', () => {
+  it('creates default tldraw rectangle props with bold title and tag paragraphs', () => {
     const props = createNoteCardProps({
       title: 'Offline Sync',
       tag: 'Idea',
@@ -10,17 +10,20 @@ describe('native note card props', () => {
     })
 
     expect(props).toMatchObject({
+      geo: 'rectangle',
+      w: 320,
+      h: 180,
       color: 'yellow',
       labelColor: 'black',
       size: 'm',
       font: 'draw',
-      fontSizeAdjustment: null,
+      fill: 'solid',
+      dash: 'draw',
       align: 'start',
       verticalAlign: 'start',
       growY: 0,
       url: '',
-      scale: 1,
-      textLastEditedBy: null
+      scale: 1
     })
     expect(props.richText).toEqual({
       type: 'doc',

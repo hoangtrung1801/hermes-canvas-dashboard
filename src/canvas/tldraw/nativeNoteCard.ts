@@ -1,4 +1,4 @@
-import type { TLDefaultColorStyle, TLDefaultSizeStyle, TLNoteShapeProps, TLRichText } from 'tldraw'
+import type { TLDefaultColorStyle, TLDefaultSizeStyle, TLGeoShapeProps, TLRichText } from 'tldraw'
 
 type NoteCardInput = {
   title: string
@@ -36,19 +36,22 @@ export function createNoteCardRichText(input: Pick<NoteCardInput, 'title' | 'tag
   }
 }
 
-export function createNoteCardProps(input: NoteCardInput): TLNoteShapeProps {
+export function createNoteCardProps(input: NoteCardInput): TLGeoShapeProps {
   return {
+    geo: 'rectangle',
+    w: 320,
+    h: 180,
     color: input.color ?? 'yellow',
     labelColor: 'black',
     size: input.size ?? 'm',
     font: 'draw',
-    fontSizeAdjustment: null,
+    fill: 'solid',
+    dash: 'draw',
     align: 'start',
     verticalAlign: 'start',
     growY: 0,
     url: '',
     richText: createNoteCardRichText(input),
-    scale: 1,
-    textLastEditedBy: null
+    scale: 1
   }
 }

@@ -225,7 +225,7 @@ Cards can also be recolored directly in the canvas dashboard by selecting the ca
 
 ### create_note_card
 
-Creates a native tldraw sticky note. Hermes sends separate `title`, `tag`, and `content` fields; the bridge converts them into the note shape's rich text. The title and tag become bold paragraphs, and content remains normal text.
+Creates a built-in tldraw rectangle with text inside. Hermes sends separate `title`, `tag`, and `content` fields; the bridge converts them into the rectangle shape's rich text. The title and tag become bold paragraphs, and content remains normal text.
 
 ```json
 {
@@ -241,7 +241,7 @@ Creates a native tldraw sticky note. Hermes sends separate `title`, `tag`, and `
 }
 ```
 
-The created shape appears in observations as `type: "note"` with standard tldraw `props.richText`.
+The created shape appears in observations as `type: "geo"` with `props.geo: "rectangle"` and standard tldraw `props.richText`.
 
 ### set_camera
 

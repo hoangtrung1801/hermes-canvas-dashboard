@@ -85,8 +85,8 @@ export function executeTldrawAction(target: TldrawExecutorTarget, action: Canvas
       })
     case 'create_note_card':
       return createShape(target, {
-        id: action.id ?? nextShapeId(target, 'note'),
-        type: 'note',
+        id: action.id ?? nextShapeId(target, 'geo'),
+        type: 'geo',
         x: action.x,
         y: action.y,
         props: createNoteCardProps(action as any) as unknown as Record<string, unknown>,
