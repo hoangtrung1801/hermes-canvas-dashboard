@@ -26,11 +26,12 @@ describe('executeHeadlessTldrawAction', () => {
       canvasId: 'canvas_001',
       actions: [
         {
-          type: 'create_task_card',
-          id: 'shape:task_1',
-          title: 'Ship tldraw',
-          body: 'Persist with sync',
-          x: 80,
+          type: 'create_note_card',
+          id: 'shape:note_1',
+          title: 'Headless note',
+          tag: 'Note',
+          content: 'Created without a bridge',
+          x: 100,
           y: 120
         },
         { type: 'read_canvas' }
@@ -42,7 +43,7 @@ describe('executeHeadlessTldrawAction', () => {
       requestId: 'req_create',
       ok: true,
       results: [
-        { actionType: 'create_task_card', createdShapeIds: ['shape:task_1'] },
+        { actionType: 'create_note_card', createdShapeIds: ['shape:note_1'] },
         { actionType: 'read_canvas' }
       ]
     })
@@ -55,13 +56,12 @@ describe('executeHeadlessTldrawAction', () => {
         pageId: 'page:page',
         shapes: [
           {
-            id: 'shape:task_1',
-            type: 'task_card',
-            x: 80,
+            id: 'shape:note_1',
+            type: 'note',
+            x: 100,
             y: 120,
             props: {
-              title: 'Ship tldraw',
-              body: 'Persist with sync'
+              color: 'yellow'
             }
           }
         ]
@@ -70,7 +70,7 @@ describe('executeHeadlessTldrawAction', () => {
 
     const room = manager.getOrCreateRoom('canvas_001')
     const snapshot = room.getCurrentSnapshot()
-    expect(snapshot.documents.some((entry) => entry.state.id === 'shape:task_1')).toBe(true)
+    expect(snapshot.documents.some((entry) => entry.state.id === 'shape:note_1')).toBe(true)
   })
 
   it('returns canvas.error for invalid action envelopes', async () => {

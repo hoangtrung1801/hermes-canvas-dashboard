@@ -2,10 +2,8 @@ import type { Editor } from 'tldraw'
 import type { CanvasAction } from '../actions/canvasAction.types'
 import {
   LINK_CARD_TYPE,
-  TASK_CARD_TYPE,
   TODO_BLOCK_TYPE,
   createLinkCardProps,
-  createTaskCardProps,
   createTodoBlockProps,
   type TodoTask
 } from './customShape.types'
@@ -72,16 +70,6 @@ export function executeTldrawAction(target: TldrawExecutorTarget, action: Canvas
         x: action.x,
         y: action.y,
         props: createTodoBlockProps(action),
-        meta: { source: 'hermes' },
-        actionType: action.type
-      })
-    case 'create_task_card':
-      return createShape(target, {
-        id: action.id ?? nextShapeId(target, TASK_CARD_TYPE),
-        type: TASK_CARD_TYPE,
-        x: action.x,
-        y: action.y,
-        props: createTaskCardProps(action),
         meta: { source: 'hermes' },
         actionType: action.type
       })

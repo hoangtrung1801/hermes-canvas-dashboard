@@ -249,11 +249,12 @@ describe('canvas gateway integration', () => {
           JSON.stringify(
             createHermesCanvasToolPayload('canvas_001', [
               {
-                type: 'create_task_card',
-                id: 'shape:task_gateway',
-                title: 'Created without dashboard',
-                body: 'Headless tldraw action',
-                x: 80,
+                type: 'create_note_card',
+                id: 'shape:note_gateway',
+                title: 'Headless note',
+                tag: 'Note',
+                content: 'Created without a bridge',
+                x: 100,
                 y: 120
               }
             ])
@@ -267,8 +268,8 @@ describe('canvas gateway integration', () => {
       ok: true,
       results: [
         {
-          actionType: 'create_task_card',
-          createdShapeIds: ['shape:task_gateway']
+          actionType: 'create_note_card',
+          createdShapeIds: ['shape:note_gateway']
         }
       ]
     })
@@ -277,11 +278,10 @@ describe('canvas gateway integration', () => {
       state: {
         shapes: [
           {
-            id: 'shape:task_gateway',
-            type: 'task_card',
+            id: 'shape:note_gateway',
+            type: 'note',
             props: {
-              title: 'Created without dashboard',
-              body: 'Headless tldraw action'
+              color: 'yellow'
             }
           }
         ]
@@ -289,6 +289,6 @@ describe('canvas gateway integration', () => {
     })
 
     const snapshot = gateway.syncRooms.getOrCreateRoom('canvas_001').getCurrentSnapshot()
-    expect(snapshot.documents.some((entry) => entry.state.id === 'shape:task_gateway')).toBe(true)
+    expect(snapshot.documents.some((entry) => entry.state.id === 'shape:note_gateway')).toBe(true)
   })
 })

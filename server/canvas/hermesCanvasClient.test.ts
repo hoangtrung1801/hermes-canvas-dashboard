@@ -12,8 +12,8 @@ describe('hermesCanvasClient', () => {
           shape: expect.objectContaining({ type: 'geo' })
         }),
         expect.objectContaining({
-          type: 'create_task_card',
-          body: expect.stringContaining('inside this shape')
+          type: 'create_note_card',
+          content: 'Created by the Hermes demo client'
         }),
         expect.objectContaining({ type: 'zoom_to_fit' })
       ])
@@ -29,7 +29,7 @@ describe('hermesCanvasClient', () => {
       '--timeoutMs',
       '250',
       '--actions',
-      '[{"type":"create_task_card","title":"Hello","body":"World","x":10,"y":20}]'
+      '[{"type":"create_note_card","title":"Hello","tag":"Note","content":"World","x":10,"y":20}]'
     ])
 
     expect(config).toEqual({
@@ -37,7 +37,7 @@ describe('hermesCanvasClient', () => {
       canvasId: 'demo_canvas',
       requestId: 'req_custom',
       timeoutMs: 250,
-      actions: [{ type: 'create_task_card', title: 'Hello', body: 'World', x: 10, y: 20 }]
+      actions: [{ type: 'create_note_card', title: 'Hello', tag: 'Note', content: 'World', x: 10, y: 20 }]
     })
   })
 

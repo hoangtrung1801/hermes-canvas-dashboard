@@ -7,43 +7,49 @@ describe('tldraw action executor', () => {
     const target = createMemoryTldrawTarget('canvas_001')
     const actions: CanvasAction[] = [
       {
-        type: 'create_task_card',
-        id: 'shape:task_1',
-        title: 'Task',
-        body: 'Body',
-        backgroundColor: '#fef3c7',
+        type: 'create_link_card',
+        id: 'shape:link_1',
+        title: 'Docs',
+        url: 'https://tldraw.dev',
+        description: 'SDK docs',
+        backgroundColor: '#ecfccb',
         x: 100,
         y: 120
       },
-      { type: 'update_shape', shapeId: 'shape:task_1', patch: { props: { priority: 'high' } } },
-      { type: 'move_shapes', shapeIds: ['shape:task_1'], dx: 20, dy: 10 },
+      { type: 'update_shape', shapeId: 'shape:link_1', patch: { props: { description: 'Updated docs' } } },
+      { type: 'move_shapes', shapeIds: ['shape:link_1'], dx: 20, dy: 10 },
       { type: 'read_canvas' }
     ]
 
     const results = actions.map((action) => executeTldrawAction(target, action))
 
     expect(results).toEqual([
-      { actionType: 'create_task_card', createdShapeIds: ['shape:task_1'] },
-      { actionType: 'update_shape', updatedShapeIds: ['shape:task_1'] },
-      { actionType: 'move_shapes', updatedShapeIds: ['shape:task_1'] },
+      { actionType: 'create_link_card', createdShapeIds: ['shape:link_1'] },
+      { actionType: 'update_shape', updatedShapeIds: ['shape:link_1'] },
+      { actionType: 'move_shapes', updatedShapeIds: ['shape:link_1'] },
       { actionType: 'read_canvas' }
     ])
     expect(readTldrawObservation(target)).toMatchObject({
       canvasId: 'canvas_001',
       shapes: [
         {
-          id: 'shape:task_1',
-          type: 'task_card',
+          id: 'shape:link_1',
+          type: 'link_card',
           x: 120,
           y: 130,
-          props: { title: 'Task', body: 'Body', priority: 'high', backgroundColor: '#fef3c7' }
+          props: {
+            title: 'Docs',
+            url: 'https://tldraw.dev',
+            description: 'Updated docs',
+            backgroundColor: '#ecfccb'
+          }
         }
       ]
     })
 
-    expect(executeTldrawAction(target, { type: 'delete_shapes', shapeIds: ['shape:task_1'] })).toEqual({
+    expect(executeTldrawAction(target, { type: 'delete_shapes', shapeIds: ['shape:link_1'] })).toEqual({
       actionType: 'delete_shapes',
-      deletedShapeIds: ['shape:task_1']
+      deletedShapeIds: ['shape:link_1']
     })
     expect(readTldrawObservation(target).shapes).toEqual([])
   })
