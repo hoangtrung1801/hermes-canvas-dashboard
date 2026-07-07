@@ -108,18 +108,6 @@ export const canvasActionSchema = z.union([
     taskId: z.string().min(1)
   }),
   z.object({
-    type: z.literal('create_task_card'),
-    id: z.string().min(1).optional(),
-    title: z.string().min(1),
-    body: z.string().optional(),
-    status: z.string().min(1).optional(),
-    priority: z.string().min(1).optional(),
-    w: z.number().positive().optional(),
-    h: z.number().positive().optional(),
-    backgroundColor,
-    ...position
-  }),
-  z.object({
     type: z.literal('create_link_card'),
     id: z.string().min(1).optional(),
     title: z.string().min(1),

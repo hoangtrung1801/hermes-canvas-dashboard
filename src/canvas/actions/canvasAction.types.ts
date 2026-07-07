@@ -102,20 +102,6 @@ export type RemoveTodoTaskAction = {
   taskId: string
 }
 
-export type CreateTaskCardAction = {
-  type: 'create_task_card'
-  id?: string
-  x: number
-  y: number
-  title: string
-  body?: string
-  status?: string
-  priority?: string
-  w?: number
-  h?: number
-  backgroundColor?: string
-}
-
 export type CreateLinkCardAction = {
   type: 'create_link_card'
   id?: string
@@ -157,6 +143,5 @@ export type CanvasAction =
   | AppendTodoTaskAction
   | SetTodoTaskDoneAction
   | RemoveTodoTaskAction
-  | CreateTaskCardAction
   | CreateLinkCardAction
   | CreateNoteCardAction

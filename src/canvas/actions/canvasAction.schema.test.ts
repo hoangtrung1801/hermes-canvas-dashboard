@@ -43,17 +43,6 @@ describe('tldraw canvas action schema', () => {
 
     expect(
       canvasActionSchema.parse({
-        type: 'create_task_card',
-        id: 'shape:task_1',
-        x: 120,
-        y: 140,
-        title: 'Design',
-        backgroundColor: '#fef3c7'
-      })
-    ).toMatchObject({ type: 'create_task_card', title: 'Design', backgroundColor: '#fef3c7' })
-
-    expect(
-      canvasActionSchema.parse({
         type: 'create_link_card',
         id: 'shape:link_1',
         x: 120,
@@ -141,6 +130,18 @@ describe('tldraw canvas action schema', () => {
         url: 'not a url',
         x: 0,
         y: 0
+      })
+    ).toThrow()
+  })
+
+  it('rejects removed task card helper actions', () => {
+    expect(() =>
+      canvasActionSchema.parse({
+        type: 'create_task_card',
+        id: 'shape:task_1',
+        x: 120,
+        y: 140,
+        title: 'Design'
       })
     ).toThrow()
   })
