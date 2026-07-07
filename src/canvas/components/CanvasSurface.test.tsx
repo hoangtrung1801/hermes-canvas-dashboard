@@ -240,6 +240,15 @@ describe('CanvasSurface', () => {
               body: 'Rendered with tldraw',
               x: 100,
               y: 120
+            },
+            {
+              type: 'create_note_card',
+              id: 'shape:note_1',
+              title: 'Captured Idea',
+              tag: 'Idea',
+              content: 'Use native notes',
+              x: 180,
+              y: 240
             }
           ]
         })
@@ -253,6 +262,13 @@ describe('CanvasSurface', () => {
             id: 'shape:task_1',
             type: 'task_card',
             props: expect.objectContaining({ title: 'Saved from Hermes' })
+          }),
+          expect.objectContaining({
+            id: 'shape:note_1',
+            type: 'note',
+            props: expect.objectContaining({
+              richText: expect.objectContaining({ type: 'doc' })
+            })
           })
         ])
       )

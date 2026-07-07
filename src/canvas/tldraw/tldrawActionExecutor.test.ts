@@ -75,6 +75,61 @@ describe('tldraw action executor', () => {
     })
   })
 
+  it('creates native tldraw note cards with formatted rich text', () => {
+    const target = createMemoryTldrawTarget('canvas_001')
+
+    expect(
+      executeTldrawAction(target, {
+        type: 'create_note_card',
+        id: 'shape:note_1',
+        title: 'Offline Sync',
+        tag: 'Idea',
+        content: 'Queue writes locally\nFlush when online',
+        color: 'light-blue',
+        size: 'l',
+        x: 240,
+        y: 260
+      })
+    ).toEqual({ actionType: 'create_note_card', createdShapeIds: ['shape:note_1'] })
+
+    expect(readTldrawObservation(target)).toMatchObject({
+      canvasId: 'canvas_001',
+      shapes: [
+        {
+          id: 'shape:note_1',
+          type: 'note',
+          x: 240,
+          y: 260,
+          props: {
+            color: 'light-blue',
+            size: 'l',
+            richText: {
+              type: 'doc',
+              content: [
+                {
+                  type: 'paragraph',
+                  content: [{ type: 'text', text: 'Offline Sync', marks: [{ type: 'bold' }] }]
+                },
+                {
+                  type: 'paragraph',
+                  content: [{ type: 'text', text: 'Idea', marks: [{ type: 'bold' }] }]
+                },
+                {
+                  type: 'paragraph',
+                  content: [{ type: 'text', text: 'Queue writes locally' }]
+                },
+                {
+                  type: 'paragraph',
+                  content: [{ type: 'text', text: 'Flush when online' }]
+                }
+              ]
+            }
+          }
+        }
+      ]
+    })
+  })
+
   it('returns action-level errors for unknown shapes and unsupported headless editor actions', () => {
     const target = createMemoryTldrawTarget('canvas_001')
 

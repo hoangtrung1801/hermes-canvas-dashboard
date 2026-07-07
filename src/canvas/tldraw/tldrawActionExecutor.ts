@@ -13,6 +13,7 @@ import {
   createCanvasObservationFromRecords,
   type CanvasObservationState
 } from './tldrawObservation'
+import { createNoteCardProps } from './nativeNoteCard'
 
 export type TldrawActionResult = {
   actionType: CanvasAction['type']
@@ -91,6 +92,16 @@ export function executeTldrawAction(target: TldrawExecutorTarget, action: Canvas
         x: action.x,
         y: action.y,
         props: createLinkCardProps(action),
+        meta: { source: 'hermes' },
+        actionType: action.type
+      })
+    case 'create_note_card':
+      return createShape(target, {
+        id: action.id ?? nextShapeId(target, 'note'),
+        type: 'note',
+        x: action.x,
+        y: action.y,
+        props: createNoteCardProps(action as any),
         meta: { source: 'hermes' },
         actionType: action.type
       })
