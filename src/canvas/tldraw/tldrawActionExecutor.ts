@@ -101,7 +101,7 @@ export function executeTldrawAction(target: TldrawExecutorTarget, action: Canvas
         type: 'note',
         x: action.x,
         y: action.y,
-        props: createNoteCardProps(action as any),
+        props: createNoteCardProps(action as any) as unknown as Record<string, unknown>,
         meta: { source: 'hermes' },
         actionType: action.type
       })
