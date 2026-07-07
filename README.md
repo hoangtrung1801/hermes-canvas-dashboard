@@ -120,7 +120,7 @@ npm run hermes:demo
 To send custom actions:
 
 ```bash
-npm run hermes:demo -- --actions '[{"type":"create_task_card","title":"Hello","body":"Created by Hermes","x":120,"y":160}]'
+npm run hermes:demo -- --actions '[{"type":"create_note_card","title":"Hello","tag":"Note","content":"Created by Hermes","x":120,"y":160}]'
 ```
 
 ## Action Examples
@@ -149,21 +149,6 @@ Mutate todo tasks:
   { "type": "set_todo_task_done", "shapeId": "shape:launch_checklist", "taskId": "task_copy", "done": true },
   { "type": "remove_todo_task", "shapeId": "shape:launch_checklist", "taskId": "task_assets" }
 ]
-```
-
-Create a task card:
-
-```json
-{
-  "type": "create_task_card",
-  "id": "shape:sprint_task",
-  "title": "Design UI System",
-  "body": "Build the tldraw-powered Hermes canvas workflow.",
-  "status": "in_progress",
-  "priority": "high",
-  "x": 100,
-  "y": 150
-}
 ```
 
 Create a link card:

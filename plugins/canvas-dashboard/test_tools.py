@@ -52,6 +52,10 @@ class FakeContext:
 
 
 class CanvasDashboardPluginTests(unittest.TestCase):
+    removed_action = "create_" + "task_" + "card"
+    removed_label = "Task " + "Card"
+    removed_phrase = "task " + "cards"
+
     def test_bundled_skill_uses_hermes_skill_format(self):
         skill_text = (PLUGIN_DIR / "skills" / "canvas-dashboard" / "SKILL.md").read_text(
             encoding="utf-8"
@@ -73,6 +77,9 @@ class CanvasDashboardPluginTests(unittest.TestCase):
         )
         for action_name in ("set_camera", "select_shapes", "clear_selection"):
             self.assertIn(f"### {action_name}", skill_text)
+        self.assertNotIn(self.removed_action, skill_text)
+        self.assertNotIn(self.removed_label, skill_text)
+        self.assertNotIn(self.removed_phrase, skill_text)
 
     def test_bundled_skill_handles_link_only_requests_with_metadata(self):
         skill_text = (PLUGIN_DIR / "skills" / "canvas-dashboard" / "SKILL.md").read_text(
@@ -179,12 +186,15 @@ class CanvasDashboardPluginTests(unittest.TestCase):
 
     def test_build_tool_config_prepends_read_canvas_before_non_read_actions(self):
         config = build_tool_config(
-            {"actions": [{"type": "create_task_card", "title": "Hello", "body": "World"}]}
+            {"actions": [{"type": "create_note_card", "title": "Hello", "tag": "Note", "content": "World"}]}
         )
 
         self.assertEqual(
             config.actions,
-            [{"type": "read_canvas"}, {"type": "create_task_card", "title": "Hello", "body": "World"}],
+            [
+                {"type": "read_canvas"},
+                {"type": "create_note_card", "title": "Hello", "tag": "Note", "content": "World"},
+            ],
         )
 
     def test_build_tool_config_does_not_duplicate_existing_leading_read_canvas(self):
@@ -192,14 +202,17 @@ class CanvasDashboardPluginTests(unittest.TestCase):
             {
                 "actions": [
                     {"type": "read_canvas"},
-                    {"type": "create_task_card", "title": "Hello", "body": "World"},
+                    {"type": "create_note_card", "title": "Hello", "tag": "Note", "content": "World"},
                 ]
             }
         )
 
         self.assertEqual(
             config.actions,
-            [{"type": "read_canvas"}, {"type": "create_task_card", "title": "Hello", "body": "World"}],
+            [
+                {"type": "read_canvas"},
+                {"type": "create_note_card", "title": "Hello", "tag": "Note", "content": "World"},
+            ],
         )
 
     def test_handle_canvas_action_returns_runner_result(self):
@@ -217,7 +230,7 @@ class CanvasDashboardPluginTests(unittest.TestCase):
 
         result = handle_canvas_action(
             {
-                "actions": [{"type": "create_task_card", "title": "Hello", "body": "World"}],
+                "actions": [{"type": "create_note_card", "title": "Hello", "tag": "Note", "content": "World"}],
                 "requestId": "req_plugin",
             },
             runner=fake_runner,
@@ -227,8 +240,22 @@ class CanvasDashboardPluginTests(unittest.TestCase):
         self.assertEqual(result["request"]["requestId"], "req_plugin")
         self.assertEqual(
             result["request"]["actions"],
-            [{"type": "read_canvas"}, {"type": "create_task_card", "title": "Hello", "body": "World"}],
+            [
+                {"type": "read_canvas"},
+                {"type": "create_note_card", "title": "Hello", "tag": "Note", "content": "World"},
+            ],
         )
+
+    def test_active_docs_do_not_advertise_removed_cards(self):
+        repo_root = PLUGIN_DIR.parent.parent
+        for relative_path in [
+            "README.md",
+            "CANVAS_API.md",
+            "plugins/canvas-dashboard/skills/canvas-dashboard/SKILL.md",
+        ]:
+            text = (repo_root / relative_path).read_text(encoding="utf-8")
+            self.assertNotIn(self.removed_action, text, relative_path)
+            self.assertNotIn(self.removed_label, text, relative_path)
 
     def test_handle_canvas_action_returns_structured_validation_error(self):
         result = handle_canvas_action({"actions": []})

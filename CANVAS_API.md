@@ -206,22 +206,6 @@ Move shapes by absolute coordinates or a delta.
 }
 ```
 
-### create_task_card
-
-```json
-{
-  "type": "create_task_card",
-  "id": "shape:sprint_task",
-  "title": "Design UI System",
-  "body": "Build the tldraw-powered Hermes canvas workflow.",
-  "status": "in_progress",
-  "priority": "high",
-  "backgroundColor": "#dbeafe",
-  "x": 100,
-  "y": 150
-}
-```
-
 ### create_link_card
 
 ```json
@@ -283,7 +267,7 @@ Browser-editor only.
 ```json
 {
   "type": "select_shapes",
-  "shapeIds": ["shape:sprint_task"]
+  "shapeIds": ["shape:tldraw_docs"]
 }
 ```
 

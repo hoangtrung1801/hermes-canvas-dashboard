@@ -14,7 +14,7 @@ Use this skill to operate a running Hermes Canvas Gateway. The gateway applies a
 
 ## When to Use
 
-Use this skill when the user asks to inspect or change the Hermes Canvas Dashboard, tldraw canvas, task cards, todo blocks, checklist items, link cards, shapes, selections, or camera view.
+Use this skill when the user asks to inspect or change the Hermes Canvas Dashboard, tldraw canvas, notes, todo blocks, checklist items, link cards, shapes, selections, or camera view.
 
 Prefer the Hermes `canvas_action` plugin tool when it is available. Use the bundled CLI only when the tool is unavailable or when the user explicitly wants a terminal command. Do not use Hermes' session `todo` tool unless the user asks for the agent-local todo list.
 
@@ -58,12 +58,6 @@ uv run --with websocket-client scripts/canvas_dashboard_tool.py --actions '[{"ty
 
 ## Actions
 
-### create_task_card
-
-```json
-{"type":"create_task_card","id":"shape:sprint_task","title":"Design UI System","body":"Build the tldraw-powered Hermes canvas workflow.","status":"in_progress","priority":"high","x":100,"y":150}
-```
-
 ### create_todo_block
 
 ```json
@@ -96,6 +90,12 @@ Use this for URLs and link-only user requests after fetching browsing metadata w
 {"type":"create_link_card","id":"shape:tldraw_docs","title":"tldraw Sync Docs","url":"https://tldraw.dev/docs/sync","description":"Sync server and client setup","x":100,"y":350}
 ```
 
+### create_note_card
+
+```json
+{"type":"create_note_card","id":"shape:plan","title":"Plan","tag":"Note","content":"Dashboard plan","x":80,"y":80}
+```
+
 ### create_shape
 
 ```json
@@ -105,7 +105,7 @@ Use this for URLs and link-only user requests after fetching browsing metadata w
 ### update_shape
 
 ```json
-{"type":"update_shape","shapeId":"shape:sprint_task","patch":{"props":{"title":"Updated title"}}}
+{"type":"update_shape","shapeId":"shape:plan","patch":{"props":{"title":"Updated title"}}}
 ```
 
 ### move_shapes
@@ -113,19 +113,19 @@ Use this for URLs and link-only user requests after fetching browsing metadata w
 Move by a delta:
 
 ```json
-{"type":"move_shapes","shapeIds":["shape:sprint_task"],"dx":40,"dy":20}
+{"type":"move_shapes","shapeIds":["shape:plan"],"dx":40,"dy":20}
 ```
 
 Move by absolute coordinates when supported by the target shape/action payload:
 
 ```json
-{"type":"move_shapes","shapeIds":["shape:sprint_task"],"x":240,"y":320}
+{"type":"move_shapes","shapeIds":["shape:plan"],"x":240,"y":320}
 ```
 
 ### delete_shapes
 
 ```json
-{"type":"delete_shapes","shapeIds":["shape:sprint_task"]}
+{"type":"delete_shapes","shapeIds":["shape:plan"]}
 ```
 
 ### set_camera
@@ -145,7 +145,7 @@ Move by absolute coordinates when supported by the target shape/action payload:
 Browser-editor only.
 
 ```json
-{"type":"select_shapes","shapeIds":["shape:sprint_task"]}
+{"type":"select_shapes","shapeIds":["shape:plan"]}
 ```
 
 ### clear_selection
@@ -165,13 +165,13 @@ Browser-editor only.
 With `canvas_action`:
 
 ```json
-{"actions":[{"type":"create_task_card","id":"shape:plan","title":"Plan","body":"Dashboard plan","x":80,"y":80},{"type":"create_todo_block","id":"shape:next_steps","title":"Next Steps","x":120,"y":250,"tasks":[{"id":"task_read","text":"Read current canvas"},{"id":"task_update","text":"Update task status"}]},{"type":"zoom_to_fit"},{"type":"read_canvas"}]}
+{"actions":[{"type":"create_note_card","id":"shape:plan","title":"Plan","tag":"Note","content":"Dashboard plan","x":80,"y":80},{"type":"create_todo_block","id":"shape:next_steps","title":"Next Steps","x":120,"y":250,"tasks":[{"id":"task_read","text":"Read current canvas"},{"id":"task_update","text":"Update task status"}]},{"type":"zoom_to_fit"},{"type":"read_canvas"}]}
 ```
 
 With the CLI:
 
 ```bash
-uv run --with websocket-client scripts/canvas_dashboard_tool.py --actions '[{"type":"create_task_card","id":"shape:plan","title":"Plan","body":"Dashboard plan","x":80,"y":80},{"type":"create_todo_block","id":"shape:next_steps","title":"Next Steps","x":120,"y":250,"tasks":[{"id":"task_read","text":"Read current canvas"},{"id":"task_update","text":"Update task status"}]},{"type":"zoom_to_fit"},{"type":"read_canvas"}]'
+uv run --with websocket-client scripts/canvas_dashboard_tool.py --actions '[{"type":"create_note_card","id":"shape:plan","title":"Plan","tag":"Note","content":"Dashboard plan","x":80,"y":80},{"type":"create_todo_block","id":"shape:next_steps","title":"Next Steps","x":120,"y":250,"tasks":[{"id":"task_read","text":"Read current canvas"},{"id":"task_update","text":"Update task status"}]},{"type":"zoom_to_fit"},{"type":"read_canvas"}]'
 ```
 
 ## Pitfalls
