@@ -239,6 +239,26 @@ Move shapes by absolute coordinates or a delta.
 
 Cards can also be recolored directly in the canvas dashboard by selecting the card and using tldraw's built-in color toolbar. API-created cards may still set `backgroundColor` for an explicit initial background.
 
+### create_note_card
+
+Creates a native tldraw sticky note. Hermes sends separate `title`, `tag`, and `content` fields; the bridge converts them into the note shape's rich text. The title and tag become bold paragraphs, and content remains normal text.
+
+```json
+{
+  "type": "create_note_card",
+  "id": "shape:idea_capture",
+  "title": "Offline Sync",
+  "tag": "Idea",
+  "content": "Queue writes locally\nFlush when online",
+  "color": "yellow",
+  "size": "m",
+  "x": 140,
+  "y": 220
+}
+```
+
+The created shape appears in observations as `type: "note"` with standard tldraw `props.richText`.
+
 ### set_camera
 
 ```json
