@@ -26,6 +26,13 @@ describe('App', () => {
     expect(screen.getByText('Canvas Inspector')).toBeInTheDocument()
   })
 
+  it('does not show removed task card simulator or inspector options', () => {
+    render(<App />)
+
+    expect(screen.queryByRole('option', { name: 'Sprint Task Card' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('option', { name: 'Task Card' })).not.toBeInTheDocument()
+  })
+
   it('renders a focused fullscreen canvas page from the query string', () => {
     window.history.replaceState({}, '', '/?view=canvas')
 

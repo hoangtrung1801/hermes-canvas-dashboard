@@ -42,19 +42,6 @@ const PRESETS = [
     ]
   },
   {
-    name: 'Sprint Task Card',
-    value: {
-      type: 'create_task_card',
-      id: 'shape:sprint_task',
-      title: 'Design New UI System',
-      body: 'Create the tldraw-powered Hermes canvas workflow.',
-      status: 'in_progress',
-      priority: 'high',
-      x: 100,
-      y: 150
-    }
-  },
-  {
     name: 'Documentation Link',
     value: {
       type: 'create_link_card',

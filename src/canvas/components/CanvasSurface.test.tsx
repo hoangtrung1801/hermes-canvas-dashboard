@@ -192,7 +192,7 @@ describe('CanvasSurface', () => {
     expect(syncMock.calls[0]).toMatchObject({
       uri: 'ws://localhost:8787/sync/canvas_001'
     })
-    expect(tldrawMock.props.shapeUtils).toHaveLength(3)
+    expect(tldrawMock.props.shapeUtils).toHaveLength(2)
   })
 
   it('does not connect to the Hermes websocket gateway unless a gateway url is configured', async () => {
@@ -234,10 +234,11 @@ describe('CanvasSurface', () => {
           canvasId: 'canvas_001',
           actions: [
             {
-              type: 'create_task_card',
-              id: 'shape:task_1',
+              type: 'create_link_card',
+              id: 'shape:link_1',
               title: 'Saved from Hermes',
-              body: 'Rendered with tldraw',
+              url: 'https://example.com',
+              description: 'Rendered with tldraw',
               x: 100,
               y: 120
             },
@@ -259,8 +260,8 @@ describe('CanvasSurface', () => {
       expect(useBridgeStore.getState().lastObservation?.shapes).toEqual(
         expect.arrayContaining([
           expect.objectContaining({
-            id: 'shape:task_1',
-            type: 'task_card',
+            id: 'shape:link_1',
+            type: 'link_card',
             props: expect.objectContaining({ title: 'Saved from Hermes' })
           }),
           expect.objectContaining({
@@ -291,35 +292,9 @@ describe('CanvasSurface', () => {
     })
 
     expect(screen.getByRole('menuitem', { name: /Todo Block/ })).toBeInTheDocument()
-    expect(screen.getByRole('menuitem', { name: /Task Card/ })).toBeInTheDocument()
     expect(screen.getByRole('menuitem', { name: /Link Card/ })).toBeInTheDocument()
     expect(screen.getByRole('menuitem', { name: /Note Card/ })).toBeInTheDocument()
-  })
-
-  it('inserts a task card from the floating canvas menu and selects it', async () => {
-    render(<App />)
-
-    const insertButton = await screen.findByRole('button', { name: 'Insert component' })
-    act(() => {
-      insertButton.click()
-    })
-
-    act(() => {
-      screen.getByRole('menuitem', { name: /Task Card/ }).click()
-    })
-
-    await waitFor(() => {
-      expect(useBridgeStore.getState().lastObservation?.shapes).toEqual(
-        expect.arrayContaining([
-          expect.objectContaining({
-            type: 'task_card',
-            props: expect.objectContaining({ title: 'New Task' })
-          })
-        ])
-      )
-    })
-
-    expect(tldrawMock.editor.getSelectedShapeIds()).toHaveLength(1)
+    expect(screen.queryByRole('menuitem', { name: /Task Card/ })).not.toBeInTheDocument()
   })
 
   it('inserts todo and link cards from the floating canvas menu', async () => {

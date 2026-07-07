@@ -102,7 +102,6 @@ export function Inspector() {
         >
           <option value="all">All Types</option>
           <option value="todo_block">Todo Block</option>
-          <option value="task_card">Task Card</option>
           <option value="link_card">Link Card</option>
           <option value="geo">Geo</option>
           <option value="text">Text</option>
