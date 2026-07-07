@@ -1,6 +1,7 @@
-import { createServer, type IncomingMessage, type ServerResponse } from 'http'
 import { join } from 'node:path'
-import { WebSocketServer, type WebSocket } from 'ws'
+import Fastify, { type FastifyRequest } from 'fastify'
+import websocketPlugin from '@fastify/websocket'
+import type { WebSocket } from 'ws'
 import {
   canvasToHermesEnvelopeSchema,
   hermesToCanvasEnvelopeSchema
@@ -28,115 +29,34 @@ export function createCanvasGateway(port = 8787, options: CanvasGatewayOptions =
   const dataDir = options.dataDir ?? join(process.cwd(), 'data')
   const logger = options.logger ?? console
   const syncRooms = new TldrawSyncRoomManager({ dataDir })
-  const server = createServer((_request, response) => {
-    sendJson(response, 404, { error: 'Not found' })
-  })
-  const wss = new WebSocketServer({ noServer: true })
-  const syncWss = new WebSocketServer({ noServer: true })
+  const app = Fastify({ logger: false })
   let closeState: 'open' | 'closing' | 'closed' = 'open'
   const closeCallbacks: Array<() => void> = []
 
-  server.on('upgrade', (request, socket, head) => {
-    const url = new URL(request.url ?? '/', 'http://localhost')
-    const syncMatch = /^\/sync\/([^/]+)$/.exec(url.pathname)
+  app.get('/health', async () => ({ ok: true }))
 
-    if (url.pathname === '/canvas') {
-      wss.handleUpgrade(request, socket, head, (websocket: WebSocket) => {
-        wss.emit('connection', websocket, request)
-      })
-      return
-    }
+  void app.register(async (routes) => {
+    await routes.register(websocketPlugin)
 
-    if (syncMatch) {
-      syncWss.handleUpgrade(request, socket, head, (websocket: WebSocket) => {
-        syncWss.emit('connection', websocket, request, decodeURIComponent(syncMatch[1]))
-      })
-      return
-    }
+    routes.get('/canvas', { websocket: true }, (socket, request) => {
+      handleCanvasSocket(socket, request, rooms, syncRooms, logger)
+    })
 
-    socket.destroy()
-  })
-
-  wss.on('connection', (socket: WebSocket, request: IncomingMessage) => {
-    const url = new URL(
-      request.url ?? '/canvas?canvasId=canvas_001&role=bridge',
-      'http://localhost'
-    )
-    if (url.pathname !== '/canvas') {
-      socket.close()
-      return
-    }
-
-    const canvasId = url.searchParams.get('canvasId') ?? 'canvas_001'
-    const role = url.searchParams.get('role') ?? 'bridge'
-
-    if (role === 'bridge') {
-      rooms.attachBridge(canvasId, socket)
-      socket.on('close', () => rooms.detachBridge(canvasId, socket))
-    } else {
-      rooms.attachHermes(canvasId, socket)
-    }
-
-    socket.on('message', (raw: unknown) => {
-      const payload = String(raw)
-      let parsed: UnknownEnvelope
-      try {
-        parsed = JSON.parse(payload)
-      } catch (error) {
-        sendCanvasError(socket, 'req_invalid_json', `Invalid JSON: ${formatError(error)}`)
-        return
-      }
-
-      if (role === 'hermes') {
-        const validated = hermesToCanvasEnvelopeSchema.safeParse(parsed)
-        if (!validated.success) {
-          sendCanvasError(
-            socket,
-            getRequestId(parsed),
-            `Invalid Hermes message: ${validated.error.message}`
-          )
-          return
-        }
-        const route = rooms.hasBridge(canvasId) ? 'bridge' : 'headless'
-        logHermesActionBatch(logger, validated.data, route)
-
-        if (route === 'bridge') {
-          rooms.forwardToBridge(canvasId, payload)
-          return
-        }
-
-        void executeHeadlessTldrawAction(syncRooms, validated.data).then((responses) => {
-          responses.forEach((responseEnvelope) => {
-            socket.send(JSON.stringify(responseEnvelope))
-          })
-        })
-        return
-      }
-
-      const validated = canvasToHermesEnvelopeSchema.safeParse(parsed)
-      if (!validated.success) {
-        sendCanvasError(
-          socket,
-          getRequestId(parsed),
-          `Invalid bridge message: ${validated.error.message}`
-        )
-        return
-      }
-      rooms.forwardToHermes(canvasId, payload)
+    routes.get<{ Params: { roomId: string } }>('/sync/:roomId', { websocket: true }, (socket, request) => {
+      const url = new URL(request.raw.url ?? '/', 'http://localhost')
+      syncRooms.connectSocket(
+        request.params.roomId,
+        socket,
+        url.searchParams.get('sessionId') ?? undefined
+      )
     })
   })
 
-  syncWss.on('connection', (socket: WebSocket, request: IncomingMessage, roomId: string) => {
-    const url = new URL(request.url ?? '/', 'http://localhost')
-    syncRooms.connectSocket(roomId, socket, url.searchParams.get('sessionId') ?? undefined)
-  })
-
-  server.listen(port)
+  void app.listen({ port, host: '0.0.0.0' })
 
   return {
-    wss,
-    syncWss,
-    server,
+    app,
+    server: app.server,
     rooms,
     syncRooms,
     close(callback: () => void) {
@@ -149,22 +69,83 @@ export function createCanvasGateway(port = 8787, options: CanvasGatewayOptions =
       if (closeState === 'closing') return
       closeState = 'closing'
 
-      wss.close(() => {
-        syncWss.close(() => {
-          server.close(() => {
-            syncRooms.close()
-            closeState = 'closed'
-            closeCallbacks.splice(0).forEach((closeCallback) => closeCallback())
-          })
-        })
+      app.close(() => {
+        syncRooms.close()
+        closeState = 'closed'
+        closeCallbacks.splice(0).forEach((closeCallback) => closeCallback())
       })
     }
   }
 }
 
-function sendJson(response: ServerResponse, status: number, payload: unknown): void {
-  response.writeHead(status, { 'Content-Type': 'application/json' })
-  response.end(JSON.stringify(payload))
+function handleCanvasSocket(
+  socket: WebSocket,
+  request: FastifyRequest,
+  rooms: RoomManager,
+  syncRooms: TldrawSyncRoomManager,
+  logger: CanvasGatewayLogger
+): void {
+  const url = new URL(
+    request.raw.url ?? '/canvas?canvasId=canvas_001&role=bridge',
+    'http://localhost'
+  )
+  const canvasId = url.searchParams.get('canvasId') ?? 'canvas_001'
+  const role = url.searchParams.get('role') ?? 'bridge'
+
+  if (role === 'bridge') {
+    rooms.attachBridge(canvasId, socket)
+    socket.on('close', () => rooms.detachBridge(canvasId, socket))
+  } else {
+    rooms.attachHermes(canvasId, socket)
+  }
+
+  socket.on('message', (raw: unknown) => {
+    const payload = String(raw)
+    let parsed: UnknownEnvelope
+    try {
+      parsed = JSON.parse(payload)
+    } catch (error) {
+      sendCanvasError(socket, 'req_invalid_json', `Invalid JSON: ${formatError(error)}`)
+      return
+    }
+
+    if (role === 'hermes') {
+      const validated = hermesToCanvasEnvelopeSchema.safeParse(parsed)
+      if (!validated.success) {
+        sendCanvasError(
+          socket,
+          getRequestId(parsed),
+          `Invalid Hermes message: ${validated.error.message}`
+        )
+        return
+      }
+      const route = rooms.hasBridge(canvasId) ? 'bridge' : 'headless'
+      logHermesActionBatch(logger, validated.data, route)
+
+      if (route === 'bridge') {
+        rooms.forwardToBridge(canvasId, payload)
+        return
+      }
+
+      void executeHeadlessTldrawAction(syncRooms, validated.data).then((responses) => {
+        responses.forEach((responseEnvelope) => {
+          socket.send(JSON.stringify(responseEnvelope))
+        })
+      })
+      return
+    }
+
+    const validated = canvasToHermesEnvelopeSchema.safeParse(parsed)
+    if (!validated.success) {
+      sendCanvasError(
+        socket,
+        getRequestId(parsed),
+        `Invalid bridge message: ${validated.error.message}`
+      )
+      return
+    }
+    rooms.forwardToHermes(canvasId, payload)
+  })
 }
 
 function getRequestId(envelope: UnknownEnvelope): string {

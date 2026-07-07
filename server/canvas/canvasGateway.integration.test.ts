@@ -146,6 +146,18 @@ describe('canvas gateway integration', () => {
     expect(getResponse.status).toBe(404)
   })
 
+  it('exposes a health endpoint from the Fastify gateway', async () => {
+    const dataDir = await mkdtemp(join(tmpdir(), 'hermes-canvas-health-'))
+    tempDirs.push(dataDir)
+    const gateway = createCanvasGateway(8796, { dataDir })
+    instances.push(gateway)
+
+    const response = await fetch('http://localhost:8796/health')
+
+    expect(response.status).toBe(200)
+    await expect(response.json()).resolves.toEqual({ ok: true })
+  })
+
   it('coalesces repeated close requests during shutdown', async () => {
     const dataDir = await mkdtemp(join(tmpdir(), 'hermes-canvas-close-'))
     tempDirs.push(dataDir)
