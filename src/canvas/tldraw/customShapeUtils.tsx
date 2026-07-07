@@ -14,31 +14,25 @@ import { T } from '@tldraw/validate'
 import type { CSSProperties, ChangeEvent, MouseEvent, PointerEvent } from 'react'
 import {
   LINK_CARD_TYPE,
-  TASK_CARD_TYPE,
   TODO_BLOCK_TYPE,
   DEFAULT_LINK_CARD_COLOR,
-  DEFAULT_TASK_CARD_COLOR,
   DEFAULT_TODO_BLOCK_COLOR,
   type LinkCardProps,
-  type TaskCardProps,
   type TodoBlockProps,
   linkCardMigrations,
-  taskCardMigrations,
   todoBlockMigrations
 } from './customShape.types'
 
 declare module 'tldraw' {
   export interface TLGlobalShapePropsMap {
     [TODO_BLOCK_TYPE]: TodoBlockProps
-    [TASK_CARD_TYPE]: TaskCardProps
     [LINK_CARD_TYPE]: LinkCardProps
   }
 }
 
 export type TodoBlockShape = TLShape<typeof TODO_BLOCK_TYPE>
-export type TaskCardShape = TLShape<typeof TASK_CARD_TYPE>
 export type LinkCardShape = TLShape<typeof LINK_CARD_TYPE>
-type HermesCardShape = TodoBlockShape | TaskCardShape | LinkCardShape
+type HermesCardShape = TodoBlockShape | LinkCardShape
 
 abstract class BaseHermesCardUtil<Shape extends HermesCardShape> extends ShapeUtil<Shape> {
   override canEdit = () => true
@@ -247,90 +241,6 @@ export class TodoBlockShapeUtil extends BaseHermesCardUtil<TodoBlockShape> {
   }
 }
 
-export class TaskCardShapeUtil extends BaseHermesCardUtil<TaskCardShape> {
-  static override type = TASK_CARD_TYPE
-  static override migrations = taskCardMigrations
-  static override props = {
-    w: T.number,
-    h: T.number,
-    title: T.string,
-    body: T.string,
-    status: T.string,
-    priority: T.string,
-    color: DefaultColorStyle,
-    backgroundColor: T.string.optional()
-  }
-
-  getDefaultProps(): TaskCardProps {
-    return { w: 280, h: 160, title: 'Task', body: '', status: 'todo', priority: 'medium', color: DEFAULT_TASK_CARD_COLOR }
-  }
-
-  component(shape: TaskCardShape) {
-    const editor = useEditor()
-    const isEditing = useIsEditing(shape.id)
-    const handlers = controlHandlers(editor)
-
-    if (!isEditing) {
-      return (
-        <HTMLContainer
-          className="hermes-shape hermes-task-card"
-          style={cardStyle(editor, shape.props)}
-          onDoubleClick={(event) => enterShapeEditMode(editor, shape, event)}
-        >
-          <div className="hermes-card-kicker">
-            {shape.props.status} - {shape.props.priority}
-          </div>
-          <strong>{shape.props.title}</strong>
-          {shape.props.body && <p>{shape.props.body}</p>}
-        </HTMLContainer>
-      )
-    }
-
-    return (
-      <HTMLContainer className="hermes-shape hermes-task-card" style={cardStyle(editor, shape.props)}>
-        <div className="hermes-inline-fields">
-          <label className="hermes-field">
-            <span>Task status</span>
-            <input
-              aria-label="Task status"
-              value={shape.props.status}
-              onChange={(event) => updateShapeProps(editor, shape, { status: event.currentTarget.value })}
-              {...handlers}
-            />
-          </label>
-          <label className="hermes-field">
-            <span>Task priority</span>
-            <input
-              aria-label="Task priority"
-              value={shape.props.priority}
-              onChange={(event) => updateShapeProps(editor, shape, { priority: event.currentTarget.value })}
-              {...handlers}
-            />
-          </label>
-        </div>
-        <label className="hermes-field hermes-field-title">
-          <span>Task title</span>
-          <input
-            aria-label="Task title"
-            value={shape.props.title}
-            onChange={(event) => updateShapeProps(editor, shape, { title: event.currentTarget.value })}
-            {...handlers}
-          />
-        </label>
-        <label className="hermes-field">
-          <span>Task body</span>
-          <textarea
-            aria-label="Task body"
-            value={shape.props.body}
-            onChange={(event) => updateShapeProps(editor, shape, { body: event.currentTarget.value })}
-            {...handlers}
-          />
-        </label>
-      </HTMLContainer>
-    )
-  }
-}
-
 export class LinkCardShapeUtil extends BaseHermesCardUtil<LinkCardShape> {
   static override type = LINK_CARD_TYPE
   static override migrations = linkCardMigrations
@@ -422,6 +332,5 @@ export class LinkCardShapeUtil extends BaseHermesCardUtil<LinkCardShape> {
 
 export const hermesShapeUtils = [
   TodoBlockShapeUtil,
-  TaskCardShapeUtil,
   LinkCardShapeUtil
 ]

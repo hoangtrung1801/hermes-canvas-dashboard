@@ -1,7 +1,7 @@
 import { fireEvent, render, screen } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { DefaultColorStyle } from 'tldraw'
-import { LinkCardShapeUtil, TaskCardShapeUtil, TodoBlockShapeUtil } from './customShapeUtils'
+import { LinkCardShapeUtil, TodoBlockShapeUtil, hermesShapeUtils } from './customShapeUtils'
 
 const tldrawMock = vi.hoisted(() => ({
   defaultColorStyle: { id: 'tldraw:color', defaultValue: 'black' },
@@ -54,6 +54,10 @@ describe('custom tldraw ShapeUtils', () => {
     tldrawMock.editor.setEditingShape.mockClear()
     tldrawMock.editingShapeId = null
     tldrawMock.resizeBox.mockClear()
+  })
+
+  it('registers only supported Hermes custom shape utils', () => {
+    expect(hermesShapeUtils.map((util) => util.type)).toEqual(['todo_block', 'link_card'])
   })
 
   it('renders todo block content', () => {
@@ -225,68 +229,48 @@ describe('custom tldraw ShapeUtils', () => {
     })
   })
 
-  it('renders task and link cards', () => {
-    const taskUtil = new TaskCardShapeUtil({} as any)
+  it('renders link cards', () => {
     const linkUtil = new LinkCardShapeUtil({} as any)
 
     render(
-      <>
-        {taskUtil.component({
-          id: 'shape:task_1',
-          type: 'task_card',
-          x: 0,
-          y: 0,
-          rotation: 0,
-          index: 'a1',
-          parentId: 'page:page',
-          isLocked: false,
-          opacity: 1,
-          meta: {},
-          props: { w: 280, h: 160, title: 'Design', body: 'Build UI', status: 'todo', priority: 'high' }
-        } as any)}
-        {linkUtil.component({
-          id: 'shape:link_1',
-          type: 'link_card',
-          x: 0,
-          y: 0,
-          rotation: 0,
-          index: 'a2',
-          parentId: 'page:page',
-          isLocked: false,
-          opacity: 1,
-          meta: {},
-          props: { w: 300, h: 120, title: 'Docs', url: 'https://tldraw.dev', description: 'SDK docs' }
-        } as any)}
-      </>
+      linkUtil.component({
+        id: 'shape:link_1',
+        type: 'link_card',
+        x: 0,
+        y: 0,
+        rotation: 0,
+        index: 'a2',
+        parentId: 'page:page',
+        isLocked: false,
+        opacity: 1,
+        meta: {},
+        props: { w: 300, h: 120, title: 'Docs', url: 'https://tldraw.dev', description: 'SDK docs' }
+      } as any)
     )
 
-    expect(screen.getByText('Design')).toBeInTheDocument()
     expect(screen.getByText('https://tldraw.dev')).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'https://tldraw.dev' })).toHaveAttribute('href', 'https://tldraw.dev')
     expect(screen.getByRole('link', { name: 'https://tldraw.dev' })).toHaveAttribute('target', '_blank')
-    expect(screen.queryByLabelText('Task title')).not.toBeInTheDocument()
     expect(screen.queryByLabelText('Link title')).not.toBeInTheDocument()
   })
 
   it('registers tldraw color style for custom card shape toolbar controls', () => {
     expect(TodoBlockShapeUtil.props.color).toBe(DefaultColorStyle)
-    expect(TaskCardShapeUtil.props.color).toBe(DefaultColorStyle)
     expect(LinkCardShapeUtil.props.color).toBe(DefaultColorStyle)
   })
 
   it('defaults custom card props to a valid tldraw toolbar color', () => {
     expect(new TodoBlockShapeUtil({} as any).getDefaultProps()).toMatchObject({ color: 'yellow' })
-    expect(new TaskCardShapeUtil({} as any).getDefaultProps()).toMatchObject({ color: 'light-blue' })
     expect(new LinkCardShapeUtil({} as any).getDefaultProps()).toMatchObject({ color: 'light-green' })
   })
 
   it('renders custom card background colors from tldraw color props', () => {
-    const util = new TaskCardShapeUtil({} as any)
+    const util = new LinkCardShapeUtil({} as any)
 
     render(
       util.component({
-        id: 'shape:task_1',
-        type: 'task_card',
+        id: 'shape:link_1',
+        type: 'link_card',
         x: 0,
         y: 0,
         rotation: 0,
@@ -296,27 +280,26 @@ describe('custom tldraw ShapeUtils', () => {
         opacity: 1,
         meta: {},
         props: {
-          w: 280,
-          h: 160,
-          title: 'Design',
-          body: 'Build UI',
-          status: 'todo',
-          priority: 'high',
+          w: 300,
+          h: 120,
+          title: 'Docs',
+          url: 'https://tldraw.dev',
+          description: 'SDK docs',
           color: 'red'
         }
       } as any)
     )
 
-    expect(screen.getByText('Design').closest('.hermes-shape')).toHaveStyle({ backgroundColor: '#fecaca' })
+    expect(screen.getByText('Docs').closest('.hermes-shape')).toHaveStyle({ backgroundColor: '#fecaca' })
   })
 
   it('keeps explicit backgroundColor as a fallback for API-created cards', () => {
-    const util = new TaskCardShapeUtil({} as any)
+    const util = new LinkCardShapeUtil({} as any)
 
     render(
       util.component({
-        id: 'shape:task_1',
-        type: 'task_card',
+        id: 'shape:link_1',
+        type: 'link_card',
         x: 0,
         y: 0,
         rotation: 0,
@@ -326,73 +309,26 @@ describe('custom tldraw ShapeUtils', () => {
         opacity: 1,
         meta: {},
         props: {
-          w: 280,
-          h: 160,
-          title: 'Design',
-          body: 'Build UI',
-          status: 'todo',
-          priority: 'high',
+          w: 300,
+          h: 120,
+          title: 'Docs',
+          url: 'https://tldraw.dev',
+          description: 'SDK docs',
           backgroundColor: '#fef3c7'
         }
       } as any)
     )
 
-    expect(screen.getByText('Design').closest('.hermes-shape')).toHaveStyle({ backgroundColor: '#fef3c7' })
-  })
-
-  it('updates task card fields from editable controls', () => {
-    tldrawMock.editingShapeId = 'shape:task_1'
-    const util = new TaskCardShapeUtil({} as any)
-    render(
-      util.component({
-        id: 'shape:task_1',
-        type: 'task_card',
-        x: 0,
-        y: 0,
-        rotation: 0,
-        index: 'a1',
-        parentId: 'page:page',
-        isLocked: false,
-        opacity: 1,
-        meta: {},
-        props: { w: 280, h: 160, title: 'Design', body: 'Build UI', status: 'todo', priority: 'high' }
-      } as any)
-    )
-
-    fireEvent.change(screen.getByLabelText('Task title'), { target: { value: 'Review' } })
-    fireEvent.change(screen.getByLabelText('Task body'), { target: { value: 'Check UI' } })
-    fireEvent.change(screen.getByLabelText('Task status'), { target: { value: 'doing' } })
-    fireEvent.change(screen.getByLabelText('Task priority'), { target: { value: 'medium' } })
-
-    expect(tldrawMock.editor.updateShape).toHaveBeenCalledWith({
-      id: 'shape:task_1',
-      type: 'task_card',
-      props: { title: 'Review' }
-    })
-    expect(tldrawMock.editor.updateShape).toHaveBeenCalledWith({
-      id: 'shape:task_1',
-      type: 'task_card',
-      props: { body: 'Check UI' }
-    })
-    expect(tldrawMock.editor.updateShape).toHaveBeenCalledWith({
-      id: 'shape:task_1',
-      type: 'task_card',
-      props: { status: 'doing' }
-    })
-    expect(tldrawMock.editor.updateShape).toHaveBeenCalledWith({
-      id: 'shape:task_1',
-      type: 'task_card',
-      props: { priority: 'medium' }
-    })
+    expect(screen.getByText('Docs').closest('.hermes-shape')).toHaveStyle({ backgroundColor: '#fef3c7' })
   })
 
   it('does not show custom background color controls in edit mode', () => {
-    tldrawMock.editingShapeId = 'shape:task_1'
-    const util = new TaskCardShapeUtil({} as any)
+    tldrawMock.editingShapeId = 'shape:link_1'
+    const util = new LinkCardShapeUtil({} as any)
     render(
       util.component({
-        id: 'shape:task_1',
-        type: 'task_card',
+        id: 'shape:link_1',
+        type: 'link_card',
         x: 0,
         y: 0,
         rotation: 0,
@@ -402,12 +338,11 @@ describe('custom tldraw ShapeUtils', () => {
         opacity: 1,
         meta: {},
         props: {
-          w: 280,
-          h: 160,
-          title: 'Design',
-          body: 'Build UI',
-          status: 'todo',
-          priority: 'high'
+          w: 300,
+          h: 120,
+          title: 'Docs',
+          url: 'https://tldraw.dev',
+          description: 'SDK docs'
         }
       } as any)
     )
@@ -458,10 +393,10 @@ describe('custom tldraw ShapeUtils', () => {
   })
 
   it('resizes custom card shapes through tldraw resizeBox', () => {
-    const util = new TaskCardShapeUtil({} as any)
+    const util = new LinkCardShapeUtil({} as any)
     const shape = {
-      id: 'shape:task_1',
-      type: 'task_card',
+      id: 'shape:link_1',
+      type: 'link_card',
       x: 0,
       y: 0,
       rotation: 0,
@@ -470,7 +405,7 @@ describe('custom tldraw ShapeUtils', () => {
       isLocked: false,
       opacity: 1,
       meta: {},
-      props: { w: 280, h: 160, title: 'Design', body: 'Build UI', status: 'todo', priority: 'high' }
+      props: { w: 300, h: 120, title: 'Docs', url: 'https://tldraw.dev', description: 'SDK docs' }
     } as any
 
     expect(util.onResize(shape, { scaleX: 2, scaleY: 2 } as any)).toMatchObject({

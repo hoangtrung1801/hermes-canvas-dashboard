@@ -1,11 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import {
   createLinkCardProps,
-  createTaskCardProps,
   createTodoBlockProps,
   linkCardMigrations,
   normalizeTodoTasks,
-  taskCardMigrations,
   todoBlockMigrations
 } from './customShape.types'
 
@@ -38,16 +36,7 @@ describe('custom tldraw shape types', () => {
     })
   })
 
-  it('creates stable default props for task and link cards', () => {
-    expect(createTaskCardProps({ title: 'Design', body: 'Build UI' })).toEqual({
-      w: 280,
-      h: 160,
-      title: 'Design',
-      body: 'Build UI',
-      status: 'todo',
-      priority: 'medium',
-      color: 'light-blue'
-    })
+  it('creates stable default props for link cards', () => {
     expect(createLinkCardProps({ title: 'Docs', url: 'https://tldraw.dev' })).toEqual({
       w: 300,
       h: 120,
@@ -62,9 +51,6 @@ describe('custom tldraw shape types', () => {
     expect(createTodoBlockProps({ title: 'Launch', backgroundColor: '#fee2e2' })).toMatchObject({
       backgroundColor: '#fee2e2'
     })
-    expect(createTaskCardProps({ title: 'Design', backgroundColor: '#fef3c7' })).toMatchObject({
-      backgroundColor: '#fef3c7'
-    })
     expect(createLinkCardProps({ title: 'Docs', url: 'https://tldraw.dev', backgroundColor: '#ecfccb' })).toMatchObject({
       backgroundColor: '#ecfccb'
     })
@@ -72,15 +58,12 @@ describe('custom tldraw shape types', () => {
 
   it('migrates existing custom component props to include a tldraw color', () => {
     const todoProps = { w: 320, h: 220, title: 'Todo', tasks: [] } as Record<string, unknown>
-    const taskProps = { w: 280, h: 160, title: 'Task', body: '', status: 'todo', priority: 'medium' } as Record<string, unknown>
     const linkProps = { w: 300, h: 120, title: 'Link', url: 'https://tldraw.dev', description: '' } as Record<string, unknown>
 
     runFirstMigration(todoBlockMigrations, todoProps)
-    runFirstMigration(taskCardMigrations, taskProps)
     runFirstMigration(linkCardMigrations, linkProps)
 
     expect(todoProps.color).toBe('yellow')
-    expect(taskProps.color).toBe('light-blue')
     expect(linkProps.color).toBe('light-green')
   })
 })

@@ -2,7 +2,6 @@ import { DefaultColorStyle, createTLSchema, defaultBindingSchemas, defaultShapeS
 import { T } from '@tldraw/validate'
 import {
   linkCardMigrations,
-  taskCardMigrations,
   todoBlockMigrations
 } from './customShape.types'
 
@@ -27,17 +26,6 @@ export function createHermesTldrawSchema() {
         props: {
           ...sizeAndTitleProps,
           tasks: T.arrayOf(taskValidator),
-          color: DefaultColorStyle,
-          backgroundColor: T.string.optional()
-        }
-      },
-      task_card: {
-        migrations: taskCardMigrations,
-        props: {
-          ...sizeAndTitleProps,
-          body: T.string,
-          status: T.string,
-          priority: T.string,
           color: DefaultColorStyle,
           backgroundColor: T.string.optional()
         }

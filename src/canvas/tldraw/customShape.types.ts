@@ -1,10 +1,8 @@
 import { createShapePropsMigrationIds, createShapePropsMigrationSequence } from '@tldraw/tlschema'
 
 export const TODO_BLOCK_TYPE = 'todo_block'
-export const TASK_CARD_TYPE = 'task_card'
 export const LINK_CARD_TYPE = 'link_card'
 export const DEFAULT_TODO_BLOCK_COLOR = 'yellow'
-export const DEFAULT_TASK_CARD_COLOR = 'light-blue'
 export const DEFAULT_LINK_CARD_COLOR = 'light-green'
 
 export type TodoTask = {
@@ -30,17 +28,6 @@ export type TodoBlockProps = {
   backgroundColor?: string
 }
 
-export type TaskCardProps = {
-  w: number
-  h: number
-  title: string
-  body: string
-  status: string
-  priority: string
-  color?: string
-  backgroundColor?: string
-}
-
 export type LinkCardProps = {
   w: number
   h: number
@@ -53,14 +40,9 @@ export type LinkCardProps = {
 
 export type HermesCustomShapeType =
   | typeof TODO_BLOCK_TYPE
-  | typeof TASK_CARD_TYPE
   | typeof LINK_CARD_TYPE
 
 const todoBlockVersions = createShapePropsMigrationIds(TODO_BLOCK_TYPE, {
-  AddColorProp: 1
-})
-
-const taskCardVersions = createShapePropsMigrationIds(TASK_CARD_TYPE, {
   AddColorProp: 1
 })
 
@@ -78,18 +60,6 @@ export const todoBlockMigrations = createShapePropsMigrationSequence({
       id: todoBlockVersions.AddColorProp,
       up: (props) => {
         props.color ??= DEFAULT_TODO_BLOCK_COLOR
-      },
-      down: removeColorProp
-    }
-  ]
-})
-
-export const taskCardMigrations = createShapePropsMigrationSequence({
-  sequence: [
-    {
-      id: taskCardVersions.AddColorProp,
-      up: (props) => {
-        props.color ??= DEFAULT_TASK_CARD_COLOR
       },
       down: removeColorProp
     }
@@ -143,28 +113,6 @@ export function createTodoBlockProps(input: {
     title: input.title,
     tasks: normalizeTodoTasks(input.tasks ?? []),
     color: input.color ?? DEFAULT_TODO_BLOCK_COLOR,
-    ...(input.backgroundColor ? { backgroundColor: input.backgroundColor } : {})
-  }
-}
-
-export function createTaskCardProps(input: {
-  title: string
-  body?: string
-  status?: string
-  priority?: string
-  w?: number
-  h?: number
-  color?: string
-  backgroundColor?: string
-}): TaskCardProps {
-  return {
-    w: input.w ?? 280,
-    h: input.h ?? 160,
-    title: input.title,
-    body: input.body ?? '',
-    status: input.status ?? 'todo',
-    priority: input.priority ?? 'medium',
-    color: input.color ?? DEFAULT_TASK_CARD_COLOR,
     ...(input.backgroundColor ? { backgroundColor: input.backgroundColor } : {})
   }
 }
