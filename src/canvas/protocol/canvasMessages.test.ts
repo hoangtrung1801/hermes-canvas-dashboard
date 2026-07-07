@@ -60,16 +60,16 @@ describe('canvasMessages', () => {
       ok: true,
       results: [
         {
-          actionType: 'create_task_card',
-          createdShapeIds: ['shape:task_1'],
-          updatedShapeIds: ['shape:task_2'],
-          deletedShapeIds: ['shape:task_3'],
+          actionType: 'create_link_card',
+          createdShapeIds: ['shape:link_1'],
+          updatedShapeIds: ['shape:link_2'],
+          deletedShapeIds: ['shape:link_3'],
           createdBindingIds: ['binding:arrow_1'],
           deletedBindingIds: ['binding:arrow_2']
         }
       ]
     })
 
-    expect(parsed.results[0].createdShapeIds).toEqual(['shape:task_1'])
+    expect(parsed.results[0].createdShapeIds).toEqual(['shape:link_1'])
   })
 })

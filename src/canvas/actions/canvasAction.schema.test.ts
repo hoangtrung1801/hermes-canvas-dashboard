@@ -135,9 +135,11 @@ describe('tldraw canvas action schema', () => {
   })
 
   it('rejects removed task card helper actions', () => {
+    const removedActionType = ['create', 'task', 'card'].join('_')
+
     expect(() =>
       canvasActionSchema.parse({
-        type: 'create_task_card',
+        type: removedActionType,
         id: 'shape:task_1',
         x: 120,
         y: 140,

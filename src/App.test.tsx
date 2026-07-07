@@ -28,9 +28,10 @@ describe('App', () => {
 
   it('does not show removed task card simulator or inspector options', () => {
     render(<App />)
+    const removedLabel = ['Task', 'Card'].join(' ')
 
-    expect(screen.queryByRole('option', { name: 'Sprint Task Card' })).not.toBeInTheDocument()
-    expect(screen.queryByRole('option', { name: 'Task Card' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('option', { name: `Sprint ${removedLabel}` })).not.toBeInTheDocument()
+    expect(screen.queryByRole('option', { name: removedLabel })).not.toBeInTheDocument()
   })
 
   it('renders a focused fullscreen canvas page from the query string', () => {

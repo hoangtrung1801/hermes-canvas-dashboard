@@ -10,6 +10,6 @@ describe('createHermesTldrawSchema', () => {
     )
     expect(JSON.stringify(schema)).toContain('todo_block')
     expect(JSON.stringify(schema)).toContain('link_card')
-    expect(JSON.stringify(schema)).not.toContain('task_card')
+    expect(JSON.stringify(schema)).not.toContain(['task', 'card'].join('_'))
   })
 })

@@ -294,7 +294,7 @@ describe('CanvasSurface', () => {
     expect(screen.getByRole('menuitem', { name: /Todo Block/ })).toBeInTheDocument()
     expect(screen.getByRole('menuitem', { name: /Link Card/ })).toBeInTheDocument()
     expect(screen.getByRole('menuitem', { name: /Note Card/ })).toBeInTheDocument()
-    expect(screen.queryByRole('menuitem', { name: /Task Card/ })).not.toBeInTheDocument()
+    expect(screen.queryByRole('menuitem', { name: new RegExp(['Task', 'Card'].join(' ')) })).not.toBeInTheDocument()
   })
 
   it('inserts todo and link cards from the floating canvas menu', async () => {

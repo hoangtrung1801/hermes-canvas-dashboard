@@ -6,15 +6,15 @@ describe('tldraw observation', () => {
     const observation = createCanvasObservationFromRecords({
       canvasId: 'canvas_001',
       pageId: 'page:page',
-      selectedShapeIds: ['shape:task_1'],
+      selectedShapeIds: ['shape:link_1'],
       camera: { x: 10, y: 20, z: 1.5 },
       shapes: [
         {
-          id: 'shape:task_1',
-          type: 'task_card',
+          id: 'shape:link_1',
+          type: 'link_card',
           x: 100,
           y: 120,
-          props: { w: 280, h: 160, title: 'Task', body: 'Body' },
+          props: { w: 300, h: 120, title: 'Docs', url: 'https://tldraw.dev' },
           meta: { source: 'hermes' }
         }
       ]
@@ -23,17 +23,17 @@ describe('tldraw observation', () => {
     expect(observation).toEqual({
       canvasId: 'canvas_001',
       pageId: 'page:page',
-      selectedShapeIds: ['shape:task_1'],
+      selectedShapeIds: ['shape:link_1'],
       camera: { x: 10, y: 20, z: 1.5 },
       shapes: [
         {
-          id: 'shape:task_1',
-          type: 'task_card',
+          id: 'shape:link_1',
+          type: 'link_card',
           x: 100,
           y: 120,
-          w: 280,
-          h: 160,
-          props: { w: 280, h: 160, title: 'Task', body: 'Body' },
+          w: 300,
+          h: 120,
+          props: { w: 300, h: 120, title: 'Docs', url: 'https://tldraw.dev' },
           meta: { source: 'hermes' }
         }
       ]
