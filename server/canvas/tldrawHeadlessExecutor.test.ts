@@ -90,4 +90,39 @@ describe('executeHeadlessTldrawAction', () => {
       }
     ])
   })
+
+  it('persists batches larger than nine shapes with valid tldraw indices', async () => {
+    const responses = await executeHeadlessTldrawAction(manager, {
+      type: 'canvas.action',
+      requestId: 'req_many_shapes',
+      canvasId: 'canvas_001',
+      actions: [
+        ...Array.from({ length: 10 }, (_, index) => ({
+          type: 'create_link_card' as const,
+          id: `shape:link_${index + 1}`,
+          title: `Link ${index + 1}`,
+          url: `https://example.com/${index + 1}`,
+          x: index * 24,
+          y: index * 12
+        })),
+        { type: 'read_canvas' as const }
+      ]
+    })
+
+    expect(responses[0]).toMatchObject({
+      type: 'canvas.result',
+      requestId: 'req_many_shapes',
+      ok: true
+    })
+    expect(responses[1]).toMatchObject({
+      type: 'canvas.observation',
+      requestId: 'req_many_shapes',
+      canvasId: 'canvas_001',
+      state: {
+        shapes: expect.arrayContaining([
+          expect.objectContaining({ id: 'shape:link_10', type: 'link_card' })
+        ])
+      }
+    })
+  })
 })

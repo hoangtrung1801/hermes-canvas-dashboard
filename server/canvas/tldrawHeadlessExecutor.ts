@@ -1,4 +1,5 @@
 import type { TLRecord } from '@tldraw/tlschema'
+import { ZERO_INDEX_KEY, getIndicesAbove, type IndexKey } from '@tldraw/utils'
 import { CanvasBridge } from '../../src/canvas/bridge/CanvasBridge'
 import type { CanvasObservationState } from '../../src/canvas/tldraw/tldrawObservation'
 import {
@@ -37,7 +38,7 @@ type HeadlessResponse =
 
 type PersistedShapeRecord = ShapeRecord & {
   parentId: string
-  index: string
+  index: IndexKey
   rotation: number
   isLocked: boolean
   opacity: number
@@ -100,6 +101,7 @@ async function commitTargetToRoom(
   target: TldrawExecutorTarget & { persistedShapes: Map<string, PersistedShapeRecord> }
 ): Promise<void> {
   const shapeRecords = [...target.shapes.values()]
+  const nextIndexByShapeId = createNextIndexByShapeId(shapeRecords, target.persistedShapes)
 
   await room.updateStore((store) => {
     for (const previousId of target.persistedShapes.keys()) {
@@ -108,17 +110,36 @@ async function commitTargetToRoom(
       }
     }
 
-    shapeRecords.forEach((shape, index) => {
-      store.put(toTlShapeRecord(shape, target.persistedShapes.get(shape.id), target.pageId, index))
+    shapeRecords.forEach((shape) => {
+      store.put(toTlShapeRecord(shape, target.persistedShapes.get(shape.id), target.pageId, nextIndexByShapeId))
     })
   })
+}
+
+function createNextIndexByShapeId(
+  shapeRecords: ShapeRecord[],
+  persistedShapes: Map<string, PersistedShapeRecord>
+): Map<string, IndexKey> {
+  const highestExistingIndex =
+    shapeRecords.reduce<IndexKey | undefined>((highest, shape) => {
+      const existingIndex = persistedShapes.get(shape.id)?.index
+      if (!existingIndex) return highest
+      return !highest || existingIndex > highest ? existingIndex : highest
+    }, undefined) ?? ZERO_INDEX_KEY
+
+  const createdShapeIds = shapeRecords
+    .filter((shape) => !persistedShapes.has(shape.id))
+    .map((shape) => shape.id)
+
+  const createdIndices = getIndicesAbove(highestExistingIndex, createdShapeIds.length)
+  return new Map(createdShapeIds.map((shapeId, index) => [shapeId, createdIndices[index]]))
 }
 
 function toTlShapeRecord(
   shape: ShapeRecord,
   existing: PersistedShapeRecord | undefined,
   pageId: string,
-  index: number
+  nextIndexByShapeId: Map<string, IndexKey>
 ): TLRecord {
   return {
     typeName: 'shape',
@@ -128,7 +149,7 @@ function toTlShapeRecord(
     y: shape.y,
     rotation: existing?.rotation ?? 0,
     parentId: existing?.parentId ?? pageId,
-    index: existing?.index ?? `a${index + 1}`,
+    index: existing?.index ?? nextIndexByShapeId.get(shape.id) ?? ZERO_INDEX_KEY,
     isLocked: existing?.isLocked ?? false,
     opacity: existing?.opacity ?? 1,
     props: shape.props,
