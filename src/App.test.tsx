@@ -11,22 +11,31 @@ describe('App', () => {
     window.history.replaceState({}, '', '/')
   })
 
-  it('shows the bridge status header', () => {
+  it('enters a canvas-only page by default', () => {
+    render(<App />)
+
+    expect(screen.getByTestId('canvas-surface-stub')).toBeInTheDocument()
+    expect(screen.queryByText('Canvas for Hermes')).not.toBeInTheDocument()
+    expect(screen.queryByText('Bridge disconnected')).not.toBeInTheDocument()
+    expect(screen.queryByText('Action Simulator')).not.toBeInTheDocument()
+    expect(screen.queryByText('Canvas Inspector')).not.toBeInTheDocument()
+    expect(screen.queryByText('Fullscreen Canvas')).not.toBeInTheDocument()
+  })
+
+  it('shows the action debug dashboard when debug query is true', () => {
+    window.history.replaceState({}, '', '/?debug=true')
+
     render(<App />)
 
     expect(screen.getByText('Canvas for Hermes')).toBeInTheDocument()
     expect(screen.getByText('Bridge disconnected')).toBeInTheDocument()
-  })
-
-  it('links from the dashboard canvas panel to fullscreen canvas view', () => {
-    render(<App />)
-
-    expect(screen.getByRole('link', { name: /fullscreen/i })).toHaveAttribute('href', '?view=canvas')
     expect(screen.getByRole('button', { name: /action simulator/i })).toBeInTheDocument()
     expect(screen.getByText('Canvas Inspector')).toBeInTheDocument()
   })
 
   it('does not show removed task card simulator or inspector options', () => {
+    window.history.replaceState({}, '', '/?debug=true')
+
     render(<App />)
     const removedLabel = ['Task', 'Card'].join(' ')
 
@@ -34,14 +43,14 @@ describe('App', () => {
     expect(screen.queryByRole('option', { name: removedLabel })).not.toBeInTheDocument()
   })
 
-  it('renders a focused fullscreen canvas page from the query string', () => {
+  it('keeps the legacy canvas view query in canvas-only mode', () => {
     window.history.replaceState({}, '', '/?view=canvas')
 
     render(<App />)
 
-    expect(screen.getByText('Fullscreen Canvas')).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: /back/i })).toHaveAttribute('href', '/')
     expect(screen.getByTestId('canvas-surface-stub')).toBeInTheDocument()
+    expect(screen.queryByText('Fullscreen Canvas')).not.toBeInTheDocument()
+    expect(screen.queryByText('Bridge disconnected')).not.toBeInTheDocument()
     expect(screen.queryByText('Action Simulator')).not.toBeInTheDocument()
     expect(screen.queryByText('Canvas Inspector')).not.toBeInTheDocument()
   })

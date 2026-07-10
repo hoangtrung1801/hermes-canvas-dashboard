@@ -29,28 +29,11 @@ function BridgeStatusMeta({ status }: { status: keyof typeof statusCopy }) {
 
 export default function App() {
   const status = useBridgeStore((state) => state.status)
-  const isFullscreenCanvas = new URLSearchParams(window.location.search).get('view') === 'canvas'
+  const isActionDebugMode = new URLSearchParams(window.location.search).get('debug') === 'true'
 
-  if (isFullscreenCanvas) {
+  if (!isActionDebugMode) {
     return (
       <main className="fullscreen-canvas-page">
-        <header className="fullscreen-canvas-topbar">
-          <div className="brand-group fullscreen-brand-group">
-            <div className="logo-symbol">H</div>
-            <div>
-              <p className="eyebrow">Hermes Canvas Bridge</p>
-              <h1 id="app-title">Fullscreen Canvas</h1>
-            </div>
-          </div>
-
-          <div className="fullscreen-topbar-actions">
-            <BridgeStatusMeta status={status} />
-            <a className="canvas-action-link" href="/">
-              Back
-            </a>
-          </div>
-        </header>
-
         <section className="fullscreen-canvas-container" aria-label="Fullscreen canvas surface">
           <CanvasInsertMenu />
           <CanvasSurface />

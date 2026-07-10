@@ -172,7 +172,7 @@ describe('CanvasSurface', () => {
     tldrawMock.editor.updateTheme.mockClear()
     tldrawMock.editor.setCurrentTheme.mockClear()
     tldrawMock.editor.updateInstanceState.mockClear()
-    window.history.pushState({}, '', '/')
+    window.history.pushState({}, '', '/?debug=true')
     vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response('not found', { status: 404 }))
     useBridgeStore.setState({
       bridge: null,
