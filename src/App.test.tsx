@@ -27,7 +27,8 @@ describe('App', () => {
 
     render(<App />)
 
-    expect(screen.getByText('Canvas for Hermes')).toBeInTheDocument()
+    expect(screen.getByText('Hermes Canvas Productivity')).toBeInTheDocument()
+    expect(screen.getByText('Visual workspace for agent-driven execution')).toBeInTheDocument()
     expect(screen.getByText('Bridge disconnected')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /action simulator/i })).toBeInTheDocument()
     expect(screen.getByText('Canvas Inspector')).toBeInTheDocument()

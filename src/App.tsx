@@ -49,8 +49,9 @@ export default function App() {
           <div className="logo-glow"></div>
           <div className="logo-symbol">H</div>
           <div>
-            <p className="eyebrow">Hermes Canvas Bridge</p>
-            <h1 id="app-title">Canvas for Hermes</h1>
+            <p className="eyebrow">Infinite canvas workspace</p>
+            <h1 id="app-title">Hermes Canvas Productivity</h1>
+            <p className="brand-description">Visual workspace for agent-driven execution</p>
           </div>
         </div>
         

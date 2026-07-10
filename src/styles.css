@@ -126,6 +126,12 @@ body {
   -webkit-text-fill-color: transparent;
 }
 
+.brand-description {
+  margin-top: 4px;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
 .header-meta {
   display: flex;
   align-items: center;
