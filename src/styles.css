@@ -19,6 +19,8 @@
   --color-info: #a78bfa;
   --color-info-bg: rgba(167, 139, 250, 0.1);
 
+  --hermes-canvas-font: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+
   font-family: 'Outfit', sans-serif;
   color: var(--text-primary);
   background: var(--bg-gradient);
@@ -1133,7 +1135,7 @@ body {
   border-radius: 14px;
   background: #ffffff;
   color: #25252d;
-  font: 14px/1.45 Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font: 14px/1.45 var(--hermes-canvas-font);
   padding: 14px 16px;
   pointer-events: all;
   overflow-wrap: anywhere;
@@ -1489,7 +1491,7 @@ body {
   border-radius: 16px;
   background: #ffffff;
   color: #202027;
-  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-family: var(--hermes-canvas-font);
   box-shadow: 0 24px 70px rgba(24, 28, 43, 0.24), 0 4px 16px rgba(24, 28, 43, 0.1);
 }
 

@@ -1,6 +1,10 @@
 import { describe, expect, it, vi } from 'vitest'
 import { DefaultColorStyle } from 'tldraw'
-import { HERMES_PASTEL_THEME_ID, hermesPastelTheme } from './pastelTheme'
+import {
+  HERMES_CANVAS_FONT_FAMILY,
+  HERMES_PASTEL_THEME_ID,
+  hermesPastelTheme
+} from './pastelTheme'
 
 const colorNames = vi.hoisted(() => [
   'black',
@@ -46,7 +50,10 @@ vi.mock('tldraw', () => {
       fontSize: 16,
       lineHeight: 1.35,
       strokeWidth: 2,
-      fonts: {},
+      fonts: {
+        draw: { fontFamily: "'tldraw_draw', sans-serif" },
+        sans: { fontFamily: "'tldraw_sans', sans-serif" }
+      },
       colors: {
         light: createDefaultThemeColors(),
         dark: createDefaultThemeColors()
@@ -58,7 +65,9 @@ vi.mock('tldraw', () => {
 describe('hermesPastelTheme', () => {
   it('registers every built-in tldraw color with pastel values', () => {
     expect(hermesPastelTheme.id).toBe(HERMES_PASTEL_THEME_ID)
-    expect(hermesPastelTheme.fontSize).toBe(14)
+    expect(hermesPastelTheme.fontSize).toBe(12)
+    expect(hermesPastelTheme.fonts.draw.fontFamily).toBe(HERMES_CANVAS_FONT_FAMILY)
+    expect(hermesPastelTheme.fonts.sans.fontFamily).toBe(HERMES_CANVAS_FONT_FAMILY)
 
     for (const color of DefaultColorStyle.values) {
       expect(hermesPastelTheme.colors.light).toHaveProperty(color)

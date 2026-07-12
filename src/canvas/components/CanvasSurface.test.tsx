@@ -222,7 +222,14 @@ describe('CanvasSurface', () => {
 
     await screen.findByText('Bridge ready')
     expect(tldrawMock.editor.updateTheme).toHaveBeenCalledWith(
-      expect.objectContaining({ id: 'hermes-pastel', fontSize: 14 })
+      expect.objectContaining({
+        id: 'hermes-pastel',
+        fontSize: 12,
+        fonts: expect.objectContaining({
+          draw: expect.objectContaining({ fontFamily: expect.stringContaining('Inter') }),
+          sans: expect.objectContaining({ fontFamily: expect.stringContaining('Inter') })
+        })
+      })
     )
     expect(tldrawMock.editor.setCurrentTheme).toHaveBeenCalledWith('hermes-pastel')
   })

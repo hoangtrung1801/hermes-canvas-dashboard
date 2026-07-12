@@ -13,6 +13,9 @@ declare module "@tldraw/tlschema" {
 
 export const HERMES_PASTEL_THEME_ID = "hermes-pastel" as const;
 
+export const HERMES_CANVAS_FONT_FAMILY =
+  "Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif";
+
 const lightPastels = {
   black: "#111827",
   grey: "#e5e7eb",
@@ -108,6 +111,17 @@ export const hermesPastelTheme: TLTheme = {
   ...DEFAULT_THEME,
   id: HERMES_PASTEL_THEME_ID,
   fontSize: 12,
+  fonts: {
+    ...DEFAULT_THEME.fonts,
+    draw: {
+      ...DEFAULT_THEME.fonts.draw,
+      fontFamily: HERMES_CANVAS_FONT_FAMILY,
+    },
+    sans: {
+      ...DEFAULT_THEME.fonts.sans,
+      fontFamily: HERMES_CANVAS_FONT_FAMILY,
+    },
+  },
   colors: {
     light: pastelPalette(DEFAULT_THEME.colors.light, lightPastels),
     dark: pastelPalette(DEFAULT_THEME.colors.dark, darkPastels, "#0f172a"),
