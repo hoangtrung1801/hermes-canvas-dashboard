@@ -56,6 +56,10 @@ uv run --with websocket-client scripts/canvas_dashboard_tool.py --actions '[{"ty
 
 6. Verify writes from the final `canvas.observation`. If the requested visual result matters, finish with `zoom_to_fit` or `set_camera` and a final `read_canvas`.
 
+## User Response
+
+After a successful canvas action, respond with only a brief confirmation such as “Added it to the canvas.” Do not report action payloads, shape ids, canvas observations, fetched metadata, screenshot details, verification steps, or implementation details unless the user explicitly asks for them. If an action fails or only partially succeeds, state the problem and required next step concisely.
+
 ## Actions
 
 ### create_todo_block

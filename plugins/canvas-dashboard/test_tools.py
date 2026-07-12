@@ -109,6 +109,16 @@ class CanvasDashboardPluginTests(unittest.TestCase):
         self.assertIn("`title` to the second line", skill_text)
         self.assertIn("`content` to the description", skill_text)
 
+    def test_bundled_skill_requires_brief_user_responses(self):
+        skill_text = (PLUGIN_DIR / "skills" / "canvas-dashboard" / "SKILL.md").read_text(
+            encoding="utf-8"
+        )
+
+        self.assertIn("## User Response", skill_text)
+        self.assertIn("only a brief confirmation", skill_text)
+        self.assertIn("Do not report action payloads", skill_text)
+        self.assertIn("unless the user explicitly asks", skill_text)
+
     def test_register_adds_tool_and_hook_and_installs_skill(self):
         ctx = FakeContext()
         plugin = load_plugin_entrypoint()
@@ -144,6 +154,8 @@ class CanvasDashboardPluginTests(unittest.TestCase):
         self.assertIn("Load the `canvas-dashboard` skill", context["context"])
         self.assertIn("canvas_action", context["context"])
         self.assertIn("session `todo` tool", context["context"])
+        self.assertIn("only a brief confirmation", context["context"])
+        self.assertIn("do not expose action payloads", context["context"])
 
     def test_pre_llm_call_ignores_unrelated_message(self):
         plugin = load_plugin_entrypoint()
