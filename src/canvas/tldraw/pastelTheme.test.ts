@@ -68,6 +68,10 @@ describe('hermesPastelTheme', () => {
       solid: '#fef3c7',
       noteFill: '#fef3c7'
     })
+    expect(hermesPastelTheme.colors.light.black).toMatchObject({
+      solid: '#111827',
+      noteText: '#111827'
+    })
     expect(hermesPastelTheme.colors.light['light-blue']).toMatchObject({
       solid: '#dbeafe',
       noteFill: '#dbeafe'

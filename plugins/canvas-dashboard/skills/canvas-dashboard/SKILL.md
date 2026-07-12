@@ -92,7 +92,15 @@ Use this for URLs and link-only user requests after fetching browsing metadata w
 
 ### create_note_card
 
-Creates a built-in tldraw rectangle with rich text.
+Creates a built-in tldraw rectangle with rich text. Always structure the visible card in this order:
+
+```text
+[TAG (Idea, Note, etc.)]
+[Title]
+[Description]
+```
+
+Map `tag` to the first line, `title` to the second line, and `content` to the description on the remaining line or lines. The square brackets above indicate placeholders; do not include them in the card text.
 
 ```json
 {"type":"create_note_card","id":"shape:plan","title":"Plan","tag":"Note","content":"Dashboard plan","x":80,"y":80}

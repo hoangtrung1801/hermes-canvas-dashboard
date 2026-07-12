@@ -43,7 +43,7 @@ describe('custom tldraw shape types', () => {
       title: 'Docs',
       url: 'https://tldraw.dev',
       description: '',
-      color: 'light-green'
+      color: 'light-blue'
     })
   })
 
@@ -64,6 +64,6 @@ describe('custom tldraw shape types', () => {
     runFirstMigration(linkCardMigrations, linkProps)
 
     expect(todoProps.color).toBe('yellow')
-    expect(linkProps.color).toBe('light-green')
+    expect(linkProps.color).toBe('light-blue')
   })
 })

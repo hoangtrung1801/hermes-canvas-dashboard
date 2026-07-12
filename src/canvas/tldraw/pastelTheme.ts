@@ -14,7 +14,7 @@ declare module "@tldraw/tlschema" {
 export const HERMES_PASTEL_THEME_ID = "hermes-pastel" as const;
 
 const lightPastels = {
-  black: "#f3f4f6",
+  black: "#111827",
   grey: "#e5e7eb",
   "light-violet": "#ede9fe",
   violet: "#ddd6fe",
@@ -30,7 +30,7 @@ const lightPastels = {
 } satisfies Record<TLDefaultColorStyle, string>;
 
 const darkPastels = {
-  black: "#9ca3af",
+  black: "#f8fafc",
   grey: "#6b7280",
   "light-violet": "#c4b5fd",
   violet: "#a78bfa",
@@ -107,8 +107,8 @@ function pastelPalette(
 export const hermesPastelTheme: TLTheme = {
   ...DEFAULT_THEME,
   id: HERMES_PASTEL_THEME_ID,
-  // colors: {
-  //   light: pastelPalette(DEFAULT_THEME.colors.light, lightPastels),
-  //   dark: pastelPalette(DEFAULT_THEME.colors.dark, darkPastels, "#0f172a"),
-  // },
+  colors: {
+    light: pastelPalette(DEFAULT_THEME.colors.light, lightPastels),
+    dark: pastelPalette(DEFAULT_THEME.colors.dark, darkPastels, "#0f172a"),
+  },
 };

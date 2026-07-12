@@ -115,11 +115,11 @@ describe('tldraw action executor', () => {
               content: [
                 {
                   type: 'paragraph',
-                  content: [{ type: 'text', text: 'Offline Sync', marks: [{ type: 'bold' }] }]
+                  content: [{ type: 'text', text: 'Idea' }]
                 },
                 {
                   type: 'paragraph',
-                  content: [{ type: 'text', text: 'Idea', marks: [{ type: 'bold' }] }]
+                  content: [{ type: 'text', text: 'Offline Sync', marks: [{ type: 'bold' }] }]
                 },
                 {
                   type: 'paragraph',

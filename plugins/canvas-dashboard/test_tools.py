@@ -95,6 +95,17 @@ class CanvasDashboardPluginTests(unittest.TestCase):
             skill_text.index("### create_link_card"),
         )
 
+    def test_bundled_skill_requires_note_card_field_order(self):
+        skill_text = (PLUGIN_DIR / "skills" / "canvas-dashboard" / "SKILL.md").read_text(
+            encoding="utf-8"
+        )
+
+        expected_format = "[TAG (Idea, Note, etc.)]\n[Title]\n[Description]"
+        self.assertIn(expected_format, skill_text)
+        self.assertIn("Map `tag` to the first line", skill_text)
+        self.assertIn("`title` to the second line", skill_text)
+        self.assertIn("`content` to the description", skill_text)
+
     def test_register_adds_tool_and_hook_and_installs_skill(self):
         ctx = FakeContext()
         plugin = load_plugin_entrypoint()

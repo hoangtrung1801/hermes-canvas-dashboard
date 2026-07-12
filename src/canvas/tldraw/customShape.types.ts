@@ -3,7 +3,7 @@ import { createShapePropsMigrationIds, createShapePropsMigrationSequence } from 
 export const TODO_BLOCK_TYPE = 'todo_block'
 export const LINK_CARD_TYPE = 'link_card'
 export const DEFAULT_TODO_BLOCK_COLOR = 'yellow'
-export const DEFAULT_LINK_CARD_COLOR = 'light-green'
+export const DEFAULT_LINK_CARD_COLOR = 'light-blue'
 
 export type TodoTask = {
   id: string

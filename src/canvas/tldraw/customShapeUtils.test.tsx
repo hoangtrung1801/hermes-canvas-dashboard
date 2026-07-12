@@ -85,6 +85,7 @@ describe('custom tldraw ShapeUtils', () => {
 
     expect(screen.getByText('Launch')).toBeInTheDocument()
     expect(screen.getByText('Write copy')).toBeInTheDocument()
+    expect(screen.getByLabelText('1 of 1 tasks complete')).toHaveTextContent('1/1')
     expect(screen.queryByLabelText('Todo title')).not.toBeInTheDocument()
   })
 
@@ -177,6 +178,10 @@ describe('custom tldraw ShapeUtils', () => {
     fireEvent.change(screen.getByLabelText('Todo title'), { target: { value: 'Release' } })
     fireEvent.change(screen.getByLabelText('Task text: Write copy'), { target: { value: 'Publish notes' } })
 
+    expect(screen.getByLabelText('Todo title')).toHaveClass('hermes-inline-title-input')
+    expect(screen.getByLabelText('Task text: Write copy')).toHaveClass('hermes-inline-task-input')
+    expect(screen.getByLabelText('0 of 1 tasks complete')).toHaveTextContent('0/1')
+
     expect(tldrawMock.editor.updateShape).toHaveBeenCalledWith({
       id: 'shape:todo_1',
       type: 'todo_block',
@@ -189,6 +194,33 @@ describe('custom tldraw ShapeUtils', () => {
         tasks: [{ id: 'task_copy', text: 'Publish notes', done: false }]
       }
     })
+  })
+
+  it('keeps completed task styling while the todo is being edited', () => {
+    tldrawMock.editingShapeId = 'shape:todo_1'
+    const util = new TodoBlockShapeUtil({} as any)
+    render(
+      util.component({
+        id: 'shape:todo_1',
+        type: 'todo_block',
+        x: 0,
+        y: 0,
+        rotation: 0,
+        index: 'a1',
+        parentId: 'page:page',
+        isLocked: false,
+        opacity: 1,
+        meta: {},
+        props: {
+          w: 320,
+          h: 220,
+          title: 'Launch',
+          tasks: [{ id: 'task_copy', text: 'Write copy', done: true }]
+        }
+      } as any)
+    )
+
+    expect(screen.getByLabelText('Task text: Write copy').closest('.hermes-task-row')).toHaveClass('is-done')
   })
 
   it('adds a task from the todo edit controls', () => {
@@ -249,9 +281,38 @@ describe('custom tldraw ShapeUtils', () => {
     )
 
     expect(screen.getByText('https://tldraw.dev')).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: 'https://tldraw.dev' })).toHaveAttribute('href', 'https://tldraw.dev')
-    expect(screen.getByRole('link', { name: 'https://tldraw.dev' })).toHaveAttribute('target', '_blank')
+    const link = screen.getByRole('link', { name: 'Open https://tldraw.dev' })
+    expect(link).toHaveClass('hermes-link-footer')
+    expect(link).toHaveAttribute('href', 'https://tldraw.dev')
+    expect(link).toHaveAttribute('target', '_blank')
+    expect(link).toHaveAttribute('title', 'https://tldraw.dev')
     expect(screen.queryByLabelText('Link title')).not.toBeInTheDocument()
+  })
+
+  it('shows where to add link text when the description is empty', () => {
+    const linkUtil = new LinkCardShapeUtil({} as any)
+
+    render(
+      linkUtil.component({
+        id: 'shape:link_1',
+        type: 'link_card',
+        x: 0,
+        y: 0,
+        rotation: 0,
+        index: 'a2',
+        parentId: 'page:page',
+        isLocked: false,
+        opacity: 1,
+        meta: {},
+        props: { w: 300, h: 120, title: 'Docs', url: 'https://tldraw.dev', description: '' }
+      } as any)
+    )
+
+    expect(screen.getByText('Double-click to add link text')).toHaveClass(
+      'hermes-link-description',
+      'is-empty'
+    )
+    expect(screen.getByText('https://tldraw.dev')).toBeVisible()
   })
 
   it('registers tldraw color style for custom card shape toolbar controls', () => {
@@ -261,7 +322,7 @@ describe('custom tldraw ShapeUtils', () => {
 
   it('defaults custom card props to a valid tldraw toolbar color', () => {
     expect(new TodoBlockShapeUtil({} as any).getDefaultProps()).toMatchObject({ color: 'yellow' })
-    expect(new LinkCardShapeUtil({} as any).getDefaultProps()).toMatchObject({ color: 'light-green' })
+    expect(new LinkCardShapeUtil({} as any).getDefaultProps()).toMatchObject({ color: 'light-blue' })
   })
 
   it('renders custom card background colors from tldraw color props', () => {
@@ -374,7 +435,8 @@ describe('custom tldraw ShapeUtils', () => {
     fireEvent.change(screen.getByLabelText('Link URL'), { target: { value: 'https://example.com' } })
     fireEvent.change(screen.getByLabelText('Link description'), { target: { value: 'Reference' } })
 
-    expect(screen.getByRole('link', { name: 'Open link' })).toHaveAttribute('href', 'https://tldraw.dev')
+    expect(screen.getByRole('dialog', { name: 'Edit link' })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Test link' })).toHaveAttribute('href', 'https://tldraw.dev')
     expect(tldrawMock.editor.updateShape).toHaveBeenCalledWith({
       id: 'shape:link_1',
       type: 'link_card',
@@ -390,6 +452,22 @@ describe('custom tldraw ShapeUtils', () => {
       type: 'link_card',
       props: { description: 'Reference' }
     })
+  })
+
+  it('closes the link editor modal from the Done button', () => {
+    tldrawMock.editingShapeId = 'shape:link_1'
+    const util = new LinkCardShapeUtil({} as any)
+    render(
+      util.component({
+        id: 'shape:link_1',
+        type: 'link_card',
+        props: { w: 300, h: 120, title: 'Docs', url: 'https://tldraw.dev', description: '' }
+      } as any)
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: 'Done' }))
+
+    expect(tldrawMock.editor.setEditingShape).toHaveBeenCalledWith(null)
   })
 
   it('resizes custom card shapes through tldraw resizeBox', () => {

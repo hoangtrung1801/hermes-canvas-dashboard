@@ -225,7 +225,7 @@ Cards can also be recolored directly in the canvas dashboard by selecting the ca
 
 ### create_note_card
 
-Creates a built-in tldraw rectangle with text inside. Hermes sends separate `title`, `tag`, and `content` fields; the bridge converts them into the rectangle shape's rich text. The title and tag become bold paragraphs, and content remains normal text.
+Creates a built-in tldraw rectangle with text inside. Hermes sends separate `title`, `tag`, and `content` fields; the bridge converts them into the rectangle shape's rich text in `[TAG]`, `[Title]`, `[Description]` order. The second line (the title) is bold; the tag and content remain normal text.
 
 ```json
 {

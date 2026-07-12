@@ -29,8 +29,8 @@ export function createNoteCardRichText(input: Pick<NoteCardInput, 'title' | 'tag
   return {
     type: 'doc',
     content: [
+      contentParagraph(input.tag),
       boldParagraph(input.title),
-      boldParagraph(input.tag),
       ...contentLines.map(contentParagraph)
     ]
   }
@@ -42,11 +42,11 @@ export function createNoteCardProps(input: NoteCardInput): TLGeoShapeProps {
     w: 320,
     h: 180,
     color: input.color ?? 'yellow',
-    labelColor: 'black',
+    labelColor: input.color === 'black' ? 'white' : 'black',
     size: input.size ?? 'm',
-    font: 'draw',
+    font: 'sans',
     fill: 'solid',
-    dash: 'draw',
+    dash: 'solid',
     align: 'start',
     verticalAlign: 'start',
     growY: 0,

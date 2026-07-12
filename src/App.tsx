@@ -1,5 +1,6 @@
 import { CanvasSurface } from './canvas/components/CanvasSurface'
 import { CanvasInsertMenu } from './canvas/components/CanvasInsertMenu'
+import { CanvasTidyButton } from './canvas/components/CanvasTidyButton'
 import { Simulator } from './canvas/components/Simulator'
 import { Inspector } from './canvas/components/Inspector'
 import { useBridgeStore } from './canvas/state/bridgeStore'
@@ -35,6 +36,7 @@ export default function App() {
     return (
       <main className="fullscreen-canvas-page">
         <section className="fullscreen-canvas-container" aria-label="Fullscreen canvas surface">
+          <CanvasTidyButton />
           <CanvasInsertMenu />
           <CanvasSurface />
         </section>
@@ -72,6 +74,7 @@ export default function App() {
             </div>
           </div>
           <div className="canvas-container">
+            <CanvasTidyButton />
             <CanvasInsertMenu />
             <CanvasSurface />
           </div>

@@ -705,6 +705,58 @@ body {
   z-index: 1100;
 }
 
+.canvas-container > .canvas-tidy-button,
+.fullscreen-canvas-container > .canvas-tidy-button {
+  position: absolute;
+  bottom: 14px;
+  right: 58px;
+  z-index: 1100;
+}
+
+.canvas-tidy-button {
+  min-width: 76px;
+  min-height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 7px 11px;
+  border: 1px solid rgba(148, 163, 184, 0.24);
+  border-radius: 8px;
+  background: rgba(15, 23, 42, 0.82);
+  color: var(--text-primary);
+  font: 600 12px/1 'Outfit', sans-serif;
+  cursor: pointer;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+  transition: background 0.16s ease, border-color 0.16s ease, transform 0.16s ease;
+}
+
+.canvas-tidy-button svg {
+  width: 17px;
+  height: 17px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.7;
+}
+
+.canvas-tidy-button:hover:not(:disabled),
+.canvas-tidy-button:focus-visible:not(:disabled) {
+  background: rgba(56, 189, 248, 0.14);
+  border-color: rgba(56, 189, 248, 0.5);
+  color: #e0f2fe;
+  outline: none;
+}
+
+.canvas-tidy-button:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.canvas-tidy-button:disabled {
+  cursor: not-allowed;
+  color: var(--text-muted);
+  opacity: 0.56;
+}
+
 .canvas-icon-button {
   width: 34px;
   height: 34px;
@@ -1156,15 +1208,84 @@ body {
   box-sizing: border-box;
   width: 100%;
   height: 100%;
-  overflow: auto;
-  border: 1px solid #1f2937;
-  border-radius: 8px;
+  overflow: hidden auto;
+  border: 1px solid color-mix(in srgb, currentColor 13%, transparent);
+  border-radius: 14px;
   background: #ffffff;
-  color: #111827;
-  font: 14px/1.35 system-ui, sans-serif;
-  padding: 12px;
+  color: #25252d;
+  font: 14px/1.45 Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  padding: 14px 16px;
   pointer-events: all;
   overflow-wrap: anywhere;
+  box-shadow: 0 2px 8px rgba(42, 39, 65, 0.08), 0 12px 28px rgba(42, 39, 65, 0.05);
+}
+
+.hermes-shape:focus-within {
+  border-color: rgba(108, 92, 231, 0.62);
+  box-shadow: 0 0 0 3px rgba(108, 92, 231, 0.12), 0 12px 28px rgba(42, 39, 65, 0.08);
+}
+
+.hermes-card-header {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  gap: 9px;
+  min-height: 28px;
+}
+
+.hermes-card-header strong {
+  min-width: 0;
+  overflow: hidden;
+  color: #202027;
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hermes-card-icon {
+  display: inline-grid;
+  flex: 0 0 auto;
+  width: 25px;
+  height: 25px;
+  place-items: center;
+  color: #6c5ce7;
+}
+
+.hermes-card-icon svg,
+.hermes-link-footer svg {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.8;
+}
+
+.hermes-progress-badge {
+  flex: 0 0 auto;
+  margin-left: auto;
+  border: 1px solid rgba(46, 125, 50, 0.08);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.62);
+  color: #376c41;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  line-height: 1;
+  padding: 6px 9px;
+}
+
+.hermes-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
 }
 
 .hermes-field {
@@ -1185,12 +1306,20 @@ body {
 .hermes-task-text-input {
   width: 100%;
   min-width: 0;
-  border: 1px solid rgba(17, 24, 39, 0.22);
-  border-radius: 5px;
-  background: rgba(255, 255, 255, 0.74);
+  border: 1px solid rgba(75, 68, 105, 0.2);
+  border-radius: 7px;
+  background: rgba(255, 255, 255, 0.82);
   color: #111827;
   font: inherit;
-  padding: 4px 6px;
+  padding: 6px 8px;
+  outline: none;
+}
+
+.hermes-field input:focus,
+.hermes-field textarea:focus,
+.hermes-task-text-input:focus {
+  border-color: rgba(108, 92, 231, 0.62);
+  box-shadow: 0 0 0 2px rgba(108, 92, 231, 0.12);
 }
 
 .hermes-field textarea {
@@ -1202,6 +1331,59 @@ body {
   font-weight: 700;
 }
 
+.hermes-card-header-editing .hermes-inline-title-field {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.hermes-inline-title-input,
+.hermes-task-row .hermes-inline-task-input {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  border: 1px solid transparent;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  outline: none;
+}
+
+.hermes-inline-title-input {
+  padding: 1px 3px;
+  color: #202027;
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: -0.015em;
+}
+
+.hermes-task-row .hermes-inline-task-input {
+  height: 22px;
+  margin: -1px 0;
+  padding: 0 3px;
+  border-radius: 4px;
+  color: #303039;
+  line-height: 20px;
+}
+
+.hermes-inline-title-input:hover,
+.hermes-task-row .hermes-inline-task-input:hover {
+  background: rgba(255, 255, 255, 0.28);
+}
+
+.hermes-inline-title-input:focus,
+.hermes-task-row .hermes-inline-task-input:focus {
+  border-color: rgba(108, 92, 231, 0.35);
+  background: rgba(255, 255, 255, 0.5);
+  box-shadow: 0 0 0 2px rgba(108, 92, 231, 0.08);
+}
+
+.hermes-task-row.is-done .hermes-inline-task-input {
+  color: #5e7663;
+  text-decoration: line-through;
+  text-decoration-color: rgba(55, 108, 65, 0.55);
+  text-decoration-thickness: 1.5px;
+}
+
 .hermes-inline-fields {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
@@ -1209,7 +1391,7 @@ body {
 }
 
 .hermes-todo-block {
-  background: #fff8cc;
+  background: #f4fbf4;
 }
 
 .hermes-task-card {
@@ -1217,7 +1399,15 @@ body {
 }
 
 .hermes-link-card {
-  background: #dcfce7;
+  display: flex;
+  flex-direction: column;
+  background: color-mix(in srgb, var(--hermes-card-accent, #dbeafe) 42%, white) !important;
+  border-color: color-mix(in srgb, var(--hermes-card-accent, #bfdbfe) 52%, #b9c7d8);
+  box-shadow: 0 2px 8px rgba(55, 96, 145, 0.08), 0 10px 24px rgba(55, 96, 145, 0.05);
+}
+
+.hermes-link-card .hermes-card-icon {
+  color: color-mix(in srgb, var(--hermes-card-accent, #bfdbfe) 48%, #2864aa);
 }
 
 .hermes-card-kicker {
@@ -1228,22 +1418,39 @@ body {
 
 .hermes-task-list {
   display: grid;
-  gap: 6px;
-  margin-top: 8px;
+  gap: 4px;
+  margin-top: 10px;
 }
 
 .hermes-task-row {
   display: flex;
   align-items: flex-start;
-  gap: 6px;
+  gap: 9px;
   min-width: 0;
+  min-height: 28px;
+  padding: 3px 2px;
   cursor: pointer;
 }
 
 .hermes-task-row input[type='checkbox'] {
   flex: 0 0 auto;
-  width: 14px;
-  margin-top: 2px;
+  width: 18px;
+  height: 18px;
+  margin: 1px 0 0;
+  accent-color: #2e8b45;
+  cursor: pointer;
+}
+
+.hermes-task-label {
+  color: #303039;
+  line-height: 20px;
+}
+
+.hermes-task-row.is-done .hermes-task-label {
+  color: #5e7663;
+  text-decoration: line-through;
+  text-decoration-color: rgba(55, 108, 65, 0.55);
+  text-decoration-thickness: 1.5px;
 }
 
 .hermes-task-row .hermes-task-text-input {
@@ -1254,11 +1461,11 @@ body {
 .hermes-add-task-button {
   display: inline-grid;
   place-items: center;
-  width: 26px;
-  height: 26px;
+  width: 30px;
+  height: 30px;
   margin-top: 8px;
   border: 1px solid rgba(17, 24, 39, 0.24);
-  border-radius: 5px;
+  border-radius: 8px;
   background: rgba(255, 255, 255, 0.72);
   color: #111827;
   cursor: pointer;
@@ -1272,10 +1479,228 @@ body {
   background: rgba(255, 255, 255, 0.9);
 }
 
-.hermes-link-card a {
-  display: block;
-  color: #047857;
+.hermes-link-description {
+  display: -webkit-box;
+  overflow: hidden;
+  margin: 7px 0 0 34px;
+  color: #424650;
+  font-size: 13px;
+  line-height: 1.42;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.hermes-link-description.is-empty {
+  color: #66758a;
+  font-style: italic;
+  font-weight: 500;
+}
+
+.hermes-link-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 28px;
+  margin: auto 0 0 34px;
+  color: #2f527a;
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.hermes-link-footer span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hermes-link-footer:hover {
+  color: #2f6fbf;
   text-decoration: underline;
   text-underline-offset: 2px;
-  margin: 6px 0;
+}
+
+.hermes-link-footer svg {
+  flex: 0 0 auto;
+  width: 17px;
+  height: 17px;
+}
+
+.hermes-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 5000;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(15, 18, 29, 0.46);
+  backdrop-filter: blur(4px);
+  pointer-events: all;
+}
+
+.hermes-link-modal {
+  width: min(460px, calc(100vw - 32px));
+  overflow: hidden;
+  border: 1px solid rgba(90, 104, 132, 0.2);
+  border-radius: 16px;
+  background: #ffffff;
+  color: #202027;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  box-shadow: 0 24px 70px rgba(24, 28, 43, 0.24), 0 4px 16px rgba(24, 28, 43, 0.1);
+}
+
+.hermes-link-modal-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 20px 20px 17px;
+  border-bottom: 1px solid #edf0f5;
+}
+
+.hermes-link-modal-icon {
+  display: grid;
+  width: 36px;
+  height: 36px;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 10px;
+  background: #eaf3ff;
+  color: #3f7fc7;
+}
+
+.hermes-link-modal-icon svg,
+.hermes-link-modal-header button svg,
+.hermes-link-modal-footer a svg {
+  width: 19px;
+  height: 19px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.8;
+}
+
+.hermes-link-modal-header h2 {
+  margin: 0;
+  font-size: 17px;
+  line-height: 1.3;
+}
+
+.hermes-link-modal-header p {
+  margin: 3px 0 0;
+  color: #697180;
+  font-size: 13px;
+}
+
+.hermes-link-modal-header button {
+  display: grid;
+  width: 36px;
+  height: 36px;
+  margin-left: auto;
+  place-items: center;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: #697180;
+  cursor: pointer;
+}
+
+.hermes-link-modal-header button:hover {
+  background: #f1f3f7;
+  color: #272b34;
+}
+
+.hermes-link-modal-fields {
+  display: grid;
+  gap: 15px;
+  padding: 20px;
+}
+
+.hermes-modal-field {
+  display: grid;
+  gap: 7px;
+}
+
+.hermes-modal-field > span {
+  color: #4d5563;
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.hermes-modal-field input,
+.hermes-modal-field textarea {
+  width: 100%;
+  border: 1px solid #d7dce5;
+  border-radius: 9px;
+  background: #fbfcfe;
+  color: #202027;
+  font: inherit;
+  font-size: 14px;
+  outline: none;
+  padding: 10px 11px;
+}
+
+.hermes-modal-field textarea {
+  min-height: 88px;
+  resize: vertical;
+}
+
+.hermes-modal-field input:focus,
+.hermes-modal-field textarea:focus {
+  border-color: #6c9ed7;
+  background: #ffffff;
+  box-shadow: 0 0 0 3px rgba(76, 142, 217, 0.13);
+}
+
+.hermes-link-modal-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 15px 20px;
+  border-top: 1px solid #edf0f5;
+  background: #fafbfc;
+}
+
+.hermes-link-modal-footer a {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #4979b3;
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.hermes-link-modal-footer a svg {
+  width: 15px;
+  height: 15px;
+}
+
+.hermes-link-modal-footer button {
+  min-width: 76px;
+  min-height: 38px;
+  border: 0;
+  border-radius: 9px;
+  background: #4b82c2;
+  color: #ffffff;
+  cursor: pointer;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  padding: 8px 16px;
+}
+
+.hermes-link-modal-footer button:hover {
+  background: #3b70ad;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hermes-shape,
+  .hermes-shape * {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
 }

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { createNoteCardProps } from './nativeNoteCard'
 
 describe('note card rectangle props', () => {
-  it('creates default tldraw rectangle props with bold title and tag paragraphs', () => {
+  it('formats note cards as tag, bold title, then description', () => {
     const props = createNoteCardProps({
       title: 'Offline Sync',
       tag: 'Idea',
@@ -16,9 +16,9 @@ describe('note card rectangle props', () => {
       color: 'yellow',
       labelColor: 'black',
       size: 'm',
-      font: 'draw',
+      font: 'sans',
       fill: 'solid',
-      dash: 'draw',
+      dash: 'solid',
       align: 'start',
       verticalAlign: 'start',
       growY: 0,
@@ -30,11 +30,11 @@ describe('note card rectangle props', () => {
       content: [
         {
           type: 'paragraph',
-          content: [{ type: 'text', text: 'Offline Sync', marks: [{ type: 'bold' }] }]
+          content: [{ type: 'text', text: 'Idea' }]
         },
         {
           type: 'paragraph',
-          content: [{ type: 'text', text: 'Idea', marks: [{ type: 'bold' }] }]
+          content: [{ type: 'text', text: 'Offline Sync', marks: [{ type: 'bold' }] }]
         },
         {
           type: 'paragraph',
@@ -61,11 +61,11 @@ describe('note card rectangle props', () => {
         content: [
           {
             type: 'paragraph',
-            content: [{ type: 'text', text: 'Research', marks: [{ type: 'bold' }] }]
+            content: [{ type: 'text', text: 'Note' }]
           },
           {
             type: 'paragraph',
-            content: [{ type: 'text', text: 'Note', marks: [{ type: 'bold' }] }]
+            content: [{ type: 'text', text: 'Research', marks: [{ type: 'bold' }] }]
           },
           {
             type: 'paragraph',
@@ -91,5 +91,15 @@ describe('note card rectangle props', () => {
         content: ''
       }).richText.content
     ).toHaveLength(2)
+  })
+
+  it('uses a contrasting label color for dark note cards', () => {
+    expect(
+      createNoteCardProps({
+        title: 'Dark note',
+        tag: 'Note',
+        color: 'black'
+      }).labelColor
+    ).toBe('white')
   })
 })
