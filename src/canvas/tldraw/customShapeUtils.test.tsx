@@ -289,6 +289,38 @@ describe('custom tldraw ShapeUtils', () => {
     expect(screen.queryByLabelText('Link title')).not.toBeInTheDocument()
   })
 
+  it('renders a browsed screenshot or preview image in a link card', () => {
+    const linkUtil = new LinkCardShapeUtil({} as any)
+
+    render(
+      linkUtil.component({
+        id: 'shape:link_preview',
+        type: 'link_card',
+        x: 0,
+        y: 0,
+        rotation: 0,
+        index: 'a2',
+        parentId: 'page:page',
+        isLocked: false,
+        opacity: 1,
+        meta: {},
+        props: {
+          w: 360,
+          h: 300,
+          title: 'Docs',
+          url: 'https://tldraw.dev',
+          description: 'SDK docs',
+          imageUrl: 'https://tldraw.dev/preview.png'
+        }
+      } as any)
+    )
+
+    expect(screen.getByRole('img', { name: 'Docs preview' })).toHaveAttribute(
+      'src',
+      'https://tldraw.dev/preview.png'
+    )
+  })
+
   it('shows where to add link text when the description is empty', () => {
     const linkUtil = new LinkCardShapeUtil({} as any)
 

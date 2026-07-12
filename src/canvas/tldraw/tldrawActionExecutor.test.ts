@@ -12,6 +12,7 @@ describe('tldraw action executor', () => {
         title: 'Docs',
         url: 'https://tldraw.dev',
         description: 'SDK docs',
+        imageUrl: 'https://tldraw.dev/preview.png',
         backgroundColor: '#ecfccb',
         x: 100,
         y: 120
@@ -41,6 +42,7 @@ describe('tldraw action executor', () => {
             title: 'Docs',
             url: 'https://tldraw.dev',
             description: 'Updated docs',
+            imageUrl: 'https://tldraw.dev/preview.png',
             backgroundColor: '#ecfccb'
           }
         }

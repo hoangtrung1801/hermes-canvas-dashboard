@@ -34,6 +34,7 @@ export type LinkCardProps = {
   title: string
   url: string
   description: string
+  imageUrl: string
   color?: string
   backgroundColor?: string
 }
@@ -47,7 +48,8 @@ const todoBlockVersions = createShapePropsMigrationIds(TODO_BLOCK_TYPE, {
 })
 
 const linkCardVersions = createShapePropsMigrationIds(LINK_CARD_TYPE, {
-  AddColorProp: 1
+  AddColorProp: 1,
+  AddImageUrl: 2
 })
 
 function removeColorProp(props: Record<string, unknown>) {
@@ -74,6 +76,15 @@ export const linkCardMigrations = createShapePropsMigrationSequence({
         props.color ??= DEFAULT_LINK_CARD_COLOR
       },
       down: removeColorProp
+    },
+    {
+      id: linkCardVersions.AddImageUrl,
+      up: (props) => {
+        props.imageUrl ??= ''
+      },
+      down: (props) => {
+        delete props.imageUrl
+      }
     }
   ]
 })
@@ -121,6 +132,7 @@ export function createLinkCardProps(input: {
   title: string
   url: string
   description?: string
+  imageUrl?: string
   w?: number
   h?: number
   color?: string
@@ -128,10 +140,11 @@ export function createLinkCardProps(input: {
 }): LinkCardProps {
   return {
     w: input.w ?? 300,
-    h: input.h ?? 120,
+    h: input.h ?? (input.imageUrl ? 300 : 120),
     title: input.title,
     url: input.url,
     description: input.description ?? '',
+    imageUrl: input.imageUrl ?? '',
     color: input.color ?? DEFAULT_LINK_CARD_COLOR,
     ...(input.backgroundColor ? { backgroundColor: input.backgroundColor } : {})
   }

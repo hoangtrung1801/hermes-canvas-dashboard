@@ -36,6 +36,7 @@ export function createHermesTldrawSchema() {
           ...sizeAndTitleProps,
           url: T.string,
           description: T.string,
+          imageUrl: T.string,
           color: DefaultColorStyle,
           backgroundColor: T.string.optional()
         }

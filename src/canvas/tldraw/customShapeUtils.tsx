@@ -313,12 +313,13 @@ export class LinkCardShapeUtil extends BaseHermesCardUtil<LinkCardShape> {
     title: T.string,
     url: T.string,
     description: T.string,
+    imageUrl: T.string,
     color: DefaultColorStyle,
     backgroundColor: T.string.optional()
   }
 
   getDefaultProps(): LinkCardProps {
-    return { w: 300, h: 120, title: 'Link', url: '', description: '', color: DEFAULT_LINK_CARD_COLOR }
+    return { w: 300, h: 120, title: 'Link', url: '', description: '', imageUrl: '', color: DEFAULT_LINK_CARD_COLOR }
   }
 
   component(shape: LinkCardShape) {
@@ -340,6 +341,14 @@ export class LinkCardShapeUtil extends BaseHermesCardUtil<LinkCardShape> {
             </span>
             <strong>{shape.props.title}</strong>
           </div>
+          {shape.props.imageUrl && (
+            <img
+              className="hermes-link-preview"
+              src={shape.props.imageUrl}
+              alt={`${shape.props.title} preview`}
+              draggable={false}
+            />
+          )}
           <p
             className={`hermes-link-description${shape.props.description ? '' : ' is-empty'}`}
           >
@@ -419,6 +428,15 @@ export class LinkCardShapeUtil extends BaseHermesCardUtil<LinkCardShape> {
                       aria-label="Link description"
                       value={shape.props.description}
                       onChange={(event) => updateShapeProps(editor, shape, { description: event.currentTarget.value })}
+                    />
+                  </label>
+                  <label className="hermes-modal-field">
+                    <span>Preview image URL</span>
+                    <input
+                      aria-label="Link preview image URL"
+                      inputMode="url"
+                      value={shape.props.imageUrl}
+                      onChange={(event) => updateShapeProps(editor, shape, { imageUrl: event.currentTarget.value })}
                     />
                   </label>
                 </div>

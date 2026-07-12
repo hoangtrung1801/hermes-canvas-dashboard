@@ -113,6 +113,10 @@ export const canvasActionSchema = z.union([
     title: z.string().min(1),
     url: z.string().url(),
     description: z.string().optional(),
+    imageUrl: z.string().refine(
+      (value) => /^https?:\/\//i.test(value) || /^data:image\//i.test(value),
+      'imageUrl must be an HTTP(S) URL or image data URI'
+    ).optional(),
     w: z.number().positive().optional(),
     h: z.number().positive().optional(),
     backgroundColor,

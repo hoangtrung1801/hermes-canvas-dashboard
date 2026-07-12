@@ -90,6 +90,9 @@ class CanvasDashboardPluginTests(unittest.TestCase):
         self.assertIn("browsing skill", skill_text)
         self.assertIn("metadata", skill_text)
         self.assertIn("create_link_card", skill_text)
+        self.assertIn("screenshot", skill_text)
+        self.assertIn("imageUrl", skill_text)
+        self.assertIn("still create the link card without `imageUrl`", skill_text)
         self.assertLess(
             skill_text.index("Use the browsing skill"),
             skill_text.index("### create_link_card"),

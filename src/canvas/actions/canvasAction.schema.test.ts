@@ -49,9 +49,26 @@ describe('tldraw canvas action schema', () => {
         y: 320,
         title: 'Docs',
         url: 'https://tldraw.dev',
+        imageUrl: 'https://tldraw.dev/preview.png',
         backgroundColor: '#ecfccb'
       })
-    ).toMatchObject({ type: 'create_link_card', title: 'Docs', backgroundColor: '#ecfccb' })
+    ).toMatchObject({
+      type: 'create_link_card',
+      title: 'Docs',
+      imageUrl: 'https://tldraw.dev/preview.png',
+      backgroundColor: '#ecfccb'
+    })
+
+    expect(() =>
+      canvasActionSchema.parse({
+        type: 'create_link_card',
+        x: 120,
+        y: 320,
+        title: 'Unsafe preview',
+        url: 'https://example.com',
+        imageUrl: 'javascript:alert(1)'
+      })
+    ).toThrow()
   })
 
   it('accepts note card helper actions', () => {

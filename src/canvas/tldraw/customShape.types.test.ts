@@ -43,7 +43,21 @@ describe('custom tldraw shape types', () => {
       title: 'Docs',
       url: 'https://tldraw.dev',
       description: '',
+      imageUrl: '',
       color: 'light-blue'
+    })
+  })
+
+  it('sizes link cards for a browsed screenshot or preview image', () => {
+    expect(
+      createLinkCardProps({
+        title: 'Docs',
+        url: 'https://tldraw.dev',
+        imageUrl: 'https://tldraw.dev/preview.png'
+      })
+    ).toMatchObject({
+      h: 300,
+      imageUrl: 'https://tldraw.dev/preview.png'
     })
   })
 
@@ -65,5 +79,15 @@ describe('custom tldraw shape types', () => {
 
     expect(todoProps.color).toBe('yellow')
     expect(linkProps.color).toBe('light-blue')
+  })
+
+  it('migrates existing link cards to an empty preview image URL', () => {
+    const props = { w: 300, h: 120, title: 'Link', url: 'https://tldraw.dev', description: '' } as Record<string, unknown>
+    const migration = linkCardMigrations.sequence[1]
+    if (!('up' in migration)) throw new Error('Expected image URL migration')
+
+    migration.up(props)
+
+    expect(props.imageUrl).toBe('')
   })
 })

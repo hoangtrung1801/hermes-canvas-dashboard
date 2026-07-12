@@ -110,6 +110,7 @@ export type CreateLinkCardAction = {
   title: string
   url: string
   description?: string
+  imageUrl?: string
   w?: number
   h?: number
   backgroundColor?: string

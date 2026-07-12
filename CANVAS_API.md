@@ -215,13 +215,16 @@ Move shapes by absolute coordinates or a delta.
   "title": "tldraw Sync Docs",
   "url": "https://tldraw.dev/docs/sync",
   "description": "Sync server and client setup",
+  "imageUrl": "https://example.com/tldraw-sync-preview.png",
   "backgroundColor": "#dcfce7",
+  "w": 360,
+  "h": 300,
   "x": 100,
   "y": 350
 }
 ```
 
-Cards can also be recolored directly in the canvas dashboard by selecting the card and using tldraw's built-in color toolbar. API-created cards may still set `backgroundColor` for an explicit initial background.
+`imageUrl` optionally displays a browsed page screenshot or representative image inside the card. It accepts an HTTP(S) image URL or image data URI. Cards can also be recolored directly in the canvas dashboard by selecting the card and using tldraw's built-in color toolbar. API-created cards may still set `backgroundColor` for an explicit initial background.
 
 ### create_note_card
 

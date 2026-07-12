@@ -1330,6 +1330,18 @@ body {
   color: color-mix(in srgb, var(--hermes-card-accent, #bfdbfe) 48%, #2864aa);
 }
 
+.hermes-link-preview {
+  display: block;
+  width: 100%;
+  min-height: 96px;
+  max-height: 160px;
+  margin-top: 10px;
+  border-radius: 10px;
+  object-fit: cover;
+  background: rgba(255, 255, 255, 0.52);
+  pointer-events: none;
+}
+
 .hermes-card-kicker {
   color: #4b5563;
   font-size: 12px;

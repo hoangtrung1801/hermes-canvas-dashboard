@@ -48,7 +48,7 @@ With the CLI, run:
 uv run --with websocket-client scripts/canvas_dashboard_tool.py --actions '[{"type":"read_canvas"}]'
 ```
 
-3. If the user's input is a link-only request, enrich it before writing to the canvas. Use the browsing skill or available browser/web metadata tool to fetch the page title, canonical URL, site name, and description. Then add the link to the canvas with `create_link_card`, using the fetched title and description when available. If metadata lookup fails, still create the card with the original URL and a concise title derived from the URL.
+3. If the user's input is a link-only request, browse the page before writing to the canvas. Use the browsing skill or available browser/web metadata tool to fetch the page title, canonical URL, site name, and description. When the browsing tool supports screenshots, capture a useful page or hero screenshot; otherwise look for a representative page image such as `og:image`. Add the visual to the link card through `imageUrl`, using an HTTP(S) image URL or an image data URI when the screenshot tool exposes one. If no usable image is available, still create the link card without `imageUrl`. Never fail the link-card request only because browsing, screenshot capture, or image lookup failed.
 
 4. Build one action batch. When using `canvas_action`, the plugin automatically prepends `{"type":"read_canvas"}` before any non-read batch. The standalone CLI sends exactly the actions passed through `--actions`.
 
@@ -87,7 +87,7 @@ uv run --with websocket-client scripts/canvas_dashboard_tool.py --actions '[{"ty
 Use this for URLs and link-only user requests after fetching browsing metadata when possible.
 
 ```json
-{"type":"create_link_card","id":"shape:tldraw_docs","title":"tldraw Sync Docs","url":"https://tldraw.dev/docs/sync","description":"Sync server and client setup","x":100,"y":350}
+{"type":"create_link_card","id":"shape:tldraw_docs","title":"tldraw Sync Docs","url":"https://tldraw.dev/docs/sync","description":"Sync server and client setup","imageUrl":"https://example.com/tldraw-sync-preview.png","w":360,"h":300,"x":100,"y":350}
 ```
 
 ### create_note_card
