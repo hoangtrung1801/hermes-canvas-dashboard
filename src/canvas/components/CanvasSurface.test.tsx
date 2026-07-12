@@ -222,7 +222,7 @@ describe('CanvasSurface', () => {
 
     await screen.findByText('Bridge ready')
     expect(tldrawMock.editor.updateTheme).toHaveBeenCalledWith(
-      expect.objectContaining({ id: 'hermes-pastel' })
+      expect.objectContaining({ id: 'hermes-pastel', fontSize: 14 })
     )
     expect(tldrawMock.editor.setCurrentTheme).toHaveBeenCalledWith('hermes-pastel')
   })
@@ -289,39 +289,26 @@ describe('CanvasSurface', () => {
     )
   })
 
-  it('opens a floating canvas insert menu with existing custom components', async () => {
+  it('shows custom component actions in a flat floating toolbar', async () => {
     render(<App />)
 
-    const insertButton = await screen.findByRole('button', { name: 'Insert component' })
-    expect(insertButton).toBeInTheDocument()
-    expect(insertButton.closest('.canvas-container')).toBeInTheDocument()
-
-    act(() => {
-      insertButton.click()
-    })
-
-    expect(screen.getByRole('menuitem', { name: /Todo Block/ })).toBeInTheDocument()
-    expect(screen.getByRole('menuitem', { name: /Link Card/ })).toBeInTheDocument()
-    expect(screen.getByRole('menuitem', { name: /Note Card/ })).toBeInTheDocument()
-    expect(screen.queryByRole('menuitem', { name: new RegExp(['Task', 'Card'].join(' ')) })).not.toBeInTheDocument()
+    const toolbar = await screen.findByRole('toolbar', { name: 'Canvas custom tools' })
+    expect(toolbar.closest('.canvas-container')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Todo Block' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Link Card' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Note Card' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Insert component' })).not.toBeInTheDocument()
   })
 
   it('inserts todo and link cards from the floating canvas menu', async () => {
     render(<App />)
 
-    const insertButton = await screen.findByRole('button', { name: 'Insert component' })
     act(() => {
-      insertButton.click()
-    })
-    act(() => {
-      screen.getByRole('menuitem', { name: /Todo Block/ }).click()
+      screen.getByRole('button', { name: 'Todo Block' }).click()
     })
 
     act(() => {
-      insertButton.click()
-    })
-    act(() => {
-      screen.getByRole('menuitem', { name: /Link Card/ }).click()
+      screen.getByRole('button', { name: 'Link Card' }).click()
     })
 
     await waitFor(() => {
@@ -337,13 +324,8 @@ describe('CanvasSurface', () => {
   it('inserts a rectangle note card from the floating canvas menu and selects it', async () => {
     render(<App />)
 
-    const insertButton = await screen.findByRole('button', { name: 'Insert component' })
     act(() => {
-      insertButton.click()
-    })
-
-    act(() => {
-      screen.getByRole('menuitem', { name: /Note Card/ }).click()
+      screen.getByRole('button', { name: 'Note Card' }).click()
     })
 
     await waitFor(() => {
@@ -363,23 +345,21 @@ describe('CanvasSurface', () => {
     expect(tldrawMock.editor.getSelectedShapeIds()).toHaveLength(1)
   })
 
-  it('shows the floating insert icon control in fullscreen canvas view', async () => {
+  it('shows the floating custom toolbar in fullscreen canvas view', async () => {
     window.history.pushState({}, '', '/?view=canvas')
 
     render(<App />)
 
-    const insertButton = await screen.findByRole('button', { name: 'Insert component' })
-    expect(insertButton).toBeInTheDocument()
-    expect(insertButton.closest('.fullscreen-canvas-container')).toBeInTheDocument()
+    const toolbar = await screen.findByRole('toolbar', { name: 'Canvas custom tools' })
+    expect(toolbar).toBeInTheDocument()
+    expect(toolbar.closest('.fullscreen-canvas-container')).toBeInTheDocument()
   })
 
   it('tidies cards into columns grouped by type', async () => {
     render(<App />)
 
-    const insertButton = await screen.findByRole('button', { name: 'Insert component' })
     for (const optionName of [/Link Card/, /Todo Block/, /Note Card/]) {
-      act(() => insertButton.click())
-      act(() => screen.getByRole('menuitem', { name: optionName }).click())
+      act(() => screen.getByRole('button', { name: optionName }).click())
     }
 
     act(() => screen.getByRole('button', { name: 'Tidy cards by type' }).click())
@@ -396,19 +376,19 @@ describe('CanvasSurface', () => {
     expect(tldrawMock.editor.zoomToFit).toHaveBeenCalledWith({ animation: { duration: 250 } })
   })
 
-  it('layers the floating insert control above tldraw header and menu panels', () => {
+  it('layers the floating custom toolbar above tldraw header and menu panels', () => {
     const styles = readFileSync('src/styles.css', 'utf8')
     const floatingRule = styles.match(
-      /\.canvas-container > \.canvas-insert-menu,\n\.fullscreen-canvas-container > \.canvas-insert-menu \{(?<body>[\s\S]*?)\n\}/
+      /\.canvas-container > \.canvas-floating-toolbar,\n\.fullscreen-canvas-container > \.canvas-floating-toolbar \{(?<body>[\s\S]*?)\n\}/
     )
 
     expect(floatingRule?.groups?.body).toMatch(/z-index:\s*(?:1\d{3}|[2-9]\d{3});/)
   })
 
-  it('anchors the floating insert control to the canvas bottom-right corner', () => {
+  it('anchors the floating custom toolbar to the canvas bottom-right corner', () => {
     const styles = readFileSync('src/styles.css', 'utf8')
     const floatingRule = styles.match(
-      /\.canvas-container > \.canvas-insert-menu,\n\.fullscreen-canvas-container > \.canvas-insert-menu \{(?<body>[\s\S]*?)\n\}/
+      /\.canvas-container > \.canvas-floating-toolbar,\n\.fullscreen-canvas-container > \.canvas-floating-toolbar \{(?<body>[\s\S]*?)\n\}/
     )
 
     expect(floatingRule?.groups?.body).toMatch(/bottom:\s*14px;/)
@@ -416,11 +396,11 @@ describe('CanvasSurface', () => {
     expect(floatingRule?.groups?.body).not.toMatch(/top:\s*14px;/)
   })
 
-  it('opens the floating insert popover above the bottom-right button', () => {
+  it('uses a single light panel for all custom canvas actions', () => {
     const styles = readFileSync('src/styles.css', 'utf8')
-    const popoverRule = styles.match(/\.canvas-insert-popover \{(?<body>[\s\S]*?)\n\}/)
+    const toolbarRule = styles.match(/^\.canvas-floating-toolbar \{(?<body>[\s\S]*?)\n\}/m)
 
-    expect(popoverRule?.groups?.body).toMatch(/bottom:\s*calc\(100% \+ 8px\);/)
-    expect(popoverRule?.groups?.body).not.toMatch(/top:\s*calc\(100% \+ 8px\);/)
+    expect(toolbarRule?.groups?.body).toMatch(/display:\s*inline-flex;/)
+    expect(toolbarRule?.groups?.body).toMatch(/background:\s*rgba\(255, 255, 255, 0\.96\);/)
   })
 })

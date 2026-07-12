@@ -65,14 +65,13 @@ export function CanvasTidyButton() {
   return (
     <button
       type="button"
-      className="canvas-tidy-button"
+      className="canvas-toolbar-button"
       aria-label="Tidy cards by type"
       disabled={!isReady}
       title={isReady ? 'Arrange cards into groups by type' : 'Canvas is still loading'}
       onClick={tidyCanvas}
     >
       <TidyIcon />
-      <span>Tidy</span>
     </button>
   )
 }

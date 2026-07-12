@@ -691,156 +691,76 @@ body {
   min-width: 0;
 }
 
-.canvas-insert-menu {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-}
-
-.canvas-container > .canvas-insert-menu,
-.fullscreen-canvas-container > .canvas-insert-menu {
+.canvas-container > .canvas-floating-toolbar,
+.fullscreen-canvas-container > .canvas-floating-toolbar {
   position: absolute;
   bottom: 14px;
   right: 14px;
   z-index: 1100;
 }
 
-.canvas-container > .canvas-tidy-button,
-.fullscreen-canvas-container > .canvas-tidy-button {
-  position: absolute;
-  bottom: 14px;
-  right: 66px;
-  z-index: 1100;
-}
-
-.canvas-tidy-button {
-  min-width: 76px;
-  min-height: 44px;
+.canvas-floating-toolbar {
   display: inline-flex;
   align-items: center;
-  justify-content: center;
-  gap: 7px;
-  padding: 7px 11px;
-  border: 1px solid rgba(148, 163, 184, 0.24);
-  border-radius: 8px;
-  background: rgba(15, 23, 42, 0.82);
-  color: var(--text-primary);
-  font: 600 12px/1 'Outfit', sans-serif;
-  cursor: pointer;
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
-  transition: background 0.16s ease, border-color 0.16s ease, transform 0.16s ease;
+  gap: 4px;
+  padding: 6px;
+  border: 1px solid rgba(15, 23, 42, 0.12);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.18), 0 2px 6px rgba(15, 23, 42, 0.1);
+  backdrop-filter: blur(12px);
 }
 
-.canvas-tidy-button svg {
-  width: 17px;
-  height: 17px;
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 1.7;
+.canvas-insert-actions {
+  display: contents;
 }
 
-.canvas-tidy-button:hover:not(:disabled),
-.canvas-tidy-button:focus-visible:not(:disabled) {
-  background: rgba(56, 189, 248, 0.14);
-  border-color: rgba(56, 189, 248, 0.5);
-  color: #e0f2fe;
-  outline: none;
-}
-
-.canvas-tidy-button:active:not(:disabled) {
-  transform: translateY(1px);
-}
-
-.canvas-tidy-button:disabled {
-  cursor: not-allowed;
-  color: var(--text-muted);
-  opacity: 0.56;
-}
-
-.canvas-icon-button {
+.canvas-toolbar-button {
   width: 44px;
   height: 44px;
+  flex: 0 0 44px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border: 1px solid rgba(148, 163, 184, 0.24);
-  border-radius: 8px;
-  background: rgba(15, 23, 42, 0.72);
-  color: var(--text-primary);
+  border: 0;
+  border-radius: 11px;
+  background: transparent;
+  color: #293241;
   cursor: pointer;
-  transition: background 0.16s ease, border-color 0.16s ease, transform 0.16s ease;
+  transition: background 0.16s ease, color 0.16s ease, transform 0.16s ease;
 }
 
-.canvas-icon-button svg,
-.canvas-insert-option-icon svg {
-  width: 18px;
-  height: 18px;
+.canvas-toolbar-button svg {
+  width: 22px;
+  height: 22px;
   display: block;
   fill: none;
   stroke: currentColor;
-  stroke-width: 1.8;
+  stroke-width: 1.7;
   stroke-linecap: round;
   stroke-linejoin: round;
 }
 
-.canvas-icon-button:hover:not(:disabled),
-.canvas-icon-button:focus-visible:not(:disabled) {
-  background: rgba(56, 189, 248, 0.14);
-  border-color: rgba(56, 189, 248, 0.5);
+.canvas-toolbar-button:hover:not(:disabled) {
+  background: #e8f1ff;
+  color: #2563eb;
+}
+
+.canvas-toolbar-button:focus-visible:not(:disabled) {
+  background: #e8f1ff;
+  color: #2563eb;
+  box-shadow: inset 0 0 0 2px #60a5fa;
   outline: none;
 }
 
-.canvas-icon-button:active:not(:disabled) {
-  transform: translateY(1px);
+.canvas-toolbar-button:active:not(:disabled) {
+  transform: scale(0.96);
 }
 
-.canvas-icon-button:disabled {
+.canvas-toolbar-button:disabled {
   cursor: not-allowed;
-  color: var(--text-muted);
-  opacity: 0.56;
-}
-
-.canvas-insert-popover {
-  position: absolute;
-  bottom: calc(100% + 8px);
-  right: 0;
-  z-index: 50;
-  width: 180px;
-  padding: 6px;
-  border: 1px solid rgba(148, 163, 184, 0.2);
-  border-radius: 8px;
-  background: rgba(8, 15, 28, 0.96);
-  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.36);
-}
-
-.canvas-insert-option {
-  width: 100%;
-  min-height: 34px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 8px 10px;
-  border: 0;
-  border-radius: 6px;
-  background: transparent;
-  color: var(--text-primary);
-  font-family: inherit;
-  font-size: 13px;
-  font-weight: 600;
-  text-align: left;
-  cursor: pointer;
-}
-
-.canvas-insert-option:hover,
-.canvas-insert-option:focus-visible {
-  background: rgba(56, 189, 248, 0.12);
-  outline: none;
-}
-
-.canvas-insert-option-icon {
-  width: 18px;
-  flex: 0 0 18px;
-  color: var(--color-primary);
+  color: #94a3b8;
+  opacity: 0.55;
 }
 
 .canvas-action-link {

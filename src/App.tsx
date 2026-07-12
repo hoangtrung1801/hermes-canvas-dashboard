@@ -36,8 +36,10 @@ export default function App() {
     return (
       <main className="fullscreen-canvas-page">
         <section className="fullscreen-canvas-container" aria-label="Fullscreen canvas surface">
-          <CanvasTidyButton />
-          <CanvasInsertMenu />
+          <div className="canvas-floating-toolbar" role="toolbar" aria-label="Canvas custom tools">
+            <CanvasTidyButton />
+            <CanvasInsertMenu />
+          </div>
           <CanvasSurface />
         </section>
       </main>
@@ -74,8 +76,10 @@ export default function App() {
             </div>
           </div>
           <div className="canvas-container">
-            <CanvasTidyButton />
-            <CanvasInsertMenu />
+            <div className="canvas-floating-toolbar" role="toolbar" aria-label="Canvas custom tools">
+              <CanvasTidyButton />
+              <CanvasInsertMenu />
+            </div>
             <CanvasSurface />
           </div>
         </section>

@@ -107,6 +107,7 @@ function pastelPalette(
 export const hermesPastelTheme: TLTheme = {
   ...DEFAULT_THEME,
   id: HERMES_PASTEL_THEME_ID,
+  fontSize: 12,
   colors: {
     light: pastelPalette(DEFAULT_THEME.colors.light, lightPastels),
     dark: pastelPalette(DEFAULT_THEME.colors.dark, darkPastels, "#0f172a"),

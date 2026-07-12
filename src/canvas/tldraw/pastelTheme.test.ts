@@ -58,6 +58,7 @@ vi.mock('tldraw', () => {
 describe('hermesPastelTheme', () => {
   it('registers every built-in tldraw color with pastel values', () => {
     expect(hermesPastelTheme.id).toBe(HERMES_PASTEL_THEME_ID)
+    expect(hermesPastelTheme.fontSize).toBe(14)
 
     for (const color of DefaultColorStyle.values) {
       expect(hermesPastelTheme.colors.light).toHaveProperty(color)

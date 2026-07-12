@@ -1,4 +1,3 @@
-import { useEffect, useRef, useState } from 'react'
 import type { CanvasAction } from '../actions/canvasAction.types'
 import { useBridgeStore } from '../state/bridgeStore'
 
@@ -96,30 +95,7 @@ export function CanvasInsertMenu() {
   const editor = useBridgeStore((state) => state.editor)
   const setObservation = useBridgeStore((state) => state.setObservation)
   const addLog = useBridgeStore((state) => state.addLog)
-  const [isOpen, setIsOpen] = useState(false)
-  const menuRef = useRef<HTMLDivElement | null>(null)
   const isReady = Boolean(bridge && adapter && editor)
-
-  useEffect(() => {
-    if (!isOpen) return
-
-    const closeOnOutsideClick = (event: MouseEvent) => {
-      if (!menuRef.current?.contains(event.target as Node)) {
-        setIsOpen(false)
-      }
-    }
-
-    const closeOnEscape = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') setIsOpen(false)
-    }
-
-    document.addEventListener('mousedown', closeOnOutsideClick)
-    document.addEventListener('keydown', closeOnEscape)
-    return () => {
-      document.removeEventListener('mousedown', closeOnOutsideClick)
-      document.removeEventListener('keydown', closeOnEscape)
-    }
-  }, [isOpen])
 
   const insertComponent = (kind: ComponentKind) => {
     if (!bridge || !adapter || !editor) return
@@ -136,7 +112,6 @@ export function CanvasInsertMenu() {
 
     addLog('in', 'canvas.action (Insert Component)', envelope)
     const response = bridge.handleActionEnvelope(envelope)
-    setIsOpen(false)
 
     if ('error' in response) {
       addLog('error', 'canvas.error (Insert Component)', response.error)
@@ -150,40 +125,20 @@ export function CanvasInsertMenu() {
   }
 
   return (
-    <div className="canvas-insert-menu" ref={menuRef}>
-      <button
-        type="button"
-        className="canvas-icon-button"
-        aria-label="Insert component"
-        aria-haspopup="menu"
-        aria-expanded={isOpen}
-        disabled={!isReady}
-        title={isReady ? 'Insert component' : 'Canvas is still loading'}
-        onClick={() => setIsOpen((value) => !value)}
-      >
-        <svg viewBox="0 0 20 20" aria-hidden="true">
-          <path d="M10 4v12M4 10h12" />
-        </svg>
-      </button>
-
-      {isOpen && (
-        <div className="canvas-insert-popover" role="menu" aria-label="Insert component menu">
-          {INSERT_OPTIONS.map((option) => (
-            <button
-              key={option.kind}
-              type="button"
-              className="canvas-insert-option"
-              role="menuitem"
-              onClick={() => insertComponent(option.kind)}
-            >
-              <span className="canvas-insert-option-icon">
-                <ComponentIcon icon={option.icon} />
-              </span>
-              <span>{option.label}</span>
-            </button>
-          ))}
-        </div>
-      )}
+    <div className="canvas-insert-actions">
+      {INSERT_OPTIONS.map((option) => (
+        <button
+          key={option.kind}
+          type="button"
+          className="canvas-toolbar-button"
+          aria-label={option.label}
+          disabled={!isReady}
+          title={isReady ? option.label : 'Canvas is still loading'}
+          onClick={() => insertComponent(option.kind)}
+        >
+          <ComponentIcon icon={option.icon} />
+        </button>
+      ))}
     </div>
   )
 }
