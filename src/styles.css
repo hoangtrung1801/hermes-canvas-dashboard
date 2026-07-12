@@ -709,13 +709,13 @@ body {
 .fullscreen-canvas-container > .canvas-tidy-button {
   position: absolute;
   bottom: 14px;
-  right: 58px;
+  right: 66px;
   z-index: 1100;
 }
 
 .canvas-tidy-button {
   min-width: 76px;
-  min-height: 34px;
+  min-height: 44px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -758,8 +758,8 @@ body {
 }
 
 .canvas-icon-button {
-  width: 34px;
-  height: 34px;
+  width: 44px;
+  height: 44px;
   display: inline-flex;
   align-items: center;
   justify-content: center;

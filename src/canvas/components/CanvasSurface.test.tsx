@@ -68,6 +68,11 @@ const tldrawMock = vi.hoisted(() => {
         }
       }
     },
+    updateShapes(patches: any[]) {
+      for (const patch of patches) {
+        this.updateShape(patch)
+      }
+    },
     deleteShapes(ids: string[]) {
       for (const id of ids) {
         const index = shapes.findIndex((shape) => shape.id === id)
@@ -90,7 +95,8 @@ const tldrawMock = vi.hoisted(() => {
     setCurrentTheme: vi.fn(),
     updateInstanceState: vi.fn(),
     setCamera() {},
-    zoomToFit() {},
+    markHistoryStoppingPoint: vi.fn(),
+    zoomToFit: vi.fn(),
     select(...ids: string[]) {
       selectedShapeIds.splice(0, selectedShapeIds.length, ...ids)
     },
@@ -172,6 +178,8 @@ describe('CanvasSurface', () => {
     tldrawMock.editor.updateTheme.mockClear()
     tldrawMock.editor.setCurrentTheme.mockClear()
     tldrawMock.editor.updateInstanceState.mockClear()
+    tldrawMock.editor.markHistoryStoppingPoint.mockClear()
+    tldrawMock.editor.zoomToFit.mockClear()
     window.history.pushState({}, '', '/?debug=true')
     vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response('not found', { status: 404 }))
     useBridgeStore.setState({
@@ -363,6 +371,29 @@ describe('CanvasSurface', () => {
     const insertButton = await screen.findByRole('button', { name: 'Insert component' })
     expect(insertButton).toBeInTheDocument()
     expect(insertButton.closest('.fullscreen-canvas-container')).toBeInTheDocument()
+  })
+
+  it('tidies cards into columns grouped by type', async () => {
+    render(<App />)
+
+    const insertButton = await screen.findByRole('button', { name: 'Insert component' })
+    for (const optionName of [/Link Card/, /Todo Block/, /Note Card/]) {
+      act(() => insertButton.click())
+      act(() => screen.getByRole('menuitem', { name: optionName }).click())
+    }
+
+    act(() => screen.getByRole('button', { name: 'Tidy cards by type' }).click())
+
+    const todo = tldrawMock.shapes.find((shape) => shape.type === 'todo_block')
+    const note = tldrawMock.shapes.find((shape) => shape.type === 'geo')
+    const link = tldrawMock.shapes.find((shape) => shape.type === 'link_card')
+
+    expect(todo.x).toBeLessThan(note.x)
+    expect(note.x).toBeLessThan(link.x)
+    expect(todo.y).toBe(note.y)
+    expect(note.y).toBe(link.y)
+    expect(tldrawMock.editor.markHistoryStoppingPoint).toHaveBeenCalledWith('tidy card layout')
+    expect(tldrawMock.editor.zoomToFit).toHaveBeenCalledWith({ animation: { duration: 250 } })
   })
 
   it('layers the floating insert control above tldraw header and menu panels', () => {
