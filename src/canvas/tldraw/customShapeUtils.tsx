@@ -18,6 +18,9 @@ import {
   TODO_BLOCK_TYPE,
   DEFAULT_LINK_CARD_COLOR,
   DEFAULT_TODO_BLOCK_COLOR,
+  HERMES_CARD_MIN_HEIGHT,
+  HERMES_CARD_MIN_WIDTH,
+  fitHermesCardDimensions,
   type LinkCardProps,
   type TodoBlockProps,
   linkCardMigrations,
@@ -75,7 +78,7 @@ function CloseIcon() {
 abstract class BaseHermesCardUtil<Shape extends HermesCardShape> extends ShapeUtil<Shape> {
   override canEdit = () => true
   override canResize = () => true
-  override isAspectRatioLocked = () => false
+  override isAspectRatioLocked = () => true
 
   getGeometry(shape: Shape) {
     const props = shape.props as Record<string, unknown>
@@ -92,9 +95,16 @@ abstract class BaseHermesCardUtil<Shape extends HermesCardShape> extends ShapeUt
 
   override onResize(shape: Shape, info: TLResizeInfo<Shape>) {
     const { id: _id, type: _type, ...patch } = resizeBox(shape as any, info as any, {
-      minWidth: 180,
-      minHeight: 96
+      minWidth: HERMES_CARD_MIN_WIDTH,
+      minHeight: HERMES_CARD_MIN_HEIGHT
     })
+
+    if (patch.props) {
+      patch.props = {
+        ...patch.props,
+        ...fitHermesCardDimensions(patch.props.w, patch.props.h)
+      }
+    }
     return patch
   }
 }
@@ -175,7 +185,7 @@ export class TodoBlockShapeUtil extends BaseHermesCardUtil<TodoBlockShape> {
   }
 
   getDefaultProps(): TodoBlockProps {
-    return { w: 320, h: 220, title: 'Todo', tasks: [], color: DEFAULT_TODO_BLOCK_COLOR }
+    return { w: 320, h: 180, title: 'Todo', tasks: [], color: DEFAULT_TODO_BLOCK_COLOR }
   }
 
   component(shape: TodoBlockShape) {
@@ -319,7 +329,7 @@ export class LinkCardShapeUtil extends BaseHermesCardUtil<LinkCardShape> {
   }
 
   getDefaultProps(): LinkCardProps {
-    return { w: 300, h: 120, title: 'Link', url: '', description: '', imageUrl: '', color: DEFAULT_LINK_CARD_COLOR }
+    return { w: 320, h: 180, title: 'Link', url: '', description: '', imageUrl: '', color: DEFAULT_LINK_CARD_COLOR }
   }
 
   component(shape: LinkCardShape) {

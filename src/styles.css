@@ -1128,7 +1128,7 @@ body {
   box-sizing: border-box;
   width: 100%;
   height: 100%;
-  overflow: hidden auto;
+  overflow: hidden;
   border: 1px solid color-mix(in srgb, currentColor 13%, transparent);
   border-radius: 14px;
   background: #ffffff;
@@ -1147,21 +1147,23 @@ body {
 
 .hermes-card-header {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   min-width: 0;
   gap: 9px;
   min-height: 28px;
 }
 
 .hermes-card-header strong {
+  flex: 1 1 auto;
   min-width: 0;
-  overflow: hidden;
   color: #202027;
   font-size: 16px;
   font-weight: 700;
+  line-height: 1.35;
   letter-spacing: -0.015em;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
+  white-space: normal;
+  word-break: break-word;
 }
 
 .hermes-card-icon {
@@ -1311,6 +1313,8 @@ body {
 }
 
 .hermes-todo-block {
+  display: flex;
+  flex-direction: column;
   background: #f4fbf4;
 }
 
@@ -1332,8 +1336,9 @@ body {
 
 .hermes-link-preview {
   display: block;
+  flex: 1 1 auto;
   width: 100%;
-  min-height: 96px;
+  min-height: 0;
   max-height: 160px;
   margin-top: 10px;
   border-radius: 10px;
@@ -1350,6 +1355,8 @@ body {
 
 .hermes-task-list {
   display: grid;
+  min-height: 0;
+  overflow-y: auto;
   gap: 4px;
   margin-top: 10px;
 }
@@ -1412,14 +1419,17 @@ body {
 }
 
 .hermes-link-description {
-  display: -webkit-box;
-  overflow: hidden;
+  display: block;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
   margin: 7px 0 0 34px;
   color: #424650;
   font-size: 13px;
   line-height: 1.42;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
+  overflow-wrap: anywhere;
+  white-space: normal;
+  word-break: break-word;
 }
 
 .hermes-link-description.is-empty {

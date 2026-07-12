@@ -519,11 +519,16 @@ describe('custom tldraw ShapeUtils', () => {
     } as any
 
     expect(util.onResize(shape, { scaleX: 2, scaleY: 2 } as any)).toMatchObject({
-      props: { w: 480, h: 260 }
+      props: { w: 480, h: 270 }
     })
     expect(tldrawMock.resizeBox).toHaveBeenCalledWith(shape, { scaleX: 2, scaleY: 2 }, {
-      minWidth: 180,
-      minHeight: 96
+      minWidth: 320,
+      minHeight: 180
     })
+  })
+
+  it('locks custom cards to their 16:9 aspect ratio', () => {
+    expect(new TodoBlockShapeUtil({} as any).isAspectRatioLocked()).toBe(true)
+    expect(new LinkCardShapeUtil({} as any).isAspectRatioLocked()).toBe(true)
   })
 })
