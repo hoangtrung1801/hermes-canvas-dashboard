@@ -57,7 +57,11 @@ describe('custom tldraw ShapeUtils', () => {
   })
 
   it('registers only supported Hermes custom shape utils', () => {
-    expect(hermesShapeUtils.map((util) => util.type)).toEqual(['todo_block', 'link_card'])
+    expect(hermesShapeUtils.map((util) => util.type)).toEqual([
+      'todo_block',
+      'link_card',
+      'project_card'
+    ])
   })
 
   it('renders todo block content', () => {

@@ -26,6 +26,7 @@ import {
   linkCardMigrations,
   todoBlockMigrations
 } from './customShape.types'
+import { ProjectCardShapeUtil } from './projectCardUtils'
 
 declare module 'tldraw' {
   export interface TLGlobalShapePropsMap {
@@ -469,5 +470,6 @@ export class LinkCardShapeUtil extends BaseHermesCardUtil<LinkCardShape> {
 
 export const hermesShapeUtils = [
   TodoBlockShapeUtil,
-  LinkCardShapeUtil
+  LinkCardShapeUtil,
+  ProjectCardShapeUtil
 ]

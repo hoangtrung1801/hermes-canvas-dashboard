@@ -200,7 +200,7 @@ describe('CanvasSurface', () => {
     expect(syncMock.calls[0]).toMatchObject({
       uri: 'ws://localhost:8787/sync/canvas_001'
     })
-    expect(tldrawMock.props.shapeUtils).toHaveLength(2)
+    expect(tldrawMock.props.shapeUtils).toHaveLength(3)
   })
 
   it('does not connect to the Hermes websocket gateway unless a gateway url is configured', async () => {

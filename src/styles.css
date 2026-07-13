@@ -1414,6 +1414,171 @@ body {
   background: rgba(255, 255, 255, 0.9);
 }
 
+.hermes-project-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: color-mix(in srgb, var(--hermes-card-accent, #ddd6fe) 38%, white) !important;
+}
+
+.hermes-project-badge,
+.hermes-project-priority {
+  border-radius: 999px;
+  padding: 3px 8px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.hermes-project-badge[data-status='planned'] {
+  background: #eef2ff;
+  color: #4f46e5;
+}
+
+.hermes-project-badge[data-status='active'] {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.hermes-project-badge[data-status='blocked'] {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.hermes-project-badge[data-status='done'] {
+  background: #e2e8f0;
+  color: #475569;
+}
+
+.hermes-project-priority[data-priority='low'] {
+  background: #f1f5f9;
+  color: #475569;
+}
+
+.hermes-project-priority[data-priority='medium'] {
+  background: #fef3c7;
+  color: #a16207;
+}
+
+.hermes-project-priority[data-priority='high'] {
+  background: #ffedd5;
+  color: #c2410c;
+}
+
+.hermes-project-meta,
+.hermes-project-progress-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 24px;
+}
+
+.hermes-project-progress-row {
+  min-height: 16px;
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.hermes-project-due {
+  color: #64748b;
+  font-size: 12px;
+}
+
+.hermes-project-due.is-overdue {
+  color: #b91c1c;
+  font-weight: 700;
+}
+
+.hermes-project-progress {
+  height: 7px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.65);
+}
+
+.hermes-project-progress > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: #6c5ce7;
+  transition: width 0.16s ease;
+}
+
+.hermes-project-actions {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.hermes-project-action {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 34px;
+}
+
+.hermes-project-action input[type='checkbox'] {
+  flex: 0 0 auto;
+  width: 18px;
+  height: 18px;
+  accent-color: #6c5ce7;
+}
+
+.hermes-project-action-label {
+  min-width: 0;
+  color: #303039;
+  overflow-wrap: anywhere;
+}
+
+.hermes-project-action.is-done .hermes-project-action-label,
+.hermes-project-action.is-done input[type='text'] {
+  color: #64748b;
+  text-decoration: line-through;
+}
+
+.hermes-project-edit-fields {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.hermes-project-edit-fields input,
+.hermes-project-edit-fields select,
+.hermes-project-action input[type='text'] {
+  min-width: 0;
+  border: 1px solid rgba(75, 68, 105, 0.2);
+  border-radius: 7px;
+  background: rgba(255, 255, 255, 0.82);
+  color: #303039;
+  font: inherit;
+  padding: 5px 7px;
+}
+
+.hermes-project-action input[type='text'] {
+  flex: 1 1 auto;
+}
+
+.hermes-project-action button {
+  flex: 0 0 26px;
+  width: 26px;
+  height: 26px;
+  border: 0;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.54);
+  color: #64748b;
+  cursor: pointer;
+}
+
+.hermes-project-edit-fields :focus-visible,
+.hermes-project-action :focus-visible {
+  outline: 2px solid #6c5ce7;
+  outline-offset: 1px;
+}
+
 .hermes-link-description {
   display: block;
   flex: 1 1 auto;
