@@ -72,7 +72,7 @@ Key jobs:
 ### MVP goals
 
 - Provide a fullscreen tldraw workspace for direct human editing.
-- Provide first-class todo blocks, link cards, and note cards.
+- Provide first-class project cards, todo blocks, link cards, and note cards.
 - Allow Hermes to read and mutate the canvas through validated action batches.
 - Persist canvas state in a local SQLite-backed tldraw sync room.
 - Execute supported agent actions even when no browser bridge is connected.
@@ -96,10 +96,11 @@ Key jobs:
 | --- | --- | --- |
 | Fullscreen infinite canvas | Shipped | Default application view; debug UI is hidden unless `?debug=true` is present. |
 | Native tldraw editing | Shipped | Selection, drawing, camera, styling, and standard tldraw interactions remain available. |
+| Project cards | Shipped | One project per card with explicit status, priority, optional due date, derived progress, and independently mutable actions. |
 | Todo blocks | Shipped | Structured title and task rows with append, completion, and removal actions. |
 | Link cards | Shipped | Title, validated URL, optional description, dimensions, position, and background color. |
 | Note cards | Shipped | Native tldraw rectangle with rich-text title, tag, and content. |
-| Floating insert menu | Shipped | Inserts todo, link, or note content near the viewport center and selects it. |
+| Floating insert menu | Shipped | Inserts project, todo, link, or note content near the viewport center and selects it. |
 | Hermes action WebSocket | Shipped | Validated batch input with result, observation, and request-level error envelopes. |
 | Headless action execution | Shipped with limits | Record mutations and reads work without a browser; editor-only actions do not. |
 | tldraw sync and SQLite persistence | Shipped | One SQLite database stores sync-room records. |
@@ -166,7 +167,7 @@ This journey is a roadmap requirement until the viewer components and applicatio
 - **CAN-02:** The canvas shall support standard tldraw creation, selection, movement, resizing, styling, camera, and deletion behavior.
 - **CAN-03:** The application shall use the Hermes pastel theme and enable the grid by default.
 - **CAN-04:** The insert control shall remain available above the canvas without replacing native tldraw controls.
-- **CAN-05:** The insert menu shall offer Todo Block, Link Card, and Note Card.
+- **CAN-05:** The insert menu shall offer Project Card, Todo Block, Link Card, and Note Card.
 - **CAN-06:** Inserted content shall be placed relative to the visible viewport, assigned a unique shape ID, and selected after creation.
 - **CAN-07:** The debug layout shall be opt-in through `?debug=true` and shall not alter the underlying canvas data.
 - **CAN-08:** A canvas loading or bridge delay shall disable insertion until an editor and action bridge are ready.
@@ -181,6 +182,12 @@ This journey is a roadmap requirement until the viewer components and applicatio
 - **CMP-06:** A note-card action shall accept a non-empty title and tag, optional content, a supported tldraw color, and size.
 - **CMP-07:** Note cards shall be stored as native tldraw rectangle shapes with rich text so normal tldraw editing remains available.
 - **CMP-08:** Productivity components shall appear in normalized observations with stable IDs, type, position, dimensions where available, props, and metadata.
+- **CMP-09:** A project card shall represent one project with a non-empty title, explicit status, priority, optional real calendar due date, and zero or more actions.
+- **CMP-10:** Project status shall be one of planned, active, blocked, or done; priority shall be low, medium, or high.
+- **CMP-11:** Project progress shall be derived from completed actions, report 0% when no actions exist, and shall not implicitly change the explicit project status.
+- **CMP-12:** Each project action shall have a stable ID, non-empty text, and completion state, and shall support append, text update, completion update, and removal operations.
+- **CMP-13:** Project cards shall support direct title, status, priority, due-date, and action-text editing; action checkboxes shall remain directly operable while the card is selected.
+- **CMP-14:** Project cards shall use a bounded, scrollable action area and visually distinguish an overdue due date unless the project status is done.
 
 ### 8.3 Agent action protocol
 
@@ -322,7 +329,7 @@ Because the MVP is local-first and has no telemetry, initial metrics should be c
 The MVP is accepted when:
 
 1. A user can open, edit, and reload the default canvas without losing content.
-2. A user can insert and directly edit todo, link, and note content.
+2. A user can insert and directly edit project, todo, link, and note content.
 3. Hermes can create, update, move, delete, and read supported content with the browser open.
 4. Supported record-level mutations also work with the browser closed and appear after reconnection.
 5. Every valid action batch returns itemized results and a canvas observation.

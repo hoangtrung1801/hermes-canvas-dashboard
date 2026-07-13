@@ -14,7 +14,7 @@ Use this skill to operate a running Hermes Canvas Gateway. The gateway applies a
 
 ## When to Use
 
-Use this skill when the user asks to inspect or change the Hermes Canvas Dashboard, tldraw canvas, notes, todo blocks, checklist items, link cards, shapes, selections, or camera view.
+Use this skill when the user asks to inspect or change the Hermes Canvas Dashboard, tldraw canvas, projects, project actions, notes, todo blocks, checklist items, link cards, shapes, selections, or camera view.
 
 Prefer the Hermes `canvas_action` plugin tool when it is available. Use the bundled CLI only when the tool is unavailable or when the user explicitly wants a terminal command. Do not use Hermes' session `todo` tool unless the user asks for the agent-local todo list.
 
@@ -61,6 +61,48 @@ uv run --with websocket-client scripts/canvas_dashboard_tool.py --actions '[{"ty
 After a successful canvas action, respond with only a brief confirmation such as “Added it to the canvas.” Do not report action payloads, shape ids, canvas observations, fetched metadata, screenshot details, verification steps, or implementation details unless the user explicitly asks for them. If an action fails or only partially succeeds, state the problem and required next step concisely.
 
 ## Actions
+
+### create_project_card
+
+Use one card per project. Status is explicit (`planned`, `active`, `blocked`, or `done`); priority is `low`, `medium`, or `high`. Progress is derived from completed actions and does not change status automatically.
+
+```json
+{"type":"create_project_card","id":"shape:website_launch","title":"Website Launch","status":"active","priority":"high","dueDate":"2026-07-31","x":100,"y":120,"actions":[{"id":"action_copy","text":"Finish copy"},{"id":"action_ship","text":"Ship","done":false}]}
+```
+
+### update_project_card
+
+Provide at least one field. Set `dueDate` to `null` to clear it.
+
+```json
+{"type":"update_project_card","shapeId":"shape:website_launch","status":"blocked","priority":"medium","dueDate":null}
+```
+
+### append_project_action
+
+Choose a stable action ID that is unique within the project.
+
+```json
+{"type":"append_project_action","shapeId":"shape:website_launch","actionId":"action_announce","text":"Publish announcement"}
+```
+
+### update_project_action_text
+
+```json
+{"type":"update_project_action_text","shapeId":"shape:website_launch","actionId":"action_announce","text":"Publish launch announcement"}
+```
+
+### set_project_action_done
+
+```json
+{"type":"set_project_action_done","shapeId":"shape:website_launch","actionId":"action_copy","done":true}
+```
+
+### remove_project_action
+
+```json
+{"type":"remove_project_action","shapeId":"shape:website_launch","actionId":"action_announce"}
+```
 
 ### create_todo_block
 
@@ -195,6 +237,7 @@ uv run --with websocket-client scripts/canvas_dashboard_tool.py --actions '[{"ty
 - Timeout waiting for `canvas.observation`: confirm the gateway is running for the selected `canvasId`.
 - `select_shapes` does not work headlessly; it requires a browser editor bridge.
 - Result item contains `error`: the envelope was valid, but that action failed. Inspect shape ids and action payloads before retrying.
+- Project action mutations require the current project shape ID and stable action ID from the latest observation; read again before retrying a missing-target error.
 - `ok` is `false` or a `canvas.error` envelope appears: stop and inspect the JSON before sending more writes.
 
 ## Verification

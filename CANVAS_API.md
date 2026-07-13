@@ -206,6 +206,90 @@ Move shapes by absolute coordinates or a delta.
 }
 ```
 
+### create_project_card
+
+Creates a dedicated `project_card` shape. `status` defaults to `planned`, `priority` to `medium`, dimensions to `360` × `320`, and `color` to `light-violet`. The due date is optional and must be a real `YYYY-MM-DD` date. Action IDs must be unique within the card; omitted IDs are generated and returned in later observations.
+
+```json
+{
+  "type": "create_project_card",
+  "id": "shape:website_launch",
+  "title": "Website Launch",
+  "status": "active",
+  "priority": "high",
+  "dueDate": "2026-07-31",
+  "x": 100,
+  "y": 120,
+  "actions": [
+    { "id": "action_copy", "text": "Finish copy" },
+    { "id": "action_ship", "text": "Ship", "done": false }
+  ]
+}
+```
+
+Valid statuses are `planned`, `active`, `blocked`, and `done`. Valid priorities are `low`, `medium`, and `high`. Progress is derived from completed actions; it does not automatically change the explicit project status. A project with no actions reports 0% progress.
+
+### update_project_card
+
+Updates one or more project-level fields. Send `dueDate: null` to clear the due date.
+
+```json
+{
+  "type": "update_project_card",
+  "shapeId": "shape:website_launch",
+  "status": "blocked",
+  "priority": "medium",
+  "dueDate": null
+}
+```
+
+### append_project_action
+
+Adds an action with a stable, caller-supplied ID. Duplicate IDs are rejected without replacing existing actions.
+
+```json
+{
+  "type": "append_project_action",
+  "shapeId": "shape:website_launch",
+  "actionId": "action_announce",
+  "text": "Publish announcement"
+}
+```
+
+### update_project_action_text
+
+```json
+{
+  "type": "update_project_action_text",
+  "shapeId": "shape:website_launch",
+  "actionId": "action_announce",
+  "text": "Publish launch announcement"
+}
+```
+
+### set_project_action_done
+
+```json
+{
+  "type": "set_project_action_done",
+  "shapeId": "shape:website_launch",
+  "actionId": "action_copy",
+  "done": true
+}
+```
+
+### remove_project_action
+
+```json
+{
+  "type": "remove_project_action",
+  "shapeId": "shape:website_launch",
+  "actionId": "action_announce"
+}
+```
+
+Project mutations fail at the action level when the target is missing, is not a `project_card`, or does not contain the requested action ID. The browser and headless executors use the same mutations and normalized observations. Long action lists scroll inside the card instead of expanding its canvas footprint.
+
 ### create_link_card
 
 ```json

@@ -151,6 +151,35 @@ Mutate todo tasks:
 ]
 ```
 
+Create a project card that tracks status, priority, due date, progress, and next actions:
+
+```json
+{
+  "type": "create_project_card",
+  "id": "shape:website_launch",
+  "title": "Website Launch",
+  "status": "active",
+  "priority": "high",
+  "dueDate": "2026-07-31",
+  "x": 100,
+  "y": 120,
+  "actions": [
+    { "id": "action_copy", "text": "Finish copy" },
+    { "id": "action_ship", "text": "Ship" }
+  ]
+}
+```
+
+Track and act on it without replacing the card:
+
+```json
+[
+  { "type": "set_project_action_done", "shapeId": "shape:website_launch", "actionId": "action_copy", "done": true },
+  { "type": "append_project_action", "shapeId": "shape:website_launch", "actionId": "action_announce", "text": "Publish announcement" },
+  { "type": "update_project_card", "shapeId": "shape:website_launch", "status": "blocked" }
+]
+```
+
 Create a link card:
 
 ```json
