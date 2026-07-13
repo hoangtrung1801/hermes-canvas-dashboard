@@ -151,32 +151,29 @@ Mutate todo tasks:
 ]
 ```
 
-Create a project card that tracks status, priority, due date, progress, and next actions:
+Create a project task board. Tasks default to the Todo column when `status` is omitted:
 
 ```json
 {
   "type": "create_project_card",
   "id": "shape:website_launch",
   "title": "Website Launch",
-  "status": "active",
-  "priority": "high",
-  "dueDate": "2026-07-31",
   "x": 100,
   "y": 120,
-  "actions": [
-    { "id": "action_copy", "text": "Finish copy" },
-    { "id": "action_ship", "text": "Ship" }
+  "tasks": [
+    { "id": "task_copy", "text": "Finish copy" },
+    { "id": "task_review", "text": "Review changes", "status": "doing" }
   ]
 }
 ```
 
-Track and act on it without replacing the card:
+Track work without replacing the card. Task statuses are `todo`, `doing`, `done`, and `blocked`:
 
 ```json
 [
-  { "type": "set_project_action_done", "shapeId": "shape:website_launch", "actionId": "action_copy", "done": true },
-  { "type": "append_project_action", "shapeId": "shape:website_launch", "actionId": "action_announce", "text": "Publish announcement" },
-  { "type": "update_project_card", "shapeId": "shape:website_launch", "status": "blocked" }
+  { "type": "move_project_task", "shapeId": "shape:website_launch", "taskId": "task_copy", "status": "doing" },
+  { "type": "append_project_task", "shapeId": "shape:website_launch", "taskId": "task_publish", "text": "Publish announcement" },
+  { "type": "update_project_task_text", "shapeId": "shape:website_launch", "taskId": "task_publish", "text": "Publish launch announcement" }
 ]
 ```
 

@@ -208,87 +208,85 @@ Move shapes by absolute coordinates or a delta.
 
 ### create_project_card
 
-Creates a dedicated `project_card` shape. `status` defaults to `planned`, `priority` to `medium`, dimensions to `360` × `320`, and `color` to `light-violet`. The due date is optional and must be a real `YYYY-MM-DD` date. Action IDs must be unique within the card; omitted IDs are generated and returned in later observations.
+Creates a dedicated four-column `project_card` task board. The columns are ordered Todo, Doing, Done, and Blocked. Task status defaults to `todo`, dimensions default to `960` × `480`, and `color` defaults to `light-violet`. Task IDs must be unique within the card; omitted IDs in the initial task list are generated and returned in later observations.
 
 ```json
 {
   "type": "create_project_card",
   "id": "shape:website_launch",
   "title": "Website Launch",
-  "status": "active",
-  "priority": "high",
-  "dueDate": "2026-07-31",
   "x": 100,
   "y": 120,
-  "actions": [
-    { "id": "action_copy", "text": "Finish copy" },
-    { "id": "action_ship", "text": "Ship", "done": false }
+  "tasks": [
+    { "id": "task_copy", "text": "Finish copy" },
+    { "id": "task_review", "text": "Review changes", "status": "doing" }
   ]
 }
 ```
 
-Valid statuses are `planned`, `active`, `blocked`, and `done`. Valid priorities are `low`, `medium`, and `high`. Progress is derived from completed actions; it does not automatically change the explicit project status. A project with no actions reports 0% progress.
+Valid task statuses are `todo`, `doing`, `done`, and `blocked`. The project itself has no status, priority, due date, or progress value.
 
 ### update_project_card
 
-Updates one or more project-level fields. Send `dueDate: null` to clear the due date.
+Updates the project title.
 
 ```json
 {
   "type": "update_project_card",
   "shapeId": "shape:website_launch",
-  "status": "blocked",
-  "priority": "medium",
-  "dueDate": null
+  "title": "Website Release"
 }
 ```
 
-### append_project_action
+### append_project_task
 
-Adds an action with a stable, caller-supplied ID. Duplicate IDs are rejected without replacing existing actions.
+Adds a task with a stable, caller-supplied ID. The status defaults to `todo`. Duplicate IDs are rejected without replacing existing tasks.
 
 ```json
 {
-  "type": "append_project_action",
+  "type": "append_project_task",
   "shapeId": "shape:website_launch",
-  "actionId": "action_announce",
+  "taskId": "task_announce",
   "text": "Publish announcement"
 }
 ```
 
-### update_project_action_text
+### update_project_task_text
 
 ```json
 {
-  "type": "update_project_action_text",
+  "type": "update_project_task_text",
   "shapeId": "shape:website_launch",
-  "actionId": "action_announce",
+  "taskId": "task_announce",
   "text": "Publish launch announcement"
 }
 ```
 
-### set_project_action_done
+### move_project_task
+
+Moves a task to another status column and optionally places it immediately before a task in that destination column. Omit `beforeTaskId` or send `null` to append it to the column.
 
 ```json
 {
-  "type": "set_project_action_done",
+  "type": "move_project_task",
   "shapeId": "shape:website_launch",
-  "actionId": "action_copy",
-  "done": true
+  "taskId": "task_copy",
+  "status": "done",
+  "beforeTaskId": null
 }
 ```
 
-### remove_project_action
+### remove_project_task
 
 ```json
 {
-  "type": "remove_project_action",
+  "type": "remove_project_task",
   "shapeId": "shape:website_launch",
-  "actionId": "action_announce"
+  "taskId": "task_announce"
 }
 ```
 
-Project mutations fail at the action level when the target is missing, is not a `project_card`, or does not contain the requested action ID. The browser and headless executors use the same mutations and normalized observations. Long action lists scroll inside the card instead of expanding its canvas footprint.
+Project mutations fail at the action level when the target is missing, is not a `project_card`, or does not contain the requested task ID. For ordered moves, `beforeTaskId` must identify another task in the destination status. The browser and headless executors use the same mutations and normalized observations. Each task column scrolls independently instead of expanding the card's canvas footprint.
 
 ### create_link_card
 

@@ -14,7 +14,7 @@ Use this skill to operate a running Hermes Canvas Gateway. The gateway applies a
 
 ## When to Use
 
-Use this skill when the user asks to inspect or change the Hermes Canvas Dashboard, tldraw canvas, projects, project actions, notes, todo blocks, checklist items, link cards, shapes, selections, or camera view.
+Use this skill when the user asks to inspect or change the Hermes Canvas Dashboard, tldraw canvas, projects, project tasks, notes, todo blocks, checklist items, link cards, shapes, selections, or camera view.
 
 Prefer the Hermes `canvas_action` plugin tool when it is available. Use the bundled CLI only when the tool is unavailable or when the user explicitly wants a terminal command. Do not use Hermes' session `todo` tool unless the user asks for the agent-local todo list.
 
@@ -64,44 +64,46 @@ After a successful canvas action, respond with only a brief confirmation such as
 
 ### create_project_card
 
-Use one card per project. Status is explicit (`planned`, `active`, `blocked`, or `done`); priority is `low`, `medium`, or `high`. Progress is derived from completed actions and does not change status automatically.
+Use one card per project. A card has a title and tasks arranged in Todo, Doing, Done, and Blocked columns. A task without a status defaults to `todo`.
 
 ```json
-{"type":"create_project_card","id":"shape:website_launch","title":"Website Launch","status":"active","priority":"high","dueDate":"2026-07-31","x":100,"y":120,"actions":[{"id":"action_copy","text":"Finish copy"},{"id":"action_ship","text":"Ship","done":false}]}
+{"type":"create_project_card","id":"shape:website_launch","title":"Website Launch","x":100,"y":120,"tasks":[{"id":"task_copy","text":"Finish copy"},{"id":"task_review","text":"Review changes","status":"doing"}]}
 ```
 
 ### update_project_card
 
-Provide at least one field. Set `dueDate` to `null` to clear it.
+Update the project title.
 
 ```json
-{"type":"update_project_card","shapeId":"shape:website_launch","status":"blocked","priority":"medium","dueDate":null}
+{"type":"update_project_card","shapeId":"shape:website_launch","title":"Website Release"}
 ```
 
-### append_project_action
+### append_project_task
 
-Choose a stable action ID that is unique within the project.
+Choose a stable task ID that is unique within the project. Status defaults to `todo`.
 
 ```json
-{"type":"append_project_action","shapeId":"shape:website_launch","actionId":"action_announce","text":"Publish announcement"}
+{"type":"append_project_task","shapeId":"shape:website_launch","taskId":"task_announce","text":"Publish announcement"}
 ```
 
-### update_project_action_text
+### update_project_task_text
 
 ```json
-{"type":"update_project_action_text","shapeId":"shape:website_launch","actionId":"action_announce","text":"Publish launch announcement"}
+{"type":"update_project_task_text","shapeId":"shape:website_launch","taskId":"task_announce","text":"Publish launch announcement"}
 ```
 
-### set_project_action_done
+### move_project_task
+
+Use `beforeTaskId` to place the task before another task in the destination column. Omit it or set it to `null` to append.
 
 ```json
-{"type":"set_project_action_done","shapeId":"shape:website_launch","actionId":"action_copy","done":true}
+{"type":"move_project_task","shapeId":"shape:website_launch","taskId":"task_copy","status":"done","beforeTaskId":null}
 ```
 
-### remove_project_action
+### remove_project_task
 
 ```json
-{"type":"remove_project_action","shapeId":"shape:website_launch","actionId":"action_announce"}
+{"type":"remove_project_task","shapeId":"shape:website_launch","taskId":"task_announce"}
 ```
 
 ### create_todo_block
@@ -237,7 +239,7 @@ uv run --with websocket-client scripts/canvas_dashboard_tool.py --actions '[{"ty
 - Timeout waiting for `canvas.observation`: confirm the gateway is running for the selected `canvasId`.
 - `select_shapes` does not work headlessly; it requires a browser editor bridge.
 - Result item contains `error`: the envelope was valid, but that action failed. Inspect shape ids and action payloads before retrying.
-- Project action mutations require the current project shape ID and stable action ID from the latest observation; read again before retrying a missing-target error.
+- Project task mutations require the current project shape ID and stable task ID from the latest observation; read again before retrying a missing-target error.
 - `ok` is `false` or a `canvas.error` envelope appears: stop and inspect the JSON before sending more writes.
 
 ## Verification
