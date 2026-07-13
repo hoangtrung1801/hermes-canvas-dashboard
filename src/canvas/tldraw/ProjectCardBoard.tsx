@@ -272,7 +272,13 @@ export function ProjectCardBoard({
             onPointerDown={onInteraction}
           />
         ) : (
-          <strong onDoubleClick={startTitleEdit}>{title}</strong>
+          <strong
+            onPointerDown={onInteraction}
+            onPointerUp={onInteraction}
+            onDoubleClick={startTitleEdit}
+          >
+            {title}
+          </strong>
         )}
       </header>
 

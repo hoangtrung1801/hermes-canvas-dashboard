@@ -135,6 +135,28 @@ describe('ProjectCardBoard', () => {
     expect(screen.getByText('Untitled Project')).toBeInTheDocument()
   })
 
+  it('claims the title pointer sequence before entering title edit mode', () => {
+    const onInteraction = vi.fn()
+    render(
+      <ProjectCardBoard
+        title="Website launch"
+        tasks={[]}
+        onTitleChange={() => undefined}
+        onTasksChange={() => undefined}
+        onInteraction={onInteraction}
+      />
+    )
+
+    const title = screen.getByText('Website launch')
+    fireEvent.pointerDown(title, { pointerId: 1, button: 0 })
+    fireEvent.pointerUp(title, { pointerId: 1, button: 0 })
+
+    expect(onInteraction).toHaveBeenCalledTimes(2)
+
+    fireEvent.doubleClick(title)
+    expect(screen.getByRole('textbox', { name: 'Project title' })).toHaveFocus()
+  })
+
   it('moves a task by pointer and cancels outside or on Escape', () => {
     const rect = (left: number, right: number, top: number, bottom: number) =>
       ({
