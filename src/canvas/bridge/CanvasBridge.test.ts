@@ -78,6 +78,53 @@ describe('CanvasBridge', () => {
     ])
   })
 
+  it('keeps project batch result context after an action-level failure', () => {
+    const bridge = new CanvasBridge(createMemoryTldrawTarget('canvas_001'))
+    const response = bridge.handleActionEnvelope({
+      type: 'canvas.action',
+      requestId: 'req_project',
+      canvasId: 'canvas_001',
+      actions: [
+        {
+          type: 'create_project_card',
+          id: 'shape:project_1',
+          x: 0,
+          y: 0,
+          title: 'Launch',
+          actions: [{ id: 'action_ship', text: 'Ship' }]
+        },
+        {
+          type: 'append_project_action',
+          shapeId: 'shape:project_1',
+          actionId: 'action_ship',
+          text: 'Duplicate'
+        },
+        {
+          type: 'set_project_action_done',
+          shapeId: 'shape:project_1',
+          actionId: 'action_ship',
+          done: true
+        }
+      ]
+    })
+
+    if ('error' in response) throw new Error('expected action results')
+    expect(response.result).toMatchObject({
+      ok: false,
+      results: [
+        { actionType: 'create_project_card', createdShapeIds: ['shape:project_1'] },
+        {
+          actionType: 'append_project_action',
+          error: 'Duplicate project action action_ship'
+        },
+        { actionType: 'set_project_action_done', updatedShapeIds: ['shape:project_1'] }
+      ]
+    })
+    expect(response.observation.state.shapes[0].props.actions).toEqual([
+      { id: 'action_ship', text: 'Ship', done: true }
+    ])
+  })
+
   it('returns an action-level error for unknown shapes', () => {
     const bridge = new CanvasBridge(createMemoryTldrawTarget('canvas_001'))
 

@@ -1,4 +1,9 @@
 import type { TodoTaskInput } from '../tldraw/customShape.types'
+import type {
+  ProjectActionInput,
+  ProjectPriority,
+  ProjectStatus
+} from '../tldraw/projectCard.types'
 
 export type TldrawShapePayload = {
   id?: string
@@ -128,6 +133,58 @@ export type CreateNoteCardAction = {
   size?: 's' | 'm' | 'l' | 'xl'
 }
 
+export type CreateProjectCardAction = {
+  type: 'create_project_card'
+  id?: string
+  x: number
+  y: number
+  title: string
+  status?: ProjectStatus
+  priority?: ProjectPriority
+  dueDate?: string
+  actions?: ProjectActionInput[]
+  w?: number
+  h?: number
+  color?: string
+}
+
+export type UpdateProjectCardAction = {
+  type: 'update_project_card'
+  shapeId: string
+  title?: string
+  status?: ProjectStatus
+  priority?: ProjectPriority
+  dueDate?: string | null
+}
+
+export type AppendProjectAction = {
+  type: 'append_project_action'
+  shapeId: string
+  actionId: string
+  text: string
+  done?: boolean
+}
+
+export type UpdateProjectActionTextAction = {
+  type: 'update_project_action_text'
+  shapeId: string
+  actionId: string
+  text: string
+}
+
+export type SetProjectActionDoneAction = {
+  type: 'set_project_action_done'
+  shapeId: string
+  actionId: string
+  done: boolean
+}
+
+export type RemoveProjectActionAction = {
+  type: 'remove_project_action'
+  shapeId: string
+  actionId: string
+}
+
 export type CanvasAction =
   | CreateShapeAction
   | UpdateShapeAction
@@ -146,3 +203,9 @@ export type CanvasAction =
   | RemoveTodoTaskAction
   | CreateLinkCardAction
   | CreateNoteCardAction
+  | CreateProjectCardAction
+  | UpdateProjectCardAction
+  | AppendProjectAction
+  | UpdateProjectActionTextAction
+  | SetProjectActionDoneAction
+  | RemoveProjectActionAction

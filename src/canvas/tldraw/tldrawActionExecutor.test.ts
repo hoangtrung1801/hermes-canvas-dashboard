@@ -83,6 +83,121 @@ describe('tldraw action executor', () => {
     })
   })
 
+  it('creates and mutates a project card while preserving explicit status', () => {
+    const target = createMemoryTldrawTarget('canvas_001')
+    const actions: CanvasAction[] = [
+      {
+        type: 'create_project_card',
+        id: 'shape:project_1',
+        x: 40,
+        y: 80,
+        title: 'Launch',
+        status: 'active',
+        priority: 'high',
+        dueDate: '2026-07-31',
+        actions: [{ id: 'action_copy', text: 'Write copy' }]
+      },
+      {
+        type: 'append_project_action',
+        shapeId: 'shape:project_1',
+        actionId: 'action_ship',
+        text: 'Ship'
+      },
+      {
+        type: 'update_project_action_text',
+        shapeId: 'shape:project_1',
+        actionId: 'action_ship',
+        text: 'Publish'
+      },
+      {
+        type: 'set_project_action_done',
+        shapeId: 'shape:project_1',
+        actionId: 'action_copy',
+        done: true
+      },
+      {
+        type: 'update_project_card',
+        shapeId: 'shape:project_1',
+        priority: 'medium',
+        dueDate: null
+      },
+      {
+        type: 'remove_project_action',
+        shapeId: 'shape:project_1',
+        actionId: 'action_ship'
+      }
+    ]
+
+    expect(actions.map((action) => executeTldrawAction(target, action))).toEqual([
+      { actionType: 'create_project_card', createdShapeIds: ['shape:project_1'] },
+      { actionType: 'append_project_action', updatedShapeIds: ['shape:project_1'] },
+      { actionType: 'update_project_action_text', updatedShapeIds: ['shape:project_1'] },
+      { actionType: 'set_project_action_done', updatedShapeIds: ['shape:project_1'] },
+      { actionType: 'update_project_card', updatedShapeIds: ['shape:project_1'] },
+      { actionType: 'remove_project_action', updatedShapeIds: ['shape:project_1'] }
+    ])
+    expect(readTldrawObservation(target).shapes[0]).toMatchObject({
+      id: 'shape:project_1',
+      type: 'project_card',
+      x: 40,
+      y: 80,
+      w: 360,
+      h: 320,
+      props: {
+        title: 'Launch',
+        status: 'active',
+        priority: 'medium',
+        actions: [{ id: 'action_copy', text: 'Write copy', done: true }]
+      }
+    })
+    expect(readTldrawObservation(target).shapes[0].props).not.toHaveProperty('dueDate')
+  })
+
+  it('returns stable project action-level errors without mutation', () => {
+    const target = createMemoryTldrawTarget('canvas_001')
+    executeTldrawAction(target, {
+      type: 'create_project_card',
+      id: 'shape:project_1',
+      x: 0,
+      y: 0,
+      title: 'Launch',
+      actions: [{ id: 'action_ship', text: 'Ship' }]
+    })
+
+    expect(
+      executeTldrawAction(target, {
+        type: 'append_project_action',
+        shapeId: 'shape:project_1',
+        actionId: 'action_ship',
+        text: 'Duplicate'
+      })
+    ).toEqual({
+      actionType: 'append_project_action',
+      error: 'Duplicate project action action_ship'
+    })
+    expect(
+      executeTldrawAction(target, {
+        type: 'set_project_action_done',
+        shapeId: 'shape:project_1',
+        actionId: 'missing',
+        done: true
+      })
+    ).toEqual({
+      actionType: 'set_project_action_done',
+      error: 'Unknown project action missing'
+    })
+    expect(
+      executeTldrawAction(target, {
+        type: 'update_project_card',
+        shapeId: 'shape:missing',
+        status: 'done'
+      })
+    ).toEqual({
+      actionType: 'update_project_card',
+      error: 'Unknown project card shape:missing'
+    })
+  })
+
   it('creates built-in rectangle note cards with formatted rich text', () => {
     const target = createMemoryTldrawTarget('canvas_001')
 

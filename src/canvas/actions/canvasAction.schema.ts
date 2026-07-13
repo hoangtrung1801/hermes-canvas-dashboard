@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { isValidProjectDueDate } from '../tldraw/projectCard.types'
 
 const position = {
   x: z.number(),
@@ -25,6 +26,32 @@ const tldrawDefaultColor = z.enum([
   'white'
 ])
 const tldrawNoteSize = z.enum(['s', 'm', 'l', 'xl'])
+const nonBlank = z.string().trim().min(1)
+const projectStatus = z.enum(['planned', 'active', 'blocked', 'done'])
+const projectPriority = z.enum(['low', 'medium', 'high'])
+const projectDueDate = z
+  .string()
+  .refine(isValidProjectDueDate, 'dueDate must be a real YYYY-MM-DD date')
+const projectActionInput = z.object({
+  id: nonBlank.optional(),
+  text: nonBlank,
+  done: z.boolean().optional()
+})
+const projectActionInputs = z.array(projectActionInput).superRefine((actions, context) => {
+  const seen = new Set<string>()
+
+  actions.forEach((action, index) => {
+    if (!action.id) return
+    if (seen.has(action.id)) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: [index, 'id'],
+        message: `duplicate action id ${action.id}`
+      })
+    }
+    seen.add(action.id)
+  })
+})
 
 const tldrawShapePayloadSchema = z.object({
   id: z.string().min(1).optional(),
@@ -131,6 +158,60 @@ export const canvasActionSchema = z.union([
     color: tldrawDefaultColor.optional(),
     size: tldrawNoteSize.optional(),
     ...position
+  }),
+  z.object({
+    type: z.literal('create_project_card'),
+    id: nonBlank.optional(),
+    title: nonBlank,
+    status: projectStatus.optional(),
+    priority: projectPriority.optional(),
+    dueDate: projectDueDate.optional(),
+    actions: projectActionInputs.optional(),
+    w: z.number().finite().positive().optional(),
+    h: z.number().finite().positive().optional(),
+    color: tldrawDefaultColor.optional(),
+    ...position
+  }),
+  z
+    .object({
+      type: z.literal('update_project_card'),
+      shapeId,
+      title: nonBlank.optional(),
+      status: projectStatus.optional(),
+      priority: projectPriority.optional(),
+      dueDate: projectDueDate.nullable().optional()
+    })
+    .refine(
+      (value) =>
+        value.title !== undefined ||
+        value.status !== undefined ||
+        value.priority !== undefined ||
+        value.dueDate !== undefined,
+      { message: 'update_project_card requires at least one field' }
+    ),
+  z.object({
+    type: z.literal('append_project_action'),
+    shapeId,
+    actionId: nonBlank,
+    text: nonBlank,
+    done: z.boolean().optional()
+  }),
+  z.object({
+    type: z.literal('update_project_action_text'),
+    shapeId,
+    actionId: nonBlank,
+    text: nonBlank
+  }),
+  z.object({
+    type: z.literal('set_project_action_done'),
+    shapeId,
+    actionId: nonBlank,
+    done: z.boolean()
+  }),
+  z.object({
+    type: z.literal('remove_project_action'),
+    shapeId,
+    actionId: nonBlank
   })
 ])
 

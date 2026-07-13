@@ -94,6 +94,103 @@ describe('tldraw canvas action schema', () => {
     })
   })
 
+  it('accepts and trims the complete project action contract', () => {
+    const actions = [
+      {
+        type: 'create_project_card',
+        id: 'shape:project_1',
+        x: 40,
+        y: 80,
+        title: '  Website launch  ',
+        status: 'active',
+        priority: 'high',
+        dueDate: '2026-07-31',
+        actions: [{ id: 'action_copy', text: '  Finish copy  ' }],
+        w: 420,
+        h: 340,
+        color: 'light-violet'
+      },
+      {
+        type: 'update_project_card',
+        shapeId: 'shape:project_1',
+        status: 'blocked',
+        dueDate: null
+      },
+      {
+        type: 'append_project_action',
+        shapeId: 'shape:project_1',
+        actionId: 'action_ship',
+        text: '  Ship  '
+      },
+      {
+        type: 'update_project_action_text',
+        shapeId: 'shape:project_1',
+        actionId: 'action_ship',
+        text: '  Publish  '
+      },
+      {
+        type: 'set_project_action_done',
+        shapeId: 'shape:project_1',
+        actionId: 'action_copy',
+        done: true
+      },
+      {
+        type: 'remove_project_action',
+        shapeId: 'shape:project_1',
+        actionId: 'action_ship'
+      }
+    ]
+
+    expect(canvasActionBatchSchema.parse(actions)).toMatchObject([
+      {
+        type: 'create_project_card',
+        title: 'Website launch',
+        actions: [{ text: 'Finish copy' }]
+      },
+      { type: 'update_project_card', dueDate: null },
+      { type: 'append_project_action', text: 'Ship' },
+      { type: 'update_project_action_text', text: 'Publish' },
+      { type: 'set_project_action_done', done: true },
+      { type: 'remove_project_action' }
+    ])
+  })
+
+  it('rejects invalid project fields and empty metadata updates', () => {
+    const invalid = [
+      { type: 'create_project_card', x: 0, y: 0, title: '   ' },
+      { type: 'create_project_card', x: 0, y: 0, title: 'Project', status: 'paused' },
+      { type: 'create_project_card', x: 0, y: 0, title: 'Project', priority: 'urgent' },
+      { type: 'create_project_card', x: 0, y: 0, title: 'Project', dueDate: '2026-02-30' },
+      {
+        type: 'create_project_card',
+        x: 0,
+        y: 0,
+        title: 'Project',
+        actions: [
+          { id: 'same', text: 'A' },
+          { id: 'same', text: 'B' }
+        ]
+      },
+      { type: 'update_project_card', shapeId: 'shape:project_1' },
+      {
+        type: 'append_project_action',
+        shapeId: 'shape:project_1',
+        actionId: '',
+        text: 'Ship'
+      },
+      {
+        type: 'update_project_action_text',
+        shapeId: 'shape:project_1',
+        actionId: 'a',
+        text: '   '
+      }
+    ]
+
+    for (const action of invalid) {
+      expect(() => canvasActionSchema.parse(action)).toThrow()
+    }
+  })
+
   it('rejects invalid note card helper actions', () => {
     expect(() =>
       canvasActionSchema.parse({

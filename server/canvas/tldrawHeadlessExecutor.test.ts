@@ -125,4 +125,81 @@ describe('executeHeadlessTldrawAction', () => {
       }
     })
   })
+
+  it('persists project creation and mutations without a browser bridge', async () => {
+    const responses = await executeHeadlessTldrawAction(manager, {
+      type: 'canvas.action',
+      requestId: 'req_project',
+      canvasId: 'canvas_001',
+      actions: [
+        {
+          type: 'create_project_card',
+          id: 'shape:project_1',
+          x: 100,
+          y: 120,
+          title: 'Website launch',
+          status: 'active',
+          priority: 'high',
+          dueDate: '2026-07-31',
+          actions: [{ id: 'action_copy', text: 'Write copy' }]
+        },
+        {
+          type: 'append_project_action',
+          shapeId: 'shape:project_1',
+          actionId: 'action_ship',
+          text: 'Ship'
+        },
+        {
+          type: 'set_project_action_done',
+          shapeId: 'shape:project_1',
+          actionId: 'action_copy',
+          done: true
+        },
+        { type: 'read_canvas' }
+      ]
+    })
+
+    expect(responses[0]).toMatchObject({
+      type: 'canvas.result',
+      requestId: 'req_project',
+      ok: true
+    })
+    expect(responses[1]).toMatchObject({
+      type: 'canvas.observation',
+      state: {
+        shapes: [
+          {
+            id: 'shape:project_1',
+            type: 'project_card',
+            w: 360,
+            h: 320,
+            props: {
+              title: 'Website launch',
+              status: 'active',
+              priority: 'high',
+              dueDate: '2026-07-31',
+              actions: [
+                { id: 'action_copy', text: 'Write copy', done: true },
+                { id: 'action_ship', text: 'Ship', done: false }
+              ]
+            }
+          }
+        ]
+      }
+    })
+
+    const stored = manager
+      .getOrCreateRoom('canvas_001')
+      .getCurrentSnapshot()
+      .documents.find((entry) => (entry.state as { id?: string }).id === 'shape:project_1')
+      ?.state as Record<string, any>
+    expect(stored).toMatchObject({
+      typeName: 'shape',
+      type: 'project_card',
+      props: {
+        title: 'Website launch',
+        actions: [{ done: true }, { done: false }]
+      }
+    })
+  })
 })

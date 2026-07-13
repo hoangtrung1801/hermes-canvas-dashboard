@@ -12,6 +12,11 @@ import {
   type CanvasObservationState
 } from './tldrawObservation'
 import { createNoteCardProps } from './nativeNoteCard'
+import {
+  PROJECT_CARD_TYPE,
+  createProjectCardProps,
+  type ProjectAction
+} from './projectCard.types'
 
 export type TldrawActionResult = {
   actionType: CanvasAction['type']
@@ -93,6 +98,23 @@ export function executeTldrawAction(target: TldrawExecutorTarget, action: Canvas
         meta: { source: 'hermes' },
         actionType: action.type
       })
+    case 'create_project_card':
+      return createShape(target, {
+        id: action.id ?? nextShapeId(target, PROJECT_CARD_TYPE),
+        type: PROJECT_CARD_TYPE,
+        x: action.x,
+        y: action.y,
+        props: createProjectCardProps(action),
+        meta: { source: 'hermes' },
+        actionType: action.type
+      })
+    case 'update_project_card':
+      return updateProjectMetadata(target, action)
+    case 'append_project_action':
+    case 'update_project_action_text':
+    case 'set_project_action_done':
+    case 'remove_project_action':
+      return mutateProjectActions(target, action)
     case 'update_shape': {
       const existing = target.shapes.get(action.shapeId)
       if (!existing) return { actionType: action.type, error: `Unknown shape ${action.shapeId}` }
@@ -255,6 +277,118 @@ function updateTodoTasks(
   target.shapes.set(shape.id, next)
   target.editor?.updateShape({ id: shape.id as any, type: TODO_BLOCK_TYPE, props: next.props as any })
   return { actionType, updatedShapeIds: [shape.id] }
+}
+
+type ProjectMutation = Extract<
+  CanvasAction,
+  {
+    type:
+      | 'append_project_action'
+      | 'update_project_action_text'
+      | 'set_project_action_done'
+      | 'remove_project_action'
+  }
+>
+
+function projectShape(target: TldrawExecutorTarget, shapeId: string) {
+  const shape = target.shapes.get(shapeId)
+  return shape?.type === PROJECT_CARD_TYPE ? shape : undefined
+}
+
+function updateProjectProps(
+  target: TldrawExecutorTarget,
+  shape: ShapeRecord,
+  props: Record<string, unknown>,
+  actionType: CanvasAction['type']
+): TldrawActionResult {
+  const next = { ...shape, props }
+  target.shapes.set(shape.id, next)
+  target.editor?.updateShape({
+    id: shape.id as any,
+    type: PROJECT_CARD_TYPE as any,
+    props: next.props as any
+  })
+  return { actionType, updatedShapeIds: [shape.id] }
+}
+
+function updateProjectMetadata(
+  target: TldrawExecutorTarget,
+  action: Extract<CanvasAction, { type: 'update_project_card' }>
+): TldrawActionResult {
+  const shape = projectShape(target, action.shapeId)
+  if (!shape) {
+    return { actionType: action.type, error: `Unknown project card ${action.shapeId}` }
+  }
+
+  const props = { ...shape.props }
+  if (action.title !== undefined) props.title = action.title
+  if (action.status !== undefined) props.status = action.status
+  if (action.priority !== undefined) props.priority = action.priority
+  if (action.dueDate === null) delete props.dueDate
+  else if (action.dueDate !== undefined) props.dueDate = action.dueDate
+
+  return updateProjectProps(target, shape, props, action.type)
+}
+
+function mutateProjectActions(
+  target: TldrawExecutorTarget,
+  action: ProjectMutation
+): TldrawActionResult {
+  const shape = projectShape(target, action.shapeId)
+  if (!shape) {
+    return { actionType: action.type, error: `Unknown project card ${action.shapeId}` }
+  }
+
+  const actions = Array.isArray(shape.props.actions)
+    ? (shape.props.actions as ProjectAction[])
+    : []
+
+  if (action.type === 'append_project_action') {
+    if (actions.some((item) => item.id === action.actionId)) {
+      return {
+        actionType: action.type,
+        error: `Duplicate project action ${action.actionId}`
+      }
+    }
+
+    return updateProjectProps(
+      target,
+      shape,
+      {
+        ...shape.props,
+        actions: [
+          ...actions,
+          { id: action.actionId, text: action.text, done: action.done ?? false }
+        ]
+      },
+      action.type
+    )
+  }
+
+  if (!actions.some((item) => item.id === action.actionId)) {
+    return {
+      actionType: action.type,
+      error: `Unknown project action ${action.actionId}`
+    }
+  }
+
+  const nextActions =
+    action.type === 'remove_project_action'
+      ? actions.filter((item) => item.id !== action.actionId)
+      : actions.map((item) =>
+          item.id !== action.actionId
+            ? item
+            : action.type === 'update_project_action_text'
+              ? { ...item, text: action.text }
+              : { ...item, done: action.done }
+        )
+
+  return updateProjectProps(
+    target,
+    shape,
+    { ...shape.props, actions: nextActions },
+    action.type
+  )
 }
 
 function nextShapeId(target: TldrawExecutorTarget, type: string): string {
