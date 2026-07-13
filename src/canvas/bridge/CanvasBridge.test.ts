@@ -91,19 +91,19 @@ describe('CanvasBridge', () => {
           x: 0,
           y: 0,
           title: 'Launch',
-          actions: [{ id: 'action_ship', text: 'Ship' }]
+          tasks: [{ id: 'task_ship', text: 'Ship' }]
         },
         {
-          type: 'append_project_action',
+          type: 'append_project_task',
           shapeId: 'shape:project_1',
-          actionId: 'action_ship',
+          taskId: 'task_ship',
           text: 'Duplicate'
         },
         {
-          type: 'set_project_action_done',
+          type: 'move_project_task',
           shapeId: 'shape:project_1',
-          actionId: 'action_ship',
-          done: true
+          taskId: 'task_ship',
+          status: 'doing'
         }
       ]
     })
@@ -114,14 +114,14 @@ describe('CanvasBridge', () => {
       results: [
         { actionType: 'create_project_card', createdShapeIds: ['shape:project_1'] },
         {
-          actionType: 'append_project_action',
-          error: 'Duplicate project action action_ship'
+          actionType: 'append_project_task',
+          error: 'Duplicate project task task_ship'
         },
-        { actionType: 'set_project_action_done', updatedShapeIds: ['shape:project_1'] }
+        { actionType: 'move_project_task', updatedShapeIds: ['shape:project_1'] }
       ]
     })
-    expect(response.observation.state.shapes[0].props.actions).toEqual([
-      { id: 'action_ship', text: 'Ship', done: true }
+    expect(response.observation.state.shapes[0].props.tasks).toEqual([
+      { id: 'task_ship', text: 'Ship', status: 'doing' }
     ])
   })
 

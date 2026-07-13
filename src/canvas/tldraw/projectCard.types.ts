@@ -6,43 +6,39 @@ import {
 import { T } from '@tldraw/validate'
 
 export const PROJECT_CARD_TYPE = 'project_card'
-export const PROJECT_CARD_DEFAULT_WIDTH = 360
-export const PROJECT_CARD_DEFAULT_HEIGHT = 320
-export const PROJECT_CARD_MIN_WIDTH = 320
-export const PROJECT_CARD_MIN_HEIGHT = 240
+export const PROJECT_CARD_DEFAULT_WIDTH = 960
+export const PROJECT_CARD_DEFAULT_HEIGHT = 480
+export const PROJECT_CARD_MIN_WIDTH = 760
+export const PROJECT_CARD_MIN_HEIGHT = 320
 export const DEFAULT_PROJECT_CARD_COLOR = 'light-violet'
 
-export const PROJECT_STATUSES = ['planned', 'active', 'blocked', 'done'] as const
-export const PROJECT_PRIORITIES = ['low', 'medium', 'high'] as const
+export const PROJECT_TASK_STATUSES = ['todo', 'doing', 'done', 'blocked'] as const
 
-export type ProjectStatus = (typeof PROJECT_STATUSES)[number]
-export type ProjectPriority = (typeof PROJECT_PRIORITIES)[number]
+export type ProjectTaskStatus = (typeof PROJECT_TASK_STATUSES)[number]
 
-export type ProjectAction = {
+export type ProjectTask = {
   id: string
   text: string
-  done: boolean
+  status: ProjectTaskStatus
 }
 
-export type ProjectActionInput = {
+export type ProjectTaskInput = {
   id?: string
   text: string
-  done?: boolean
+  status?: ProjectTaskStatus
 }
 
 export type ProjectCardProps = {
   w: number
   h: number
   title: string
-  status: ProjectStatus
-  priority: ProjectPriority
-  dueDate?: string
-  actions: ProjectAction[]
+  tasks: ProjectTask[]
   color: string
 }
 
 const projectCardVersions = createShapePropsMigrationIds(PROJECT_CARD_TYPE, {
-  AddProjectFields: 1
+  AddProjectFields: 1,
+  TaskBoardFields: 2
 })
 
 export const projectCardMigrations = createShapePropsMigrationSequence({
@@ -62,24 +58,45 @@ export const projectCardMigrations = createShapePropsMigrationSequence({
         delete props.actions
         delete props.color
       }
+    },
+    {
+      id: projectCardVersions.TaskBoardFields,
+      up: (props) => {
+        delete props.status
+        delete props.priority
+        delete props.dueDate
+        delete props.actions
+        props.tasks ??= []
+        props.w = Math.max(
+          PROJECT_CARD_MIN_WIDTH,
+          Number(props.w) || PROJECT_CARD_DEFAULT_WIDTH
+        )
+        props.h = Math.max(
+          PROJECT_CARD_MIN_HEIGHT,
+          Number(props.h) || PROJECT_CARD_DEFAULT_HEIGHT
+        )
+      },
+      down: (props) => {
+        delete props.tasks
+        props.status = 'planned'
+        props.priority = 'medium'
+        props.actions = []
+      }
     }
   ]
 })
 
-const projectActionValidator = T.object({
+const projectTaskValidator = T.object({
   id: T.string,
   text: T.string,
-  done: T.boolean
+  status: T.literalEnum(...PROJECT_TASK_STATUSES)
 })
 
 export const projectCardProps = {
   w: T.number,
   h: T.number,
   title: T.string,
-  status: T.literalEnum(...PROJECT_STATUSES),
-  priority: T.literalEnum(...PROJECT_PRIORITIES),
-  dueDate: T.string.optional(),
-  actions: T.arrayOf(projectActionValidator),
+  tasks: T.arrayOf(projectTaskValidator),
   color: DefaultColorStyle
 }
 
@@ -89,105 +106,153 @@ function nonBlank(value: string, label: string) {
   return trimmed
 }
 
-export function nextProjectActionId<Action extends { id: string }>(actions: Action[]) {
-  const used = new Set(actions.map((action) => action.id))
+function isProjectTaskStatus(status: string): status is ProjectTaskStatus {
+  return (PROJECT_TASK_STATUSES as readonly string[]).includes(status)
+}
+
+export function nextProjectTaskId(tasks: Pick<ProjectTask, 'id'>[]) {
+  const used = new Set(tasks.map((task) => task.id))
 
   for (let index = 1; ; index += 1) {
-    const id = `action_${String(index).padStart(4, '0')}`
+    const id = `task_${String(index).padStart(4, '0')}`
     if (!used.has(id)) return id
   }
 }
 
-export function normalizeProjectActions(inputs: ProjectActionInput[] = []): ProjectAction[] {
-  const supplied = inputs.flatMap((action) => (action.id ? [action.id] : []))
-  if (new Set(supplied).size !== supplied.length) {
-    const duplicate = supplied.find((id, index) => supplied.indexOf(id) !== index)
-    throw new Error(`Duplicate project action ${duplicate}`)
-  }
+export function normalizeProjectTasks(inputs: ProjectTaskInput[] = []): ProjectTask[] {
+  const supplied = inputs.flatMap((task) => {
+    if (task.id === undefined) return []
+    return [nonBlank(task.id, 'Project task id')]
+  })
+  const duplicate = supplied.find((id, index) => supplied.indexOf(id) !== index)
+  if (duplicate) throw new Error(`Duplicate project task ${duplicate}`)
 
   const used = new Set(supplied)
   return inputs.map((input) => {
-    let id = input.id
+    let id = input.id?.trim()
     if (!id) {
-      id = nextProjectActionId([...used].map((usedId) => ({ id: usedId })))
+      id = nextProjectTaskId([...used].map((usedId) => ({ id: usedId })))
       used.add(id)
+    }
+
+    const status = input.status ?? 'todo'
+    if (!isProjectTaskStatus(status)) {
+      throw new Error(`Invalid project task status ${status}`)
     }
 
     return {
       id,
-      text: nonBlank(input.text, 'Project action text'),
-      done: input.done ?? false
+      text: nonBlank(input.text, 'Project task text'),
+      status
     }
   })
 }
 
+export function appendProjectTask(tasks: ProjectTask[], task: ProjectTask): ProjectTask[] {
+  const id = nonBlank(task.id, 'Project task id')
+  if (tasks.some((item) => item.id === id)) {
+    throw new Error(`Duplicate project task ${id}`)
+  }
+  if (!isProjectTaskStatus(task.status)) {
+    throw new Error(`Invalid project task status ${task.status}`)
+  }
+
+  return [
+    ...tasks,
+    {
+      id,
+      text: nonBlank(task.text, 'Project task text'),
+      status: task.status
+    }
+  ]
+}
+
+export function updateProjectTaskText(
+  tasks: ProjectTask[],
+  taskId: string,
+  text: string
+): ProjectTask[] {
+  if (!tasks.some((task) => task.id === taskId)) {
+    throw new Error(`Unknown project task ${taskId}`)
+  }
+  const nextText = nonBlank(text, 'Project task text')
+  return tasks.map((task) => (task.id === taskId ? { ...task, text: nextText } : task))
+}
+
+export function removeProjectTask(tasks: ProjectTask[], taskId: string): ProjectTask[] {
+  if (!tasks.some((task) => task.id === taskId)) {
+    throw new Error(`Unknown project task ${taskId}`)
+  }
+  return tasks.filter((task) => task.id !== taskId)
+}
+
+export function moveProjectTask(
+  tasks: ProjectTask[],
+  taskId: string,
+  status: ProjectTaskStatus,
+  beforeTaskId?: string | null
+): ProjectTask[] {
+  if (!isProjectTaskStatus(status)) {
+    throw new Error(`Invalid project task status ${status}`)
+  }
+
+  const moving = tasks.find((task) => task.id === taskId)
+  if (!moving) throw new Error(`Unknown project task ${taskId}`)
+  if (beforeTaskId === taskId) throw new Error('Project task cannot move before itself')
+
+  const remaining = tasks.filter((task) => task.id !== taskId)
+  let insertionIndex: number
+
+  if (beforeTaskId) {
+    insertionIndex = remaining.findIndex((task) => task.id === beforeTaskId)
+    if (insertionIndex < 0) throw new Error(`Unknown project task ${beforeTaskId}`)
+    if (remaining[insertionIndex].status !== status) {
+      throw new Error(`Project task ${beforeTaskId} is not in ${status}`)
+    }
+  } else {
+    const lastDestinationIndex = remaining.reduce(
+      (found, task, index) => (task.status === status ? index : found),
+      -1
+    )
+    insertionIndex = lastDestinationIndex < 0 ? remaining.length : lastDestinationIndex + 1
+  }
+
+  const candidate = [
+    ...remaining.slice(0, insertionIndex),
+    { ...moving, status },
+    ...remaining.slice(insertionIndex)
+  ]
+  const before = tasks.filter((task) => task.status === status).map((task) => task.id)
+  const after = candidate.filter((task) => task.status === status).map((task) => task.id)
+
+  return moving.status === status && before.join('\0') === after.join('\0')
+    ? tasks
+    : candidate
+}
+
 export function fitProjectCardDimensions(w?: number, h?: number) {
-  const validWidth =
+  const width =
     typeof w === 'number' && Number.isFinite(w) && w > 0 ? w : PROJECT_CARD_DEFAULT_WIDTH
-  const validHeight =
+  const height =
     typeof h === 'number' && Number.isFinite(h) && h > 0 ? h : PROJECT_CARD_DEFAULT_HEIGHT
 
   return {
-    w: Math.max(PROJECT_CARD_MIN_WIDTH, validWidth),
-    h: Math.max(PROJECT_CARD_MIN_HEIGHT, validHeight)
-  }
-}
-
-export function isValidProjectDueDate(value: string) {
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false
-  const parsed = new Date(`${value}T00:00:00.000Z`)
-  return !Number.isNaN(parsed.getTime()) && parsed.toISOString().slice(0, 10) === value
-}
-
-export function localProjectDate(date = new Date()) {
-  const year = date.getFullYear()
-  const month = String(date.getMonth() + 1).padStart(2, '0')
-  const day = String(date.getDate()).padStart(2, '0')
-  return `${year}-${month}-${day}`
-}
-
-export function isProjectOverdue(
-  dueDate: string | undefined,
-  status: ProjectStatus,
-  today = localProjectDate()
-) {
-  return Boolean(
-    dueDate && isValidProjectDueDate(dueDate) && status !== 'done' && dueDate < today
-  )
-}
-
-export function getProjectProgress(actions: ProjectAction[]) {
-  const completed = actions.filter((action) => action.done).length
-  const total = actions.length
-
-  return {
-    completed,
-    total,
-    percent: total === 0 ? 0 : Math.round((completed / total) * 100)
+    w: Math.max(PROJECT_CARD_MIN_WIDTH, width),
+    h: Math.max(PROJECT_CARD_MIN_HEIGHT, height)
   }
 }
 
 export function createProjectCardProps(input: {
   title: string
-  status?: ProjectStatus
-  priority?: ProjectPriority
-  dueDate?: string
-  actions?: ProjectActionInput[]
+  tasks?: ProjectTaskInput[]
   w?: number
   h?: number
   color?: string
 }): ProjectCardProps {
-  if (input.dueDate !== undefined && !isValidProjectDueDate(input.dueDate)) {
-    throw new Error('Project due date must be a real YYYY-MM-DD date')
-  }
-
   return {
     ...fitProjectCardDimensions(input.w, input.h),
     title: nonBlank(input.title, 'Project title'),
-    status: input.status ?? 'planned',
-    priority: input.priority ?? 'medium',
-    ...(input.dueDate ? { dueDate: input.dueDate } : {}),
-    actions: normalizeProjectActions(input.actions),
+    tasks: normalizeProjectTasks(input.tasks),
     color: input.color ?? DEFAULT_PROJECT_CARD_COLOR
   }
 }

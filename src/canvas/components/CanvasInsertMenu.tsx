@@ -27,7 +27,7 @@ function getInsertPoint(editor: unknown, kind: ComponentKind) {
   const bounds = editorWithBounds.getViewportPageBounds?.()
   if (!bounds) return { x: 160, y: 160 }
 
-  const dimensions = kind === 'project' ? { width: 360, height: 320 } : { width: 280, height: 160 }
+  const dimensions = kind === 'project' ? { width: 960, height: 480 } : { width: 280, height: 160 }
   return {
     x: Math.round(bounds.x + bounds.w / 2 - dimensions.width / 2),
     y: Math.round(bounds.y + bounds.h / 2 - dimensions.height / 2)
@@ -56,9 +56,7 @@ function buildCreateAction(kind: ComponentKind, id: string, x: number, y: number
       type: 'create_project_card',
       id,
       title: 'New Project',
-      status: 'planned',
-      priority: 'medium',
-      actions: [],
+      tasks: [],
       x,
       y
     }

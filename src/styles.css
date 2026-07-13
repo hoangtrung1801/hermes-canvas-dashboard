@@ -1415,168 +1415,195 @@ body {
 }
 
 .hermes-project-card {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
+  display: block;
   background: color-mix(in srgb, var(--hermes-card-accent, #ddd6fe) 38%, white) !important;
 }
 
-.hermes-project-badge,
-.hermes-project-priority {
-  border-radius: 999px;
-  padding: 3px 8px;
-  font-size: 11px;
-  font-weight: 700;
-  text-transform: uppercase;
+.hermes-project-board-shell {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  gap: 11px;
+  outline: none;
 }
 
-.hermes-project-badge[data-status='planned'] {
-  background: #eef2ff;
-  color: #4f46e5;
+.hermes-project-header {
+  align-items: center;
 }
 
-.hermes-project-badge[data-status='active'] {
-  background: #dcfce7;
-  color: #15803d;
+.hermes-project-header .hermes-inline-title-input {
+  flex: 1 1 auto;
 }
 
-.hermes-project-badge[data-status='blocked'] {
-  background: #fee2e2;
-  color: #b91c1c;
+.hermes-project-board {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  min-height: 0;
 }
 
-.hermes-project-badge[data-status='done'] {
-  background: #e2e8f0;
-  color: #475569;
+.hermes-project-column {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  border: 1px solid rgba(75, 68, 105, 0.1);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.46);
+  transition: outline-color 0.12s ease, background-color 0.12s ease;
 }
 
-.hermes-project-priority[data-priority='low'] {
-  background: #f1f5f9;
-  color: #475569;
+.hermes-project-column[data-drop-active='true'] {
+  outline: 2px solid #6c5ce7;
+  outline-offset: -2px;
+  background: rgba(255, 255, 255, 0.68);
 }
 
-.hermes-project-priority[data-priority='medium'] {
-  background: #fef3c7;
-  color: #a16207;
-}
-
-.hermes-project-priority[data-priority='high'] {
-  background: #ffedd5;
-  color: #c2410c;
-}
-
-.hermes-project-meta,
-.hermes-project-progress-row {
+.hermes-project-column h3 {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
-  min-height: 24px;
-}
-
-.hermes-project-progress-row {
-  min-height: 16px;
-  color: #64748b;
+  gap: 6px;
+  min-height: 35px;
+  margin: 0;
+  padding: 8px 10px;
+  border-bottom: 1px solid rgba(75, 68, 105, 0.08);
+  color: #4b5563;
   font-size: 11px;
-  font-weight: 700;
+  font-weight: 800;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
 }
 
-.hermes-project-due {
-  color: #64748b;
-  font-size: 12px;
-}
-
-.hermes-project-due.is-overdue {
-  color: #b91c1c;
-  font-weight: 700;
-}
-
-.hermes-project-progress {
-  height: 7px;
-  overflow: hidden;
+.hermes-project-column h3 span:last-child {
+  display: inline-grid;
+  min-width: 22px;
+  height: 22px;
+  place-items: center;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.65);
+  background: rgba(108, 92, 231, 0.1);
+  color: #5b4cc4;
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
 }
 
-.hermes-project-progress > span {
-  display: block;
-  height: 100%;
-  border-radius: inherit;
-  background: #6c5ce7;
-  transition: width 0.16s ease;
-}
-
-.hermes-project-actions {
-  flex: 1 1 auto;
+.hermes-project-column-body {
   min-height: 0;
   overflow-y: auto;
   overscroll-behavior: contain;
+  padding: 8px;
 }
 
-.hermes-project-action {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  min-height: 34px;
-}
-
-.hermes-project-action input[type='checkbox'] {
-  flex: 0 0 auto;
-  width: 18px;
-  height: 18px;
-  accent-color: #6c5ce7;
-}
-
-.hermes-project-action-label {
+.hermes-project-task {
+  position: relative;
   min-width: 0;
+  min-height: 42px;
+  margin-bottom: 8px;
+  border: 1px solid rgba(75, 68, 105, 0.1);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.88);
   color: #303039;
-  overflow-wrap: anywhere;
+  cursor: grab;
+  line-height: 1.35;
+  padding: 10px 31px 10px 11px;
+  box-shadow: 0 2px 6px rgba(42, 39, 65, 0.05);
+  user-select: none;
+  touch-action: none;
 }
 
-.hermes-project-action.is-done .hermes-project-action-label,
-.hermes-project-action.is-done input[type='text'] {
+.hermes-project-task:active {
+  cursor: grabbing;
+}
+
+.hermes-project-task[data-status='done'] {
+  opacity: 0.62;
+}
+
+.hermes-project-task[data-status='done'] > span {
   color: #64748b;
   text-decoration: line-through;
 }
 
-.hermes-project-edit-fields {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 6px;
+.hermes-project-task[data-status='blocked'] {
+  border-left: 3px solid #ef4444;
+  background: rgba(254, 242, 242, 0.94);
 }
 
-.hermes-project-edit-fields input,
-.hermes-project-edit-fields select,
-.hermes-project-action input[type='text'] {
+.hermes-project-task input {
+  width: 100%;
   min-width: 0;
   border: 1px solid rgba(75, 68, 105, 0.2);
   border-radius: 7px;
-  background: rgba(255, 255, 255, 0.82);
+  background: #ffffff;
   color: #303039;
   font: inherit;
   padding: 5px 7px;
+  outline: none;
+  user-select: text;
 }
 
-.hermes-project-action input[type='text'] {
-  flex: 1 1 auto;
-}
-
-.hermes-project-action button {
-  flex: 0 0 26px;
-  width: 26px;
-  height: 26px;
+.hermes-project-task-delete {
+  position: absolute;
+  top: 7px;
+  right: 6px;
+  display: grid;
+  width: 24px;
+  height: 24px;
+  place-items: center;
   border: 0;
   border-radius: 6px;
-  background: rgba(255, 255, 255, 0.54);
-  color: #64748b;
+  background: transparent;
+  color: #94a3b8;
   cursor: pointer;
+  font: inherit;
+  font-size: 16px;
+  line-height: 1;
 }
 
-.hermes-project-edit-fields :focus-visible,
-.hermes-project-action :focus-visible {
+.hermes-project-task-delete:hover {
+  background: rgba(239, 68, 68, 0.1);
+  color: #b91c1c;
+}
+
+.hermes-project-header :focus-visible,
+.hermes-project-task :focus-visible,
+.hermes-project-footer :focus-visible {
   outline: 2px solid #6c5ce7;
   outline-offset: 1px;
+}
+
+.hermes-project-drop-marker {
+  height: 3px;
+  margin: 3px 0 5px;
+  border-radius: 999px;
+  background: #6c5ce7;
+}
+
+.hermes-project-drag-preview {
+  position: fixed;
+  z-index: 10000;
+  max-width: 220px;
+  pointer-events: none;
+  border: 1px solid rgba(75, 68, 105, 0.13);
+  border-radius: 10px;
+  background: #ffffff;
+  color: #303039;
+  font: 14px/1.35 var(--hermes-canvas-font);
+  padding: 9px 12px;
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.24);
+}
+
+.hermes-project-footer {
+  display: flex;
+  justify-content: center;
+  min-height: 30px;
+}
+
+.hermes-project-footer .hermes-add-task-button {
+  margin-top: 0;
 }
 
 .hermes-link-description {

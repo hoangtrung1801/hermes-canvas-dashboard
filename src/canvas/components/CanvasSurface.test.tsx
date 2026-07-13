@@ -365,11 +365,13 @@ describe('CanvasSurface', () => {
         expect.arrayContaining([
           expect.objectContaining({
             type: 'project_card',
+            x: 120,
+            y: 160,
+            w: 960,
+            h: 480,
             props: expect.objectContaining({
               title: 'New Project',
-              status: 'planned',
-              priority: 'medium',
-              actions: []
+              tasks: []
             })
           })
         ])

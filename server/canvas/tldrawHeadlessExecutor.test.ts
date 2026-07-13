@@ -138,23 +138,32 @@ describe('executeHeadlessTldrawAction', () => {
           x: 100,
           y: 120,
           title: 'Website launch',
-          status: 'active',
-          priority: 'high',
-          dueDate: '2026-07-31',
-          actions: [{ id: 'action_copy', text: 'Write copy' }]
+          tasks: [{ id: 'task_copy', text: 'Write copy' }]
         },
         {
-          type: 'append_project_action',
+          type: 'append_project_task',
           shapeId: 'shape:project_1',
-          actionId: 'action_ship',
+          taskId: 'task_ship',
           text: 'Ship'
         },
         {
-          type: 'set_project_action_done',
+          type: 'update_project_task_text',
           shapeId: 'shape:project_1',
-          actionId: 'action_copy',
-          done: true
+          taskId: 'task_ship',
+          text: 'Publish'
         },
+        {
+          type: 'move_project_task',
+          shapeId: 'shape:project_1',
+          taskId: 'task_ship',
+          status: 'doing'
+        },
+        {
+          type: 'update_project_card',
+          shapeId: 'shape:project_1',
+          title: 'Website release'
+        },
+        { type: 'remove_project_task', shapeId: 'shape:project_1', taskId: 'task_copy' },
         { type: 'read_canvas' }
       ]
     })
@@ -171,17 +180,11 @@ describe('executeHeadlessTldrawAction', () => {
           {
             id: 'shape:project_1',
             type: 'project_card',
-            w: 360,
-            h: 320,
+            w: 960,
+            h: 480,
             props: {
-              title: 'Website launch',
-              status: 'active',
-              priority: 'high',
-              dueDate: '2026-07-31',
-              actions: [
-                { id: 'action_copy', text: 'Write copy', done: true },
-                { id: 'action_ship', text: 'Ship', done: false }
-              ]
+              title: 'Website release',
+              tasks: [{ id: 'task_ship', text: 'Publish', status: 'doing' }]
             }
           }
         ]
@@ -197,8 +200,8 @@ describe('executeHeadlessTldrawAction', () => {
       typeName: 'shape',
       type: 'project_card',
       props: {
-        title: 'Website launch',
-        actions: [{ done: true }, { done: false }]
+        title: 'Website release',
+        tasks: [{ id: 'task_ship', text: 'Publish', status: 'doing' }]
       }
     })
   })

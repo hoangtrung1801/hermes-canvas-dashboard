@@ -94,96 +94,108 @@ describe('tldraw canvas action schema', () => {
     })
   })
 
-  it('accepts and trims the complete project action contract', () => {
-    const actions = [
+  it('accepts and trims the complete project task-board contract', () => {
+    const parsed = canvasActionBatchSchema.parse([
       {
         type: 'create_project_card',
         id: 'shape:project_1',
         x: 40,
         y: 80,
         title: '  Website launch  ',
-        status: 'active',
-        priority: 'high',
-        dueDate: '2026-07-31',
-        actions: [{ id: 'action_copy', text: '  Finish copy  ' }],
-        w: 420,
-        h: 340,
+        tasks: [
+          { id: 'task_copy', text: '  Finish copy  ' },
+          { text: 'Review', status: 'doing' }
+        ],
+        w: 1000,
+        h: 520,
         color: 'light-violet'
       },
       {
         type: 'update_project_card',
         shapeId: 'shape:project_1',
-        status: 'blocked',
-        dueDate: null
+        title: '  Release  '
       },
       {
-        type: 'append_project_action',
+        type: 'append_project_task',
         shapeId: 'shape:project_1',
-        actionId: 'action_ship',
+        taskId: 'task_ship',
         text: '  Ship  '
       },
       {
-        type: 'update_project_action_text',
+        type: 'update_project_task_text',
         shapeId: 'shape:project_1',
-        actionId: 'action_ship',
+        taskId: 'task_ship',
         text: '  Publish  '
       },
       {
-        type: 'set_project_action_done',
+        type: 'move_project_task',
         shapeId: 'shape:project_1',
-        actionId: 'action_copy',
-        done: true
+        taskId: 'task_ship',
+        status: 'done',
+        beforeTaskId: null
       },
       {
-        type: 'remove_project_action',
+        type: 'remove_project_task',
         shapeId: 'shape:project_1',
-        actionId: 'action_ship'
+        taskId: 'task_ship'
       }
-    ]
+    ])
 
-    expect(canvasActionBatchSchema.parse(actions)).toMatchObject([
+    expect(parsed).toMatchObject([
       {
         type: 'create_project_card',
         title: 'Website launch',
-        actions: [{ text: 'Finish copy' }]
+        tasks: [
+          { text: 'Finish copy', status: 'todo' },
+          { text: 'Review', status: 'doing' }
+        ]
       },
-      { type: 'update_project_card', dueDate: null },
-      { type: 'append_project_action', text: 'Ship' },
-      { type: 'update_project_action_text', text: 'Publish' },
-      { type: 'set_project_action_done', done: true },
-      { type: 'remove_project_action' }
+      { type: 'update_project_card', title: 'Release' },
+      { type: 'append_project_task', text: 'Ship', status: 'todo' },
+      { type: 'update_project_task_text', text: 'Publish' },
+      { type: 'move_project_task', status: 'done', beforeTaskId: null },
+      { type: 'remove_project_task' }
     ])
   })
 
-  it('rejects invalid project fields and empty metadata updates', () => {
+  it('rejects legacy project fields and invalid task-board payloads', () => {
     const invalid = [
       { type: 'create_project_card', x: 0, y: 0, title: '   ' },
-      { type: 'create_project_card', x: 0, y: 0, title: 'Project', status: 'paused' },
-      { type: 'create_project_card', x: 0, y: 0, title: 'Project', priority: 'urgent' },
-      { type: 'create_project_card', x: 0, y: 0, title: 'Project', dueDate: '2026-02-30' },
       {
         type: 'create_project_card',
         x: 0,
         y: 0,
         title: 'Project',
-        actions: [
+        tasks: [
           { id: 'same', text: 'A' },
           { id: 'same', text: 'B' }
         ]
       },
-      { type: 'update_project_card', shapeId: 'shape:project_1' },
       {
-        type: 'append_project_action',
+        type: 'create_project_card',
+        x: 0,
+        y: 0,
+        title: 'Project',
+        tasks: [{ text: 'A', status: 'paused' }]
+      },
+      { type: 'create_project_card', x: 0, y: 0, title: 'Project', status: 'active' },
+      { type: 'create_project_card', x: 0, y: 0, title: 'Project', priority: 'high' },
+      { type: 'create_project_card', x: 0, y: 0, title: 'Project', dueDate: '2026-07-31' },
+      { type: 'update_project_card', shapeId: 'shape:project_1', status: 'done' },
+      {
+        type: 'append_project_task',
         shapeId: 'shape:project_1',
-        actionId: '',
+        taskId: '',
         text: 'Ship'
       },
       {
-        type: 'update_project_action_text',
+        type: 'move_project_task',
         shapeId: 'shape:project_1',
-        actionId: 'a',
-        text: '   '
-      }
+        taskId: 'task_a',
+        status: 'planned'
+      },
+      { type: 'append_project_action', shapeId: 'shape:project_1', actionId: 'a', text: 'Legacy' },
+      { type: 'set_project_action_done', shapeId: 'shape:project_1', actionId: 'a', done: true }
     ]
 
     for (const action of invalid) {

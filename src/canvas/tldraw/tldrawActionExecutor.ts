@@ -14,8 +14,12 @@ import {
 import { createNoteCardProps } from './nativeNoteCard'
 import {
   PROJECT_CARD_TYPE,
+  appendProjectTask,
   createProjectCardProps,
-  type ProjectAction
+  moveProjectTask,
+  removeProjectTask,
+  updateProjectTaskText,
+  type ProjectTask
 } from './projectCard.types'
 
 export type TldrawActionResult = {
@@ -109,12 +113,12 @@ export function executeTldrawAction(target: TldrawExecutorTarget, action: Canvas
         actionType: action.type
       })
     case 'update_project_card':
-      return updateProjectMetadata(target, action)
-    case 'append_project_action':
-    case 'update_project_action_text':
-    case 'set_project_action_done':
-    case 'remove_project_action':
-      return mutateProjectActions(target, action)
+      return updateProjectTitle(target, action)
+    case 'append_project_task':
+    case 'update_project_task_text':
+    case 'move_project_task':
+    case 'remove_project_task':
+      return mutateProjectTasks(target, action)
     case 'update_shape': {
       const existing = target.shapes.get(action.shapeId)
       if (!existing) return { actionType: action.type, error: `Unknown shape ${action.shapeId}` }
@@ -279,14 +283,14 @@ function updateTodoTasks(
   return { actionType, updatedShapeIds: [shape.id] }
 }
 
-type ProjectMutation = Extract<
+type ProjectTaskMutation = Extract<
   CanvasAction,
   {
     type:
-      | 'append_project_action'
-      | 'update_project_action_text'
-      | 'set_project_action_done'
-      | 'remove_project_action'
+      | 'append_project_task'
+      | 'update_project_task_text'
+      | 'move_project_task'
+      | 'remove_project_task'
   }
 >
 
@@ -311,7 +315,7 @@ function updateProjectProps(
   return { actionType, updatedShapeIds: [shape.id] }
 }
 
-function updateProjectMetadata(
+function updateProjectTitle(
   target: TldrawExecutorTarget,
   action: Extract<CanvasAction, { type: 'update_project_card' }>
 ): TldrawActionResult {
@@ -320,75 +324,55 @@ function updateProjectMetadata(
     return { actionType: action.type, error: `Unknown project card ${action.shapeId}` }
   }
 
-  const props = { ...shape.props }
-  if (action.title !== undefined) props.title = action.title
-  if (action.status !== undefined) props.status = action.status
-  if (action.priority !== undefined) props.priority = action.priority
-  if (action.dueDate === null) delete props.dueDate
-  else if (action.dueDate !== undefined) props.dueDate = action.dueDate
-
-  return updateProjectProps(target, shape, props, action.type)
+  return updateProjectProps(
+    target,
+    shape,
+    { ...shape.props, title: action.title },
+    action.type
+  )
 }
 
-function mutateProjectActions(
+function mutateProjectTasks(
   target: TldrawExecutorTarget,
-  action: ProjectMutation
+  action: ProjectTaskMutation
 ): TldrawActionResult {
   const shape = projectShape(target, action.shapeId)
   if (!shape) {
     return { actionType: action.type, error: `Unknown project card ${action.shapeId}` }
   }
 
-  const actions = Array.isArray(shape.props.actions)
-    ? (shape.props.actions as ProjectAction[])
-    : []
+  const tasks = Array.isArray(shape.props.tasks) ? (shape.props.tasks as ProjectTask[]) : []
 
-  if (action.type === 'append_project_action') {
-    if (actions.some((item) => item.id === action.actionId)) {
-      return {
-        actionType: action.type,
-        error: `Duplicate project action ${action.actionId}`
-      }
+  try {
+    const nextTasks =
+      action.type === 'append_project_task'
+        ? appendProjectTask(tasks, {
+            id: action.taskId,
+            text: action.text,
+            status: action.status ?? 'todo'
+          })
+        : action.type === 'update_project_task_text'
+          ? updateProjectTaskText(tasks, action.taskId, action.text)
+          : action.type === 'move_project_task'
+            ? moveProjectTask(tasks, action.taskId, action.status, action.beforeTaskId)
+            : removeProjectTask(tasks, action.taskId)
+
+    if (nextTasks === tasks) {
+      return { actionType: action.type, updatedShapeIds: [shape.id] }
     }
 
     return updateProjectProps(
       target,
       shape,
-      {
-        ...shape.props,
-        actions: [
-          ...actions,
-          { id: action.actionId, text: action.text, done: action.done ?? false }
-        ]
-      },
+      { ...shape.props, tasks: nextTasks },
       action.type
     )
-  }
-
-  if (!actions.some((item) => item.id === action.actionId)) {
+  } catch (error) {
     return {
       actionType: action.type,
-      error: `Unknown project action ${action.actionId}`
+      error: error instanceof Error ? error.message : String(error)
     }
   }
-
-  const nextActions =
-    action.type === 'remove_project_action'
-      ? actions.filter((item) => item.id !== action.actionId)
-      : actions.map((item) =>
-          item.id !== action.actionId
-            ? item
-            : action.type === 'update_project_action_text'
-              ? { ...item, text: action.text }
-              : { ...item, done: action.done }
-        )
-
-  return updateProjectProps(
-    target,
-    shape,
-    { ...shape.props, actions: nextActions },
-    action.type
-  )
 }
 
 function nextShapeId(target: TldrawExecutorTarget, type: string): string {

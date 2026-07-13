@@ -1,9 +1,5 @@
 import type { TodoTaskInput } from '../tldraw/customShape.types'
-import type {
-  ProjectActionInput,
-  ProjectPriority,
-  ProjectStatus
-} from '../tldraw/projectCard.types'
+import type { ProjectTaskInput, ProjectTaskStatus } from '../tldraw/projectCard.types'
 
 export type TldrawShapePayload = {
   id?: string
@@ -139,10 +135,7 @@ export type CreateProjectCardAction = {
   x: number
   y: number
   title: string
-  status?: ProjectStatus
-  priority?: ProjectPriority
-  dueDate?: string
-  actions?: ProjectActionInput[]
+  tasks?: ProjectTaskInput[]
   w?: number
   h?: number
   color?: string
@@ -151,38 +144,36 @@ export type CreateProjectCardAction = {
 export type UpdateProjectCardAction = {
   type: 'update_project_card'
   shapeId: string
-  title?: string
-  status?: ProjectStatus
-  priority?: ProjectPriority
-  dueDate?: string | null
+  title: string
 }
 
-export type AppendProjectAction = {
-  type: 'append_project_action'
+export type AppendProjectTaskAction = {
+  type: 'append_project_task'
   shapeId: string
-  actionId: string
+  taskId: string
   text: string
-  done?: boolean
+  status?: ProjectTaskStatus
 }
 
-export type UpdateProjectActionTextAction = {
-  type: 'update_project_action_text'
+export type UpdateProjectTaskTextAction = {
+  type: 'update_project_task_text'
   shapeId: string
-  actionId: string
+  taskId: string
   text: string
 }
 
-export type SetProjectActionDoneAction = {
-  type: 'set_project_action_done'
+export type MoveProjectTaskAction = {
+  type: 'move_project_task'
   shapeId: string
-  actionId: string
-  done: boolean
+  taskId: string
+  status: ProjectTaskStatus
+  beforeTaskId?: string | null
 }
 
-export type RemoveProjectActionAction = {
-  type: 'remove_project_action'
+export type RemoveProjectTaskAction = {
+  type: 'remove_project_task'
   shapeId: string
-  actionId: string
+  taskId: string
 }
 
 export type CanvasAction =
@@ -205,7 +196,7 @@ export type CanvasAction =
   | CreateNoteCardAction
   | CreateProjectCardAction
   | UpdateProjectCardAction
-  | AppendProjectAction
-  | UpdateProjectActionTextAction
-  | SetProjectActionDoneAction
-  | RemoveProjectActionAction
+  | AppendProjectTaskAction
+  | UpdateProjectTaskTextAction
+  | MoveProjectTaskAction
+  | RemoveProjectTaskAction

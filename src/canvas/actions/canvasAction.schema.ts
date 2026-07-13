@@ -1,5 +1,4 @@
 import { z } from 'zod'
-import { isValidProjectDueDate } from '../tldraw/projectCard.types'
 
 const position = {
   x: z.number(),
@@ -27,29 +26,25 @@ const tldrawDefaultColor = z.enum([
 ])
 const tldrawNoteSize = z.enum(['s', 'm', 'l', 'xl'])
 const nonBlank = z.string().trim().min(1)
-const projectStatus = z.enum(['planned', 'active', 'blocked', 'done'])
-const projectPriority = z.enum(['low', 'medium', 'high'])
-const projectDueDate = z
-  .string()
-  .refine(isValidProjectDueDate, 'dueDate must be a real YYYY-MM-DD date')
-const projectActionInput = z.object({
+const projectTaskStatus = z.enum(['todo', 'doing', 'done', 'blocked'])
+const projectTaskInput = z.object({
   id: nonBlank.optional(),
   text: nonBlank,
-  done: z.boolean().optional()
-})
-const projectActionInputs = z.array(projectActionInput).superRefine((actions, context) => {
+  status: projectTaskStatus.default('todo')
+}).strict()
+const projectTaskInputs = z.array(projectTaskInput).superRefine((tasks, context) => {
   const seen = new Set<string>()
 
-  actions.forEach((action, index) => {
-    if (!action.id) return
-    if (seen.has(action.id)) {
+  tasks.forEach((task, index) => {
+    if (!task.id) return
+    if (seen.has(task.id)) {
       context.addIssue({
         code: z.ZodIssueCode.custom,
         path: [index, 'id'],
-        message: `duplicate action id ${action.id}`
+        message: `duplicate task id ${task.id}`
       })
     }
-    seen.add(action.id)
+    seen.add(task.id)
   })
 })
 
@@ -163,56 +158,42 @@ export const canvasActionSchema = z.union([
     type: z.literal('create_project_card'),
     id: nonBlank.optional(),
     title: nonBlank,
-    status: projectStatus.optional(),
-    priority: projectPriority.optional(),
-    dueDate: projectDueDate.optional(),
-    actions: projectActionInputs.optional(),
+    tasks: projectTaskInputs.optional(),
     w: z.number().finite().positive().optional(),
     h: z.number().finite().positive().optional(),
     color: tldrawDefaultColor.optional(),
     ...position
-  }),
-  z
-    .object({
-      type: z.literal('update_project_card'),
-      shapeId,
-      title: nonBlank.optional(),
-      status: projectStatus.optional(),
-      priority: projectPriority.optional(),
-      dueDate: projectDueDate.nullable().optional()
-    })
-    .refine(
-      (value) =>
-        value.title !== undefined ||
-        value.status !== undefined ||
-        value.priority !== undefined ||
-        value.dueDate !== undefined,
-      { message: 'update_project_card requires at least one field' }
-    ),
+  }).strict(),
   z.object({
-    type: z.literal('append_project_action'),
+    type: z.literal('update_project_card'),
     shapeId,
-    actionId: nonBlank,
+    title: nonBlank
+  }).strict(),
+  z.object({
+    type: z.literal('append_project_task'),
+    shapeId,
+    taskId: nonBlank,
     text: nonBlank,
-    done: z.boolean().optional()
-  }),
+    status: projectTaskStatus.default('todo')
+  }).strict(),
   z.object({
-    type: z.literal('update_project_action_text'),
+    type: z.literal('update_project_task_text'),
     shapeId,
-    actionId: nonBlank,
+    taskId: nonBlank,
     text: nonBlank
-  }),
+  }).strict(),
   z.object({
-    type: z.literal('set_project_action_done'),
+    type: z.literal('move_project_task'),
     shapeId,
-    actionId: nonBlank,
-    done: z.boolean()
-  }),
+    taskId: nonBlank,
+    status: projectTaskStatus,
+    beforeTaskId: nonBlank.nullable().optional()
+  }).strict(),
   z.object({
-    type: z.literal('remove_project_action'),
+    type: z.literal('remove_project_task'),
     shapeId,
-    actionId: nonBlank
-  })
+    taskId: nonBlank
+  }).strict()
 ])
 
 export const canvasActionBatchSchema = z.array(canvasActionSchema).min(1)
