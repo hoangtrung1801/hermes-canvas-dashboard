@@ -1,241 +1,252 @@
-# Project Card Design
+# Project Task Board Card Design
 
-**Status:** Approved design
+**Status:** Approved revised design
 **Date:** July 13, 2026
-**Scope:** One self-contained Project card per project on the Hermes canvas
+**Scope:** One four-column task board per Project card on the Hermes canvas
 
 ## Context
 
-Hermes Canvas already provides custom Todo and Link shapes, native Note cards, a typed canvas action protocol, browser and headless execution, normalized observations, tldraw sync persistence, and a floating insert menu. The new component should help a user scan multiple projects and act on each project's immediate work without turning the canvas into a full project-management system.
+Hermes Canvas already has a dedicated `project_card` tldraw shape with project-level status, priority, due date, progress, and checklist actions. The required product model has changed: a project no longer has a status or other metadata. Instead, each Project card is a compact task board whose tasks move through Todo, Doing, Done, and Blocked columns.
+
+The existing canvas action protocol, browser and headless executors, normalized observations, tldraw sync persistence, insert toolbar, and tidy-layout behavior remain the integration foundation.
 
 ## Goals
 
 - Represent one project per canvas card.
-- Make project status, priority, due date, action progress, and immediate actions easy to scan.
-- Allow direct human editing and typed Hermes mutations.
-- Preserve equivalent browser-backed and headless behavior.
-- Keep the card compact even when it contains more actions than it can show at once.
-- Follow the existing custom-shape, action-validation, observation, and persistence patterns.
+- Keep the project itself to a title and its tasks.
+- Show Todo, Doing, Done, and Blocked columns simultaneously.
+- Allow tasks to be reordered within a column and moved between columns by dragging.
+- Make task creation, text editing, and deletion direct and compact.
+- Provide deterministic typed Hermes operations with browser/headless parity.
+- Persist the task board as one tldraw shape record.
 
 ## Non-goals
 
-The first version does not include linked Todo Blocks, action reordering, project dependencies, owners, tags, milestones, attachments, recurring actions, kanban views, notifications, a portfolio container, or automatic status transitions.
+This revision does not include project-level status, priority, due dates, progress, owners, tags, milestones, attachments, task descriptions, task due dates, dependencies, subtasks, recurring tasks, notifications, column customization, column reordering, drag autoscroll, or links to Todo Blocks. It does not preserve the meaning of legacy Project-card fields or checklist actions.
 
 ## Chosen Approach
 
-Add a dedicated `project_card` tldraw shape with project-specific properties and typed actions. The underscore naming follows the existing `todo_block` and `link_card` shape identifiers. Checklist implementation patterns may be shared with Todo Blocks, but the shapes retain separate data contracts and product meanings.
+Keep one dedicated `project_card` shape containing a flat ordered task list. Each task stores a stable ID, text, and status. Array order is the canonical ordering: filtering the array by one status yields that column's ordered tasks.
 
-This was selected over extending Todo Blocks because a project has distinct metadata and lifecycle semantics. A generic schema-driven card framework was rejected because no second use case currently justifies that abstraction.
+This approach was selected over four separate arrays because a move remains one remove-and-insert operation on a single collection and the agent contract addresses one stable task namespace. Independent tldraw task shapes were rejected because containment, grouped movement, resize behavior, and multi-record synchronization add complexity without improving the requested card experience.
+
+The UI uses a small pointer-based drag layer backed by pure task-reordering functions. It does not add a drag-and-drop dependency.
 
 ## Architecture
 
-The feature consists of five bounded parts:
+The feature remains divided into bounded parts:
 
-1. **Project shape model:** defines property types, defaults, dimension constraints, validation, and migrations.
-2. **Project shape utility:** renders normal and edit modes and applies direct human edits through the tldraw editor.
-3. **Canvas action contract:** defines validated operations for creating and mutating Project cards.
-4. **Browser and headless executors:** implement the same operations against live editor state or persisted room records.
-5. **Canvas integration:** registers the shape, exposes it through observations, and adds it to the insert toolbar.
+1. **Project task-board model:** types, validators, defaults, task ID allocation, dimensions, legacy-field cleanup, and pure task mutations.
+2. **Project shape utility:** renders the header, board columns, task rows, editing controls, and drag feedback.
+3. **Drag controller:** turns pointer movement into a destination status and insertion target, then calls the pure move operation on drop.
+4. **Canvas action contract:** validates project creation, title updates, and task append/edit/move/remove operations.
+5. **Browser and headless execution:** applies the same task operations to live or persisted shape records.
+6. **Canvas integration and documentation:** retains schema registration, observations, insertion, tidy layout, and published workflow guidance.
 
-Project state remains entirely in the tldraw shape record. There is no separate project store or relationship to a Todo shape. Existing tldraw sync and SQLite room persistence remain the source of truth.
+Project state remains entirely in the tldraw shape record. There is no secondary store and no relationship to Todo shapes.
 
 ## Data Model
 
-A Project card has these properties:
-
 ```ts
-type ProjectStatus = 'planned' | 'active' | 'blocked' | 'done'
-type ProjectPriority = 'low' | 'medium' | 'high'
+type ProjectTaskStatus = 'todo' | 'doing' | 'done' | 'blocked'
 
-type ProjectAction = {
+type ProjectTask = {
   id: string
   text: string
-  done: boolean
+  status: ProjectTaskStatus
+}
+
+type ProjectTaskInput = {
+  id?: string
+  text: string
+  status?: ProjectTaskStatus
 }
 
 type ProjectCardProps = {
   w: number
   h: number
   title: string
-  status: ProjectStatus
-  priority: ProjectPriority
-  dueDate?: string
-  actions: ProjectAction[]
-  color: string // a supported tldraw color value
+  tasks: ProjectTask[]
+  color: string
 }
 ```
 
-`dueDate`, when present, is an ISO calendar date in `YYYY-MM-DD` form. It intentionally has no time or timezone semantics.
+The fixed column order is:
 
-Each action ID is stable and unique within its Project card. Actions retain insertion order. The list has no five-item data limit: the UI shows roughly five rows at the default card size and scrolls for additional items.
+1. Todo (`todo`)
+2. Doing (`doing`)
+3. Done (`done`)
+4. Blocked (`blocked`)
 
-Progress is derived rather than stored:
+Task IDs are stable and unique within a Project card. Initial tasks without IDs receive deterministic IDs in `task_0001`, `task_0002`, and subsequent order, skipping reserved IDs. Direct UI creation uses the same next-unused-ID rule.
 
-- With one or more actions, progress is `completed actions / total actions`.
-- With no actions, progress is 0% and the count is `0/0`.
-
-Derived progress prevents stored percentage and checklist state from becoming inconsistent. Project status remains independent and changes only through an explicit human or Hermes edit. Completing every current action does not automatically mark the project Done.
+Stored titles and task text are trimmed and non-empty. A missing initial task status defaults to `todo`. The canonical task array preserves relative order within every status. Moving a task removes it from its old position and inserts it immediately before a requested task in the destination column, or after the last destination task when no insertion target is supplied.
 
 Defaults are:
 
-- Status: Planned
-- Priority: Medium
-- Due date: absent
-- Actions: empty
-- Dimensions: 360 by 320 canvas units
-- Minimum dimensions: 320 by 240 canvas units
-- Color: `light-violet`, using the standard Hermes pastel card treatment
+- Title: `New Project`
+- Tasks: empty
+- Dimensions: 960 by 480 canvas units
+- Minimum dimensions: 760 by 320 canvas units
+- Color: `light-violet`
 
-The Project shape receives its own migration sequence so future property changes can be applied without affecting Todo or Link records.
+The next shape-props migration removes legacy `status`, `priority`, `dueDate`, and `actions` fields and initializes `tasks` to an empty array. It intentionally does not translate old checklist data. Users should delete legacy Project cards before adopting this revision if they do not want empty migrated cards.
 
-## Card Layout and Interaction
+## Card Layout
 
-### Normal mode
+The card uses three vertical regions:
 
-The card is arranged vertically:
+1. A header containing the project icon and title
+2. A four-column board that consumes the available body height
+3. A footer containing one Plus button
 
-1. Header with project icon, title, and status badge
-2. Metadata row with priority and optional due date
-3. Progress bar with completed/total count
-4. Scrollable action viewport
+All four equal-width columns remain visible at the default size and minimum width. The card does not use horizontal scrolling. Each column has a fixed header with its display name and current task count, followed by an independently scrollable task viewport. Column scrolling stops propagation so wheel input does not pan or zoom the canvas.
 
-Completed actions show a checked control and subdued, struck-through text. Action checkboxes remain interactive in normal mode.
+Task status is communicated by column placement. Done tasks use subdued text and surface styling. Blocked tasks use a warning accent. Todo and Doing use neutral and active treatments. The task layout remains legible when the card is resized to its minimum dimensions.
 
-A due date earlier than the user's current local calendar date receives an overdue warning treatment unless status is Done. A due date equal to today is not overdue.
+## Editing Interactions
 
-The card does not grow when actions are appended. The action viewport scrolls instead. Manual canvas resizing remains available down to 320 by 240 canvas units. Width and height may be adjusted independently; resizing changes the space available to the action viewport without changing project data. Wheel events over the action viewport scroll its content instead of panning or zooming the canvas.
+Double-clicking the project title replaces it with an inline input. Double-clicking a task replaces that task label with an inline input. Enter trims and saves the draft, Escape restores the prior value, and blur trims and saves. If committed task text is empty, it becomes `New task`; if a committed project title is empty, it becomes `Untitled Project`.
 
-### Focused edit mode
+The footer Plus button:
 
-Double-clicking the card enters edit mode. In edit mode:
+1. Generates the next unused task ID.
+2. Appends `{ text: "New task", status: "todo" }` to the end of Todo.
+3. Scrolls the Todo column to the new row.
+4. Immediately opens the new task's text input with its text selected.
 
-- Title and action text use inline text inputs.
-- Status and priority use fixed-value selectors.
-- Due date uses a date input and can be cleared.
-- Actions can be appended or removed.
-- Checkboxes continue to update completion state.
+Escape during the new task's initial edit keeps the task with its default `New task` text. Each task row has a small delete button with an explicit accessible name. Deletion is immediate and removes only that task.
 
-Clicking outside the card or pressing Escape exits edit mode. Canvas pointer events originating from interactive controls are marked as handled so field editing does not accidentally move or deselect the shape. All controls receive explicit accessible names and visible keyboard focus styles.
+Interactive controls mark pointer events as handled so editing, adding, deleting, and scrolling do not move or deselect the canvas shape. Inputs and buttons have visible keyboard focus states.
+
+## Drag-and-Drop Interaction
+
+Dragging begins from a task row, excluding its input and delete button. A small movement threshold distinguishes dragging from clicks and double-clicks. Once active, the drag controller captures the pointer, marks the event handled for tldraw, and displays a lightweight task preview.
+
+Column and task-row bounds determine the destination status and insertion slot. The UI highlights the destination column and draws an insertion marker before the target task. It supports drops:
+
+- At the beginning, middle, or end of a populated column
+- Into an empty column
+- Within the source column to reorder
+- Across columns to change status and order
+
+The shape record changes only on a valid drop. Dropping outside the board, pressing Escape, or losing pointer capture cancels the drag without mutation. Moving a task to its existing effective position is a no-op. Drag autoscroll is intentionally not included in this revision.
 
 ## Canvas Actions
 
-The typed action protocol adds these operations:
+The old project status and checklist-action operations are removed from the public contract and replaced with task-board operations.
 
 ### `create_project_card`
 
-Creates a card from:
-
-- Optional shape ID
-- Required non-empty title
-- Optional status, priority, due date, and initial actions
-- Position
-- Optional dimensions and color
-
-Omitted project fields use the defaults defined above.
-
-Each initial action contains non-empty text, an optional ID, and an optional completion value. All caller-supplied IDs are reserved first; omitted IDs are then generated deterministically as `action_0001`, `action_0002`, and so on, skipping reserved or previously generated IDs. Stored titles and action text are trimmed.
+Creates a card from an optional shape ID, required non-empty title, optional initial tasks, position, optional dimensions, and optional color. Initial tasks accept optional IDs and statuses. Omitted statuses default to `todo`.
 
 ### `update_project_card`
 
-Updates one or more project metadata fields: title, status, priority, or due date. At least one field is required. `dueDate: null` explicitly removes the date; an omitted field remains unchanged.
+Updates the non-empty project title. No project-level status, priority, or due-date fields are accepted.
 
-### `append_project_action`
+### `append_project_task`
 
-Appends a new action with a caller-supplied unique action ID, non-empty text, and an optional completion value that defaults to false. Direct UI insertion generates the next unused `action_NNNN` ID locally.
+Appends a task with a caller-supplied unique `taskId`, non-empty text, and optional status. The status defaults to `todo`.
 
-### `update_project_action_text`
+### `update_project_task_text`
 
-Replaces the text of one existing action while retaining its ID, order, and completion state.
+Replaces one task's text while retaining its ID, status, and position.
 
-### `set_project_action_done`
+### `move_project_task`
 
-Sets the completion state of one existing action.
+Moves one task to a required destination `status`. An optional `beforeTaskId` identifies the destination task before which it is inserted. Omitting `beforeTaskId`, or sending it as `null`, appends the task to the destination column.
 
-### `remove_project_action`
+```json
+{
+  "type": "move_project_task",
+  "shapeId": "shape:website",
+  "taskId": "task_copy",
+  "status": "doing",
+  "beforeTaskId": "task_review"
+}
+```
 
-Removes one existing action by ID.
+The `beforeTaskId` task must exist, differ from the moving task, and already have the requested destination status. Validation is evaluated after logically removing the moving task from its old position.
 
-Action reordering is not part of this version. Existing generic shape movement, resizing, coloring, and deletion operations continue to apply where supported by the current protocol.
+### `remove_project_task`
+
+Removes one task by stable task ID.
+
+Existing generic shape movement, resizing, coloring, selection, and deletion operations continue to apply where already supported.
 
 ## Data Flow
 
 ### Human path
 
-1. The user inserts a Project card or edits an existing one.
-2. The Project shape utility applies property changes through the mounted tldraw editor.
-3. tldraw sync persists the updated shape record to the current room.
-4. Other connected views receive the normal sync update.
+1. The user inserts or opens a Project card.
+2. Text, add, delete, or drop interactions call a focused pure task mutation.
+3. The shape utility writes the resulting properties through the mounted tldraw editor.
+4. tldraw sync persists the single updated shape record and distributes it to connected views.
 
-The insert toolbar creates a default Project card near the viewport center and selects it, matching existing insert behavior.
+The insert toolbar creates a default 960 by 480 Project card near the viewport center and selects it. Tidy layout continues placing Project cards in the first component column and uses their wider dimensions when calculating later columns.
 
 ### Hermes path
 
 1. Hermes sends a validated `canvas.action` envelope.
-2. The gateway routes it to the browser bridge when available or to the headless executor otherwise.
-3. The selected executor applies Project operations sequentially using the same domain rules.
-4. Updated records persist to the same sync room.
-5. Hermes receives one result per requested action followed by a normalized observation.
+2. The gateway routes it to the browser bridge when available or the headless executor otherwise.
+3. The selected executor loads the target Project card and applies the same pure task mutation rules.
+4. Updated records persist to the current tldraw sync room.
+5. Hermes receives one result per action followed by a normalized observation.
 
-Project observations include the stable shape ID, type, position, dimensions, and complete Project properties needed to inspect status, priority, due date, progress inputs, and individual actions. Progress may be computed by consumers from the action list and is not persisted as an additional property.
+Project observations include the stable shape ID, type, position, dimensions, title, complete ordered task list, and color. Column membership and order can be reconstructed without additional stored state.
 
 ## Validation and Error Handling
 
-- Titles and action text must contain at least one non-whitespace character after trimming.
-- Status must be Planned, Active, Blocked, or Done using the protocol's lowercase enum values.
-- Priority must be Low, Medium, or High using the protocol's lowercase enum values.
-- Due dates must be real calendar dates formatted exactly as `YYYY-MM-DD`.
-- Initial and appended action IDs must be non-empty.
-- Action IDs must be unique within a Project card.
-- Dimensions must be positive and are normalized to the Project card's UI minimums.
-- Color, when supplied, must be one of the tldraw colors supported by the existing custom-card schema.
-- Project-specific mutations reject missing shapes and shapes whose type is not `project_card`.
-- Action-specific mutations reject unknown action IDs.
+- Project titles and task text must contain non-whitespace text after trimming.
+- Task status must be `todo`, `doing`, `done`, or `blocked`.
+- Initial and appended task IDs must be non-empty and unique within the card.
+- Dimensions must be finite and positive, then normalize to the card minimums.
+- Color must be a supported tldraw color.
+- Project-specific mutations reject missing shapes and non-`project_card` shapes.
+- Task mutations reject missing task IDs.
+- Move operations reject a missing insertion target, a target in another status, or the moving task as its own target.
+- A no-op reorder succeeds without rewriting unrelated task data.
 
-Validation failures use the existing request-level error behavior when an envelope is invalid. Execution failures use action-level errors and do not discard the result context for the remaining actions in a valid batch. Neither route partially mutates a single failing operation.
-
-The browser and headless implementations must return equivalent success and error semantics. Hermes clients should read before mutation and verify the final observation, following the existing API guidance.
+Envelope validation failures use the existing request-level error behavior. Execution failures use action-level errors and do not stop later actions in a valid batch. A failing operation does not partially mutate its Project card. Browser and headless routes return equivalent results and observations.
 
 ## Testing Strategy
 
-### Model and schema tests
+### Model and schema
 
-- Defaults and property creation
-- Minimum dimension fitting
-- Migration compatibility
-- Progress for empty, partial, and complete action lists
-- Exact status and priority enums
-- Valid, invalid, and impossible calendar dates
-- Trimming and non-empty constraints
-- Duplicate action ID rejection
+- New defaults, fixed status enum, deterministic IDs, trimming, and dimension fitting
+- Shape migration removes legacy fields and initializes an empty task list
+- Duplicate IDs and invalid statuses are rejected
+- Pure append, text update, removal, and move operations preserve unrelated data
+- Beginning, middle, end, empty-column, same-column, and cross-column moves
+- Invalid and no-op insertion targets
 
-### Shape utility tests
+### Shape utility and drag controller
 
-- Normal-mode header, metadata, progress, and actions
-- Approximately five visible rows at default size with overflow scrolling
-- Checkbox mutation in normal and edit modes
-- Double-click entry and Escape/blur exit behavior
-- Editing each metadata field and action text
-- Appending and removing actions
-- Overdue, due-today, future, and Done-state date treatment
-- Accessible control names and handled pointer events
-- Manual resize behavior and minimum dimensions
+- Header, fixed column order, task counts, and empty columns
+- Independent vertical overflow and wheel-event containment
+- Done and Blocked visual treatments
+- Plus creation, Todo placement, scroll into view, and immediate edit focus
+- Title and task double-click editing, Enter, Escape, blur, and empty-text fallback
+- Accessible delete controls and task deletion
+- Drag activation threshold, preview, destination highlight, insertion marker, and cancellation
+- Reordering within a column and movement across all four columns
+- Canvas movement suppression during interactive operations
+- Independent resizing and minimum dimensions
 
-### Executor and observation tests
+### Actions, persistence, and integration
 
-- Every Project operation through the browser executor
-- Equivalent operations through the headless executor
-- Sequential batches with successful and failed items
-- Wrong shape types, missing shapes, and missing action IDs
-- Persisted Project records loading through the shared tldraw schema
-- Complete Project data in normalized observations
-
-### Integration and regression tests
-
-- Insert toolbar creation and selection
-- Browser/headless parity against the shared action contract
-- Existing Todo, Link, and Note behavior remains unchanged
-- Type checking, the full test suite, and the production build pass
+- Validation and execution of all six Project operations
+- Equivalent browser and headless success/error semantics
+- Sequential batches continue after one action-level failure
+- Persisted task boards reload through the shared tldraw schema
+- Normalized observations retain complete ordered task data
+- Insert toolbar creates and selects the wider default card
+- Tidy layout accounts for the wider Project column
+- Todo, Link, Note, selection, sync, and gateway regressions remain green
+- Public API, README, PRD, and Canvas Dashboard skill describe the task-board contract
 
 ## Success Criteria
 
-The feature is complete when a user can place multiple Project cards on the canvas and quickly see each project's status, priority, due date, automatic action progress, and immediate actions; directly edit those fields through a focused mode; check actions without entering edit mode; and scroll longer action lists without cards expanding. Hermes must be able to create and mutate the same cards with equivalent results whether or not the browser is connected, and all state must persist through the existing tldraw sync room.
+The revision is complete when a user can create a wide Project card, see Todo, Doing, Done, and Blocked simultaneously, add a Todo task from the single footer Plus button, edit its text immediately or later by double-clicking, reorder it within a column, drag it through every status, delete it, and reload without losing state or ordering.
+
+Hermes must be able to create the same board and append, edit, move, reorder, and remove tasks with identical behavior whether the browser is open or closed. The previous project-level lifecycle and checklist-completion contract must no longer appear in the UI, action schema, observations for newly created cards, or published documentation.
