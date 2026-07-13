@@ -1,1232 +1,1144 @@
-# Project Card Implementation Plan
+# Project Task Board Card Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Add one self-contained, persistent Project card per project with fixed status and priority values, an optional due date, derived action progress, a scrollable action list, direct editing, and equivalent Hermes browser/headless actions.
+**Goal:** Replace the Project card's project-level lifecycle checklist with a title-only, persistent four-column task board whose tasks can be created, edited, deleted, reordered, and dragged between statuses.
 
-**Architecture:** A focused Project domain module owns props, migrations, normalization, date rules, dimensions, IDs, and progress. A dedicated tldraw `ShapeUtil` renders and edits the shape, while the existing Zod action union and shared executor provide one mutation contract for both the mounted browser bridge and headless sync-room execution.
+**Architecture:** Keep one `project_card` tldraw record with a flat ordered task array. Pure domain functions own every task mutation, a framework-free drop resolver converts pointer coordinates into deterministic insertion targets, and a focused React board component owns editing and drag interaction while the existing `ShapeUtil` remains a thin tldraw adapter. The browser and headless executors call the same domain functions.
 
-**Tech Stack:** TypeScript, React 19, tldraw 5.2, Zod 3, Vitest, Testing Library, Vite, tldraw sync, SQLite-backed sync rooms, plain CSS.
+**Tech Stack:** TypeScript, React 19, React DOM portals, tldraw 5.2, Zod 3, Vitest, Testing Library, Vite, tldraw sync, SQLite-backed sync rooms, plain CSS.
 
 ## Global Constraints
 
-- Use the internal shape identifier `project_card`, following `todo_block` and `link_card` naming.
-- Status values are exactly `planned`, `active`, `blocked`, and `done`.
-- Priority values are exactly `low`, `medium`, and `high`.
-- Defaults are Planned, Medium, no due date, no actions, `360x320`, minimum `320x240`, and tldraw color `light-violet`.
-- Store due dates only as real calendar dates in exact `YYYY-MM-DD` form; compare overdue state against the user's local calendar date and do not treat today as overdue.
-- Derive progress as completed actions divided by total actions; an empty list is 0% and `0/0`.
-- Keep status explicit: completing all actions must not automatically change status to Done.
-- Permit any number of actions, preserve insertion order, keep the card size stable, and scroll the action viewport.
-- Browser and headless routes must return equivalent per-action results, errors, persistence, and observations.
-- Do not add linked Todo Blocks, reordering, dependencies, owners, tags, milestones, attachments, recurrence, kanban views, notifications, portfolio containers, or automatic status transitions.
-- Add no runtime dependency.
+- Keep the internal shape identifier `project_card`.
+- Project properties are exactly width, height, title, tasks, and color; do not retain project status, priority, due date, or progress.
+- Task statuses are exactly `todo`, `doing`, `done`, and `blocked`, displayed in that order.
+- Defaults are title `New Project`, no tasks, `960x480`, minimum `760x320`, and color `light-violet`.
+- The only task-creation control is one footer Plus button; it appends to Todo and immediately edits the new text.
+- Double-click edits project titles and task text; Enter/blur save, Escape restores, and blank committed values fall back to `Untitled Project` or `New task`.
+- Support pointer dragging within and across columns, including empty columns and beginning/middle/end insertion; invalid/outside drops cancel.
+- Do not add a drag-and-drop dependency or drag autoscroll.
+- Do not semantically preserve old Project-card fields/actions; the v2 migration discards them and initializes an empty task list.
+- Browser and headless routes must return equivalent results, errors, persistence, and observations.
+- Preserve Todo, Link, Note, sync, selection, insert-menu, and tidy-layout behavior.
 
 ---
 
 ## File Structure
 
-- Create `src/canvas/tldraw/projectCard.types.ts`: Project constants, types, migrations, normalization, dimension, progress, date, and ID helpers.
-- Create `src/canvas/tldraw/projectCard.types.test.ts`: focused domain and migration-helper tests.
-- Create `src/canvas/tldraw/projectCardUtils.tsx`: Project `ShapeUtil`, normal mode, focused edit mode, and direct editor mutations.
-- Create `src/canvas/tldraw/projectCardUtils.test.tsx`: renderer, interaction, resize, accessibility, and overdue tests.
-- Modify `src/canvas/tldraw/tldrawSchema.ts`: register `project_card` in the shared browser/server schema.
-- Modify `src/canvas/tldraw/tldrawSchema.test.ts`: prove shared schema registration.
-- Modify `src/canvas/actions/canvasAction.types.ts`: add six typed Project operations.
-- Modify `src/canvas/actions/canvasAction.schema.ts`: validate and normalize Project actions.
-- Modify `src/canvas/actions/canvasAction.schema.test.ts`: cover accepted payloads and each domain validation failure.
-- Modify `src/canvas/tldraw/tldrawActionExecutor.ts`: create and mutate Project records for both execution routes.
-- Modify `src/canvas/tldraw/tldrawActionExecutor.test.ts`: cover lifecycle, observations, and action-level failures.
-- Modify `src/canvas/bridge/CanvasBridge.test.ts`: prove validated sequential Project batches keep per-action result context.
-- Modify `server/canvas/tldrawHeadlessExecutor.test.ts`: prove Project records persist and reload in a sync room.
-- Modify `src/canvas/tldraw/customShapeUtils.tsx`: add `ProjectCardShapeUtil` to the central custom-shape list.
-- Modify `src/canvas/tldraw/customShapeUtils.test.tsx`: update the supported shape registration assertion.
-- Modify `src/canvas/components/CanvasSurface.test.tsx`: update registered utility count and integration assertions.
-- Modify `src/styles.css`: add Project layout, statuses, priorities, progress, scrolling, edit controls, and focus styles.
-- Modify `src/canvas/components/CanvasInsertMenu.tsx`: add Project creation and icon.
-- Modify `src/canvas/tldraw/tidyCardLayout.ts`: include a Project column.
-- Modify `src/canvas/tldraw/tidyCardLayout.test.ts`: cover Project placement and dimensions.
-- Modify `CANVAS_API.md`: document all Project actions and observation behavior.
-- Modify `README.md`: add a concise Project lifecycle example.
-- Modify `docs/PRD.md`: mark the Project component shipped and add its product requirements.
-- Modify `plugins/canvas-dashboard/skills/canvas-dashboard/SKILL.md`: teach Hermes when and how to operate Project cards.
+- Modify `src/canvas/tldraw/projectCard.types.ts`: replace legacy lifecycle fields with task-board types, migration, normalization, IDs, and pure mutations.
+- Modify `src/canvas/tldraw/projectCard.types.test.ts`: cover defaults, migration, validation, and task ordering mutations.
+- Modify `src/canvas/actions/canvasAction.types.ts`: replace checklist actions with six task-board operations.
+- Modify `src/canvas/actions/canvasAction.schema.ts`: validate and trim the revised payloads.
+- Modify `src/canvas/actions/canvasAction.schema.test.ts`: prove the revised contract and reject legacy fields/actions.
+- Modify `src/canvas/tldraw/tldrawActionExecutor.ts`: call pure project-task mutations for both browser and headless targets.
+- Modify `src/canvas/tldraw/tldrawActionExecutor.test.ts`: cover the complete lifecycle and action-level errors.
+- Modify `src/canvas/bridge/CanvasBridge.test.ts`: cover sequential failure continuation.
+- Modify `server/canvas/tldrawHeadlessExecutor.test.ts`: cover sync-room persistence and observations.
+- Create `src/canvas/tldraw/projectCardDrag.ts`: resolve pointer coordinates to a status and `beforeTaskId` without DOM dependencies.
+- Create `src/canvas/tldraw/projectCardDrag.test.ts`: cover drop geometry and empty columns.
+- Create `src/canvas/tldraw/ProjectCardBoard.tsx`: render columns and own local edit/drag state.
+- Create `src/canvas/tldraw/ProjectCardBoard.test.tsx`: cover rendering, editing, addition, deletion, and pointer dragging.
+- Modify `src/canvas/tldraw/projectCardUtils.tsx`: reduce the shape utility to a tldraw adapter around `ProjectCardBoard`.
+- Modify `src/canvas/tldraw/projectCardUtils.test.tsx`: cover defaults, adapter updates, color, and minimum resize.
+- Modify `src/styles.css`: replace lifecycle/checklist rules with board, column, task, edit, drag, and focus rules.
+- Modify `src/canvas/components/CanvasInsertMenu.tsx`: create and center a `960x480` Project board.
+- Modify `src/canvas/components/CanvasSurface.test.tsx`: update default insertion assertions.
+- Modify `src/canvas/tldraw/tidyCardLayout.test.ts`: account for the wider Project column.
+- Modify `CANVAS_API.md`, `README.md`, `docs/PRD.md`, and `plugins/canvas-dashboard/skills/canvas-dashboard/SKILL.md`: replace the old lifecycle contract with task-board workflows.
 
 ---
 
-### Task 1: Add the Project Domain Model and Shared tldraw Schema
+### Task 1: Replace the Project Domain With Ordered Task Mutations
 
 **Files:**
-- Create: `src/canvas/tldraw/projectCard.types.ts`
-- Create: `src/canvas/tldraw/projectCard.types.test.ts`
-- Modify: `src/canvas/tldraw/tldrawSchema.ts`
-- Modify: `src/canvas/tldraw/tldrawSchema.test.ts`
+- Modify: `src/canvas/tldraw/projectCard.types.ts`
+- Test: `src/canvas/tldraw/projectCard.types.test.ts`
+- Verify: `src/canvas/tldraw/tldrawSchema.test.ts`
 
 **Interfaces:**
-- Consumes: tldraw shape migration helpers from `@tldraw/tlschema`.
-- Produces: `PROJECT_CARD_TYPE`, `ProjectStatus`, `ProjectPriority`, `ProjectAction`, `ProjectActionInput`, `ProjectCardProps`, `projectCardMigrations`, `projectCardProps`, `createProjectCardProps()`, `nextProjectActionId()`, `getProjectProgress()`, `isValidProjectDueDate()`, `localProjectDate()`, and `isProjectOverdue()`.
+- Produces: `PROJECT_TASK_STATUSES`, `ProjectTaskStatus`, `ProjectTask`, `ProjectTaskInput`, `ProjectCardProps`, `nextProjectTaskId()`, `normalizeProjectTasks()`, `appendProjectTask()`, `updateProjectTaskText()`, `moveProjectTask()`, `removeProjectTask()`, `fitProjectCardDimensions()`, and `createProjectCardProps()`.
+- Preserves: `PROJECT_CARD_TYPE`, `projectCardMigrations`, and `projectCardProps` for the registered shared schema.
 
-- [ ] **Step 1: Write the failing domain tests**
+- [ ] **Step 1: Replace the domain tests with failing task-board cases**
 
-Create `src/canvas/tldraw/projectCard.types.test.ts`:
+Use these core assertions in `src/canvas/tldraw/projectCard.types.test.ts`:
 
 ```ts
 import { describe, expect, it } from 'vitest'
 import {
+  appendProjectTask,
   createProjectCardProps,
-  getProjectProgress,
-  isProjectOverdue,
-  isValidProjectDueDate,
-  nextProjectActionId
+  moveProjectTask,
+  nextProjectTaskId,
+  projectCardMigrations,
+  removeProjectTask,
+  updateProjectTaskText
 } from './projectCard.types'
 
-describe('project card domain', () => {
-  it('creates trimmed defaults and reserves explicit action ids before generation', () => {
-    expect(
-      createProjectCardProps({
-        title: '  Website launch  ',
-        actions: [
-          { text: '  Draft copy  ' },
-          { id: 'action_0001', text: 'Approve design', done: true },
-          { text: 'Publish' }
-        ]
-      })
-    ).toEqual({
-      w: 360,
-      h: 320,
+const tasks = [
+  { id: 'task_a', text: 'A', status: 'todo' as const },
+  { id: 'task_b', text: 'B', status: 'todo' as const },
+  { id: 'task_c', text: 'C', status: 'doing' as const }
+]
+
+describe('project task-board domain', () => {
+  it('creates wide defaults and reserves explicit task ids before generation', () => {
+    expect(createProjectCardProps({
+      title: '  Website launch  ',
+      tasks: [
+        { text: '  Draft copy  ' },
+        { id: 'task_0001', text: 'Review', status: 'doing' },
+        { text: 'Ship', status: 'blocked' }
+      ]
+    })).toEqual({
+      w: 960,
+      h: 480,
       title: 'Website launch',
-      status: 'planned',
-      priority: 'medium',
-      actions: [
-        { id: 'action_0002', text: 'Draft copy', done: false },
-        { id: 'action_0001', text: 'Approve design', done: true },
-        { id: 'action_0003', text: 'Publish', done: false }
+      tasks: [
+        { id: 'task_0002', text: 'Draft copy', status: 'todo' },
+        { id: 'task_0001', text: 'Review', status: 'doing' },
+        { id: 'task_0003', text: 'Ship', status: 'blocked' }
       ],
       color: 'light-violet'
     })
   })
 
-  it('fits dimensions independently to the project minimums', () => {
-    expect(createProjectCardProps({ title: 'Small', w: 120, h: 100 })).toMatchObject({
-      w: 320,
-      h: 240
+  it('fits dimensions to 760 by 320 and allocates the first free task id', () => {
+    expect(createProjectCardProps({ title: 'Small', w: 100, h: 100 })).toMatchObject({
+      w: 760,
+      h: 320
     })
-    expect(createProjectCardProps({ title: 'Wide', w: 640, h: 260 })).toMatchObject({
-      w: 640,
-      h: 260
+    expect(nextProjectTaskId([{ id: 'task_0001' }, { id: 'task_0003' }])).toBe('task_0002')
+  })
+
+  it('discards legacy lifecycle fields in the task-board migration', () => {
+    const migration = projectCardMigrations.sequence[1]
+    if (!('up' in migration)) throw new Error('Expected task-board up migration')
+    const props: Record<string, unknown> = {
+      w: 360, h: 320, title: 'Legacy', color: 'light-violet',
+      status: 'active', priority: 'high', dueDate: '2026-07-31',
+      actions: [{ id: 'action_ship', text: 'Ship', done: false }]
+    }
+    migration.up(props)
+    expect(props).toEqual({
+      w: 760, h: 320, title: 'Legacy', color: 'light-violet', tasks: []
     })
   })
 
-  it('rejects blank text and duplicate explicit ids', () => {
+  it('appends, edits, and removes tasks without changing unrelated tasks', () => {
+    const appended = appendProjectTask(tasks, { id: 'task_d', text: ' D ', status: 'done' })
+    expect(appended.at(-1)).toEqual({ id: 'task_d', text: 'D', status: 'done' })
+    expect(updateProjectTaskText(appended, 'task_d', '  Delivered  ').at(-1)?.text).toBe('Delivered')
+    expect(removeProjectTask(appended, 'task_b').map((task) => task.id)).toEqual([
+      'task_a', 'task_c', 'task_d'
+    ])
+  })
+
+  it('moves across columns and before a destination task', () => {
+    expect(moveProjectTask(tasks, 'task_b', 'doing', 'task_c')).toEqual([
+      { id: 'task_a', text: 'A', status: 'todo' },
+      { id: 'task_b', text: 'B', status: 'doing' },
+      { id: 'task_c', text: 'C', status: 'doing' }
+    ])
+  })
+
+  it('reorders within a column and appends to an empty column', () => {
+    expect(moveProjectTask(tasks, 'task_b', 'todo', 'task_a').map((task) => task.id)).toEqual([
+      'task_b', 'task_a', 'task_c'
+    ])
+    expect(moveProjectTask(tasks, 'task_a', 'blocked').at(-1)).toEqual({
+      id: 'task_a', text: 'A', status: 'blocked'
+    })
+  })
+
+  it('returns the original array for an effective no-op and rejects invalid targets', () => {
+    expect(moveProjectTask(tasks, 'task_a', 'todo', 'task_b')).toBe(tasks)
+    expect(() => moveProjectTask(tasks, 'missing', 'todo')).toThrow('Unknown project task missing')
+    expect(() => moveProjectTask(tasks, 'task_a', 'doing', 'task_b')).toThrow(
+      'Project task task_b is not in doing'
+    )
+    expect(() => moveProjectTask(tasks, 'task_a', 'todo', 'task_a')).toThrow(
+      'Project task cannot move before itself'
+    )
+  })
+
+  it('rejects blank text, duplicate ids, and invalid runtime status values', () => {
     expect(() => createProjectCardProps({ title: '   ' })).toThrow('Project title must not be empty')
-    expect(() =>
-      createProjectCardProps({
-        title: 'Launch',
-        actions: [
-          { id: 'action_ship', text: 'Ship' },
-          { id: 'action_ship', text: 'Announce' }
-        ]
-      })
-    ).toThrow('Duplicate project action action_ship')
-  })
-
-  it('derives empty, partial, and complete progress', () => {
-    expect(getProjectProgress([])).toEqual({ completed: 0, total: 0, percent: 0 })
-    expect(
-      getProjectProgress([
-        { id: 'a', text: 'A', done: true },
-        { id: 'b', text: 'B', done: false },
-        { id: 'c', text: 'C', done: true }
-      ])
-    ).toEqual({ completed: 2, total: 3, percent: 67 })
-  })
-
-  it('validates real ISO dates and applies explicit overdue rules', () => {
-    expect(isValidProjectDueDate('2026-07-13')).toBe(true)
-    expect(isValidProjectDueDate('2026-02-30')).toBe(false)
-    expect(isValidProjectDueDate('13-07-2026')).toBe(false)
-    expect(isProjectOverdue('2026-07-12', 'active', '2026-07-13')).toBe(true)
-    expect(isProjectOverdue('2026-07-13', 'active', '2026-07-13')).toBe(false)
-    expect(isProjectOverdue('2026-07-12', 'done', '2026-07-13')).toBe(false)
-  })
-
-  it('finds the next unused local action id', () => {
-    expect(nextProjectActionId([
-      { id: 'action_0001', text: 'A', done: false },
-      { id: 'action_0003', text: 'C', done: false }
-    ])).toBe('action_0002')
+    expect(() => createProjectCardProps({
+      title: 'Launch',
+      tasks: [{ id: 'same', text: 'A' }, { id: 'same', text: 'B' }]
+    })).toThrow('Duplicate project task same')
+    expect(() => appendProjectTask(tasks, {
+      id: 'task_bad', text: 'Bad', status: 'paused' as never
+    })).toThrow('Invalid project task status paused')
   })
 })
 ```
 
-Extend `src/canvas/tldraw/tldrawSchema.test.ts` with:
-
-```ts
-expect(JSON.stringify(schema)).toContain('project_card')
-```
-
-- [ ] **Step 2: Run the tests and verify the red state**
+- [ ] **Step 2: Run the domain tests and verify the red state**
 
 Run: `npm test -- src/canvas/tldraw/projectCard.types.test.ts src/canvas/tldraw/tldrawSchema.test.ts`
 
-Expected: FAIL because the Project domain module and shared schema entry do not exist.
+Expected: FAIL because task-board exports and defaults do not exist.
 
-- [ ] **Step 3: Implement the Project domain module**
+- [ ] **Step 3: Replace the domain types, validators, and v2 migration**
 
-Create `src/canvas/tldraw/projectCard.types.ts`:
+In `src/canvas/tldraw/projectCard.types.ts`, retain the tldraw imports and replace the legacy model with:
 
 ```ts
-import {
-  DefaultColorStyle,
-  createShapePropsMigrationIds,
-  createShapePropsMigrationSequence
-} from '@tldraw/tlschema'
-import { T } from '@tldraw/validate'
-
 export const PROJECT_CARD_TYPE = 'project_card'
-export const PROJECT_CARD_DEFAULT_WIDTH = 360
-export const PROJECT_CARD_DEFAULT_HEIGHT = 320
-export const PROJECT_CARD_MIN_WIDTH = 320
-export const PROJECT_CARD_MIN_HEIGHT = 240
+export const PROJECT_CARD_DEFAULT_WIDTH = 960
+export const PROJECT_CARD_DEFAULT_HEIGHT = 480
+export const PROJECT_CARD_MIN_WIDTH = 760
+export const PROJECT_CARD_MIN_HEIGHT = 320
 export const DEFAULT_PROJECT_CARD_COLOR = 'light-violet'
+export const PROJECT_TASK_STATUSES = ['todo', 'doing', 'done', 'blocked'] as const
 
-export const PROJECT_STATUSES = ['planned', 'active', 'blocked', 'done'] as const
-export const PROJECT_PRIORITIES = ['low', 'medium', 'high'] as const
-export type ProjectStatus = (typeof PROJECT_STATUSES)[number]
-export type ProjectPriority = (typeof PROJECT_PRIORITIES)[number]
-
-export type ProjectAction = { id: string; text: string; done: boolean }
-export type ProjectActionInput = { id?: string; text: string; done?: boolean }
+export type ProjectTaskStatus = (typeof PROJECT_TASK_STATUSES)[number]
+export type ProjectTask = { id: string; text: string; status: ProjectTaskStatus }
+export type ProjectTaskInput = { id?: string; text: string; status?: ProjectTaskStatus }
 export type ProjectCardProps = {
   w: number
   h: number
   title: string
-  status: ProjectStatus
-  priority: ProjectPriority
-  dueDate?: string
-  actions: ProjectAction[]
+  tasks: ProjectTask[]
   color: string
 }
 
 const projectCardVersions = createShapePropsMigrationIds(PROJECT_CARD_TYPE, {
-  AddProjectFields: 1
+  AddProjectFields: 1,
+  TaskBoardFields: 2
 })
 
 export const projectCardMigrations = createShapePropsMigrationSequence({
-  sequence: [{
-    id: projectCardVersions.AddProjectFields,
-    up: (props) => {
-      props.status ??= 'planned'
-      props.priority ??= 'medium'
-      props.actions ??= []
-      props.color ??= DEFAULT_PROJECT_CARD_COLOR
+  sequence: [
+    {
+      id: projectCardVersions.AddProjectFields,
+      up: (props) => {
+        props.status ??= 'planned'
+        props.priority ??= 'medium'
+        props.actions ??= []
+        props.color ??= DEFAULT_PROJECT_CARD_COLOR
+      },
+      down: (props) => {
+        delete props.status
+        delete props.priority
+        delete props.dueDate
+        delete props.actions
+        delete props.color
+      }
     },
-    down: (props) => {
-      delete props.status
-      delete props.priority
-      delete props.dueDate
-      delete props.actions
-      delete props.color
+    {
+      id: projectCardVersions.TaskBoardFields,
+      up: (props) => {
+        delete props.status
+        delete props.priority
+        delete props.dueDate
+        delete props.actions
+        props.tasks ??= []
+        props.w = Math.max(PROJECT_CARD_MIN_WIDTH, Number(props.w) || PROJECT_CARD_DEFAULT_WIDTH)
+        props.h = Math.max(PROJECT_CARD_MIN_HEIGHT, Number(props.h) || PROJECT_CARD_DEFAULT_HEIGHT)
+      },
+      down: (props) => {
+        delete props.tasks
+        props.status = 'planned'
+        props.priority = 'medium'
+        props.actions = []
+      }
     }
-  }]
+  ]
 })
 
-const projectActionValidator = T.object({ id: T.string, text: T.string, done: T.boolean })
+const projectTaskValidator = T.object({
+  id: T.string,
+  text: T.string,
+  status: T.literalEnum(...PROJECT_TASK_STATUSES)
+})
+
 export const projectCardProps = {
   w: T.number,
   h: T.number,
   title: T.string,
-  status: T.literalEnum(...PROJECT_STATUSES),
-  priority: T.literalEnum(...PROJECT_PRIORITIES),
-  dueDate: T.string.optional(),
-  actions: T.arrayOf(projectActionValidator),
+  tasks: T.arrayOf(projectTaskValidator),
   color: DefaultColorStyle
 }
+```
 
+- [ ] **Step 4: Implement normalization and pure task mutations**
+
+Add these concrete helpers in the same file:
+
+```ts
 function nonBlank(value: string, label: string) {
   const trimmed = value.trim()
   if (!trimmed) throw new Error(`${label} must not be empty`)
   return trimmed
 }
 
-export function nextProjectActionId(actions: Pick<ProjectAction, 'id'>[]) {
-  const used = new Set(actions.map((action) => action.id))
+function validStatus(status: string): status is ProjectTaskStatus {
+  return (PROJECT_TASK_STATUSES as readonly string[]).includes(status)
+}
+
+export function nextProjectTaskId(tasks: Pick<ProjectTask, 'id'>[]) {
+  const used = new Set(tasks.map((task) => task.id))
   for (let index = 1; ; index += 1) {
-    const id = `action_${String(index).padStart(4, '0')}`
+    const id = `task_${String(index).padStart(4, '0')}`
     if (!used.has(id)) return id
   }
 }
 
-export function normalizeProjectActions(inputs: ProjectActionInput[] = []): ProjectAction[] {
-  const supplied = inputs.flatMap((action) => action.id ? [action.id] : [])
-  if (new Set(supplied).size !== supplied.length) {
-    const duplicate = supplied.find((id, index) => supplied.indexOf(id) !== index)
-    throw new Error(`Duplicate project action ${duplicate}`)
-  }
-
+export function normalizeProjectTasks(inputs: ProjectTaskInput[] = []): ProjectTask[] {
+  const supplied = inputs.flatMap((task) => task.id ? [task.id] : [])
+  const duplicate = supplied.find((id, index) => supplied.indexOf(id) !== index)
+  if (duplicate) throw new Error(`Duplicate project task ${duplicate}`)
   const used = new Set(supplied)
   return inputs.map((input) => {
     let id = input.id
     if (!id) {
-      id = nextProjectActionId([...used].map((usedId) => ({ id: usedId })))
+      id = nextProjectTaskId([...used].map((usedId) => ({ id: usedId })))
       used.add(id)
     }
-    return { id, text: nonBlank(input.text, 'Project action text'), done: input.done ?? false }
+    const status = input.status ?? 'todo'
+    if (!validStatus(status)) throw new Error(`Invalid project task status ${status}`)
+    return { id, text: nonBlank(input.text, 'Project task text'), status }
   })
 }
 
+export function appendProjectTask(tasks: ProjectTask[], task: ProjectTask): ProjectTask[] {
+  if (tasks.some((item) => item.id === task.id)) throw new Error(`Duplicate project task ${task.id}`)
+  if (!validStatus(task.status)) throw new Error(`Invalid project task status ${task.status}`)
+  return [...tasks, { ...task, text: nonBlank(task.text, 'Project task text') }]
+}
+
+export function updateProjectTaskText(tasks: ProjectTask[], taskId: string, text: string) {
+  if (!tasks.some((task) => task.id === taskId)) throw new Error(`Unknown project task ${taskId}`)
+  const nextText = nonBlank(text, 'Project task text')
+  return tasks.map((task) => task.id === taskId ? { ...task, text: nextText } : task)
+}
+
+export function removeProjectTask(tasks: ProjectTask[], taskId: string) {
+  if (!tasks.some((task) => task.id === taskId)) throw new Error(`Unknown project task ${taskId}`)
+  return tasks.filter((task) => task.id !== taskId)
+}
+
+export function moveProjectTask(
+  tasks: ProjectTask[],
+  taskId: string,
+  status: ProjectTaskStatus,
+  beforeTaskId?: string | null
+) {
+  if (!validStatus(status)) throw new Error(`Invalid project task status ${status}`)
+  const moving = tasks.find((task) => task.id === taskId)
+  if (!moving) throw new Error(`Unknown project task ${taskId}`)
+  if (beforeTaskId === taskId) throw new Error('Project task cannot move before itself')
+  const remaining = tasks.filter((task) => task.id !== taskId)
+  let index: number
+  if (beforeTaskId) {
+    index = remaining.findIndex((task) => task.id === beforeTaskId)
+    if (index < 0) throw new Error(`Unknown project task ${beforeTaskId}`)
+    if (remaining[index].status !== status) throw new Error(`Project task ${beforeTaskId} is not in ${status}`)
+  } else {
+    const last = remaining.reduce((found, task, taskIndex) => task.status === status ? taskIndex : found, -1)
+    index = last < 0 ? remaining.length : last + 1
+  }
+  const candidate = [
+    ...remaining.slice(0, index),
+    { ...moving, status },
+    ...remaining.slice(index)
+  ]
+  const before = tasks.filter((task) => task.status === status).map((task) => task.id)
+  const after = candidate.filter((task) => task.status === status).map((task) => task.id)
+  return moving.status === status && before.join('\0') === after.join('\0') ? tasks : candidate
+}
+
 export function fitProjectCardDimensions(w?: number, h?: number) {
-  const validW = typeof w === 'number' && Number.isFinite(w) && w > 0 ? w : PROJECT_CARD_DEFAULT_WIDTH
-  const validH = typeof h === 'number' && Number.isFinite(h) && h > 0 ? h : PROJECT_CARD_DEFAULT_HEIGHT
-  return { w: Math.max(PROJECT_CARD_MIN_WIDTH, validW), h: Math.max(PROJECT_CARD_MIN_HEIGHT, validH) }
-}
-
-export function isValidProjectDueDate(value: string) {
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false
-  const parsed = new Date(`${value}T00:00:00.000Z`)
-  return !Number.isNaN(parsed.getTime()) && parsed.toISOString().slice(0, 10) === value
-}
-
-export function localProjectDate(date = new Date()) {
-  const year = date.getFullYear()
-  const month = String(date.getMonth() + 1).padStart(2, '0')
-  const day = String(date.getDate()).padStart(2, '0')
-  return `${year}-${month}-${day}`
-}
-
-export function isProjectOverdue(dueDate: string | undefined, status: ProjectStatus, today = localProjectDate()) {
-  return Boolean(dueDate && isValidProjectDueDate(dueDate) && status !== 'done' && dueDate < today)
-}
-
-export function getProjectProgress(actions: ProjectAction[]) {
-  const completed = actions.filter((action) => action.done).length
-  const total = actions.length
-  return { completed, total, percent: total === 0 ? 0 : Math.round((completed / total) * 100) }
+  const width = typeof w === 'number' && Number.isFinite(w) && w > 0 ? w : PROJECT_CARD_DEFAULT_WIDTH
+  const height = typeof h === 'number' && Number.isFinite(h) && h > 0 ? h : PROJECT_CARD_DEFAULT_HEIGHT
+  return { w: Math.max(PROJECT_CARD_MIN_WIDTH, width), h: Math.max(PROJECT_CARD_MIN_HEIGHT, height) }
 }
 
 export function createProjectCardProps(input: {
   title: string
-  status?: ProjectStatus
-  priority?: ProjectPriority
-  dueDate?: string
-  actions?: ProjectActionInput[]
+  tasks?: ProjectTaskInput[]
   w?: number
   h?: number
   color?: string
 }): ProjectCardProps {
-  if (input.dueDate !== undefined && !isValidProjectDueDate(input.dueDate)) {
-    throw new Error('Project due date must be a real YYYY-MM-DD date')
-  }
   return {
     ...fitProjectCardDimensions(input.w, input.h),
     title: nonBlank(input.title, 'Project title'),
-    status: input.status ?? 'planned',
-    priority: input.priority ?? 'medium',
-    ...(input.dueDate ? { dueDate: input.dueDate } : {}),
-    actions: normalizeProjectActions(input.actions),
+    tasks: normalizeProjectTasks(input.tasks),
     color: input.color ?? DEFAULT_PROJECT_CARD_COLOR
   }
 }
 ```
 
-- [ ] **Step 4: Register the shape in the shared schema**
+- [ ] **Step 5: Run tests and type checking**
 
-In `src/canvas/tldraw/tldrawSchema.ts`, import `projectCardMigrations` and `projectCardProps`, then add this entry beside the existing custom shapes:
+Run: `npm test -- src/canvas/tldraw/projectCard.types.test.ts src/canvas/tldraw/tldrawSchema.test.ts && npm run lint:types`
 
-```ts
-project_card: {
-  migrations: projectCardMigrations,
-  props: projectCardProps
-}
-```
-
-- [ ] **Step 5: Run the domain and schema tests**
-
-Run: `npm test -- src/canvas/tldraw/projectCard.types.test.ts src/canvas/tldraw/tldrawSchema.test.ts`
-
-Expected: PASS.
+Expected: both test files PASS and TypeScript exits 0.
 
 - [ ] **Step 6: Commit the domain slice**
 
 ```bash
-git add src/canvas/tldraw/projectCard.types.ts src/canvas/tldraw/projectCard.types.test.ts src/canvas/tldraw/tldrawSchema.ts src/canvas/tldraw/tldrawSchema.test.ts
-git commit -m "feat: add project card domain model"
+git add src/canvas/tldraw/projectCard.types.ts src/canvas/tldraw/projectCard.types.test.ts
+git commit -m "refactor: model project cards as task boards"
 ```
 
 ---
 
-### Task 2: Add the Typed Project Action Contract
+### Task 2: Replace the Canvas Action Contract
 
 **Files:**
 - Modify: `src/canvas/actions/canvasAction.types.ts`
 - Modify: `src/canvas/actions/canvasAction.schema.ts`
 - Test: `src/canvas/actions/canvasAction.schema.test.ts`
+- Modify: `src/canvas/tldraw/tldrawActionExecutor.ts`
+- Test: `src/canvas/tldraw/tldrawActionExecutor.test.ts`
 
 **Interfaces:**
-- Consumes: `ProjectActionInput`, `ProjectPriority`, and `ProjectStatus` from Task 1.
-- Produces: six `CanvasAction` variants whose parsed strings are trimmed and whose dates, enums, IDs, dimensions, and non-empty update payloads are validated before execution.
+- Consumes: `ProjectTaskInput` and `ProjectTaskStatus` from Task 1.
+- Produces: `create_project_card`, `update_project_card`, `append_project_task`, `update_project_task_text`, `move_project_task`, and `remove_project_task` action variants plus in-memory execution through the shared executor.
 
-- [ ] **Step 1: Write failing schema tests**
+- [ ] **Step 1: Write failing accepted/rejected schema tests**
 
-Add to `src/canvas/actions/canvasAction.schema.test.ts`:
+Replace the old Project action cases with:
 
 ```ts
-it('accepts and trims the complete project action contract', () => {
-  const actions = [
+it('accepts and trims the complete project task-board contract', () => {
+  const parsed = canvasActionBatchSchema.parse([
     {
       type: 'create_project_card', id: 'shape:project_1', x: 40, y: 80,
-      title: '  Website launch  ', status: 'active', priority: 'high', dueDate: '2026-07-31',
-      actions: [{ id: 'action_copy', text: '  Finish copy  ' }], w: 420, h: 340,
-      color: 'light-violet'
+      title: '  Website launch  ',
+      tasks: [{ id: 'task_copy', text: '  Finish copy  ' }, { text: 'Review', status: 'doing' }],
+      w: 1000, h: 520, color: 'light-violet'
     },
-    { type: 'update_project_card', shapeId: 'shape:project_1', status: 'blocked', dueDate: null },
-    { type: 'append_project_action', shapeId: 'shape:project_1', actionId: 'action_ship', text: '  Ship  ' },
-    { type: 'update_project_action_text', shapeId: 'shape:project_1', actionId: 'action_ship', text: '  Publish  ' },
-    { type: 'set_project_action_done', shapeId: 'shape:project_1', actionId: 'action_copy', done: true },
-    { type: 'remove_project_action', shapeId: 'shape:project_1', actionId: 'action_ship' }
-  ]
-
-  expect(canvasActionBatchSchema.parse(actions)).toMatchObject([
-    { type: 'create_project_card', title: 'Website launch', actions: [{ text: 'Finish copy' }] },
-    { type: 'update_project_card', dueDate: null },
-    { type: 'append_project_action', text: 'Ship' },
-    { type: 'update_project_action_text', text: 'Publish' },
-    { type: 'set_project_action_done', done: true },
-    { type: 'remove_project_action' }
+    { type: 'update_project_card', shapeId: 'shape:project_1', title: '  Release  ' },
+    { type: 'append_project_task', shapeId: 'shape:project_1', taskId: 'task_ship', text: '  Ship  ' },
+    { type: 'update_project_task_text', shapeId: 'shape:project_1', taskId: 'task_ship', text: '  Publish  ' },
+    { type: 'move_project_task', shapeId: 'shape:project_1', taskId: 'task_ship', status: 'done', beforeTaskId: null },
+    { type: 'remove_project_task', shapeId: 'shape:project_1', taskId: 'task_ship' }
+  ])
+  expect(parsed).toMatchObject([
+    { type: 'create_project_card', title: 'Website launch', tasks: [{ text: 'Finish copy', status: 'todo' }, { text: 'Review', status: 'doing' }] },
+    { type: 'update_project_card', title: 'Release' },
+    { type: 'append_project_task', text: 'Ship', status: 'todo' },
+    { type: 'update_project_task_text', text: 'Publish' },
+    { type: 'move_project_task', status: 'done', beforeTaskId: null },
+    { type: 'remove_project_task' }
   ])
 })
 
-it('rejects invalid project fields and empty metadata updates', () => {
+it('rejects legacy project fields/actions and invalid task-board payloads', () => {
   const invalid = [
-    { type: 'create_project_card', x: 0, y: 0, title: '   ' },
-    { type: 'create_project_card', x: 0, y: 0, title: 'Project', status: 'paused' },
-    { type: 'create_project_card', x: 0, y: 0, title: 'Project', priority: 'urgent' },
-    { type: 'create_project_card', x: 0, y: 0, title: 'Project', dueDate: '2026-02-30' },
-    { type: 'create_project_card', x: 0, y: 0, title: 'Project', actions: [
-      { id: 'same', text: 'A' }, { id: 'same', text: 'B' }
-    ] },
-    { type: 'update_project_card', shapeId: 'shape:project_1' },
-    { type: 'append_project_action', shapeId: 'shape:project_1', actionId: '', text: 'Ship' },
-    { type: 'update_project_action_text', shapeId: 'shape:project_1', actionId: 'a', text: '   ' }
+    { type: 'create_project_card', x: 0, y: 0, title: 'Project', status: 'active' },
+    { type: 'create_project_card', x: 0, y: 0, title: 'Project', priority: 'high' },
+    { type: 'create_project_card', x: 0, y: 0, title: 'Project', dueDate: '2026-07-31' },
+    { type: 'create_project_card', x: 0, y: 0, title: 'Project', tasks: [{ text: 'A', status: 'paused' }] },
+    { type: 'update_project_card', shapeId: 'shape:project_1', status: 'done' },
+    { type: 'append_project_task', shapeId: 'shape:project_1', taskId: '', text: 'Ship' },
+    { type: 'move_project_task', shapeId: 'shape:project_1', taskId: 'task_a', status: 'planned' },
+    { type: 'append_project_action', shapeId: 'shape:project_1', actionId: 'a', text: 'Legacy' },
+    { type: 'set_project_action_done', shapeId: 'shape:project_1', actionId: 'a', done: true }
   ]
-  for (const action of invalid) expect(() => canvasActionSchema.parse(action)).toThrow()
+  invalid.forEach((action) => expect(() => canvasActionSchema.parse(action)).toThrow())
+})
+```
+
+Replace the old Project executor lifecycle test at the same time with:
+
+```ts
+it('creates and mutates an ordered project task board', () => {
+  const target = createMemoryTldrawTarget('canvas_001')
+  const actions: CanvasAction[] = [
+    { type: 'create_project_card', id: 'shape:project_1', x: 40, y: 80, title: 'Launch', tasks: [{ id: 'task_copy', text: 'Write copy' }] },
+    { type: 'append_project_task', shapeId: 'shape:project_1', taskId: 'task_ship', text: 'Ship' },
+    { type: 'update_project_task_text', shapeId: 'shape:project_1', taskId: 'task_ship', text: 'Publish' },
+    { type: 'move_project_task', shapeId: 'shape:project_1', taskId: 'task_ship', status: 'doing' },
+    { type: 'update_project_card', shapeId: 'shape:project_1', title: 'Release' },
+    { type: 'remove_project_task', shapeId: 'shape:project_1', taskId: 'task_copy' }
+  ]
+  expect(actions.map((action) => executeTldrawAction(target, action))).toEqual([
+    { actionType: 'create_project_card', createdShapeIds: ['shape:project_1'] },
+    { actionType: 'append_project_task', updatedShapeIds: ['shape:project_1'] },
+    { actionType: 'update_project_task_text', updatedShapeIds: ['shape:project_1'] },
+    { actionType: 'move_project_task', updatedShapeIds: ['shape:project_1'] },
+    { actionType: 'update_project_card', updatedShapeIds: ['shape:project_1'] },
+    { actionType: 'remove_project_task', updatedShapeIds: ['shape:project_1'] }
+  ])
+  expect(readTldrawObservation(target).shapes[0]).toMatchObject({
+    id: 'shape:project_1', type: 'project_card', w: 960, h: 480,
+    props: { title: 'Release', tasks: [{ id: 'task_ship', text: 'Publish', status: 'doing' }] }
+  })
 })
 ```
 
 - [ ] **Step 2: Run schema tests and verify failure**
 
-Run: `npm test -- src/canvas/actions/canvasAction.schema.test.ts`
+Run: `npm test -- src/canvas/actions/canvasAction.schema.test.ts src/canvas/tldraw/tldrawActionExecutor.test.ts`
 
-Expected: FAIL because the union rejects every Project action.
+Expected: FAIL because the old project lifecycle union and executor branches are still active.
 
-- [ ] **Step 3: Add the TypeScript action types**
+- [ ] **Step 3: Replace Project action types**
 
-In `src/canvas/actions/canvasAction.types.ts`, import the Project types and add:
+Use these definitions in `canvasAction.types.ts` and add them to `CanvasAction`:
 
 ```ts
 export type CreateProjectCardAction = {
-  type: 'create_project_card'; id?: string; x: number; y: number; title: string
-  status?: ProjectStatus; priority?: ProjectPriority; dueDate?: string
-  actions?: ProjectActionInput[]; w?: number; h?: number; color?: string
+  type: 'create_project_card'
+  id?: string
+  x: number
+  y: number
+  title: string
+  tasks?: ProjectTaskInput[]
+  w?: number
+  h?: number
+  color?: string
 }
-export type UpdateProjectCardAction = {
-  type: 'update_project_card'; shapeId: string; title?: string; status?: ProjectStatus
-  priority?: ProjectPriority; dueDate?: string | null
+export type UpdateProjectCardAction = { type: 'update_project_card'; shapeId: string; title: string }
+export type AppendProjectTaskAction = {
+  type: 'append_project_task'; shapeId: string; taskId: string; text: string; status?: ProjectTaskStatus
 }
-export type AppendProjectAction = {
-  type: 'append_project_action'; shapeId: string; actionId: string; text: string; done?: boolean
+export type UpdateProjectTaskTextAction = {
+  type: 'update_project_task_text'; shapeId: string; taskId: string; text: string
 }
-export type UpdateProjectActionTextAction = {
-  type: 'update_project_action_text'; shapeId: string; actionId: string; text: string
+export type MoveProjectTaskAction = {
+  type: 'move_project_task'; shapeId: string; taskId: string; status: ProjectTaskStatus; beforeTaskId?: string | null
 }
-export type SetProjectActionDoneAction = {
-  type: 'set_project_action_done'; shapeId: string; actionId: string; done: boolean
-}
-export type RemoveProjectActionAction = {
-  type: 'remove_project_action'; shapeId: string; actionId: string
-}
+export type RemoveProjectTaskAction = { type: 'remove_project_task'; shapeId: string; taskId: string }
 ```
 
-Add all six names to the `CanvasAction` union.
+- [ ] **Step 4: Replace Project Zod variants**
 
-- [ ] **Step 4: Add Zod Project schemas**
-
-In `src/canvas/actions/canvasAction.schema.ts`, import `isValidProjectDueDate` and add these constants:
+Use `z.object(...).strict()` for all six Project variants so legacy project keys are rejected. Define `projectTaskStatus = z.enum(['todo', 'doing', 'done', 'blocked'])`, and use `nonBlank` for IDs/text/title. Transform optional initial task status to `todo` and optional appended status to `todo`:
 
 ```ts
-const nonBlank = z.string().trim().min(1)
-const projectStatus = z.enum(['planned', 'active', 'blocked', 'done'])
-const projectPriority = z.enum(['low', 'medium', 'high'])
-const projectDueDate = z.string().refine(isValidProjectDueDate, 'dueDate must be a real YYYY-MM-DD date')
-const projectActionInput = z.object({
+const projectTaskInput = z.object({
   id: nonBlank.optional(),
   text: nonBlank,
-  done: z.boolean().optional()
-})
-const projectActionInputs = z.array(projectActionInput).superRefine((actions, context) => {
-  const seen = new Set<string>()
-  actions.forEach((action, index) => {
-    if (!action.id) return
-    if (seen.has(action.id)) {
-      context.addIssue({ code: z.ZodIssueCode.custom, path: [index, 'id'], message: `duplicate action id ${action.id}` })
-    }
-    seen.add(action.id)
-  })
-})
-```
+  status: projectTaskStatus.default('todo')
+}).strict()
 
-Add these six members to `canvasActionSchema`:
-
-```ts
 z.object({
   type: z.literal('create_project_card'), id: nonBlank.optional(), title: nonBlank,
-  status: projectStatus.optional(), priority: projectPriority.optional(), dueDate: projectDueDate.optional(),
-  actions: projectActionInputs.optional(), w: z.number().finite().positive().optional(),
+  tasks: z.array(projectTaskInput).optional(), w: z.number().finite().positive().optional(),
   h: z.number().finite().positive().optional(), color: tldrawDefaultColor.optional(), ...position
-}),
+}).strict()
+
+z.object({ type: z.literal('update_project_card'), shapeId, title: nonBlank }).strict()
 z.object({
-  type: z.literal('update_project_card'), shapeId, title: nonBlank.optional(),
-  status: projectStatus.optional(), priority: projectPriority.optional(),
-  dueDate: projectDueDate.nullable().optional()
-}).refine((value) => value.title !== undefined || value.status !== undefined ||
-  value.priority !== undefined || value.dueDate !== undefined, {
-  message: 'update_project_card requires at least one field'
-}),
+  type: z.literal('append_project_task'), shapeId, taskId: nonBlank, text: nonBlank,
+  status: projectTaskStatus.default('todo')
+}).strict()
+z.object({ type: z.literal('update_project_task_text'), shapeId, taskId: nonBlank, text: nonBlank }).strict()
 z.object({
-  type: z.literal('append_project_action'), shapeId, actionId: nonBlank,
-  text: nonBlank, done: z.boolean().optional()
-}),
-z.object({
-  type: z.literal('update_project_action_text'), shapeId, actionId: nonBlank, text: nonBlank
-}),
-z.object({
-  type: z.literal('set_project_action_done'), shapeId, actionId: nonBlank, done: z.boolean()
-}),
-z.object({
-  type: z.literal('remove_project_action'), shapeId, actionId: nonBlank
-})
+  type: z.literal('move_project_task'), shapeId, taskId: nonBlank, status: projectTaskStatus,
+  beforeTaskId: nonBlank.nullable().optional()
+}).strict()
+z.object({ type: z.literal('remove_project_task'), shapeId, taskId: nonBlank }).strict()
 ```
 
-- [ ] **Step 5: Run schema tests**
+Keep the existing duplicate-ID `superRefine` on initial tasks, changing its message to `duplicate task id`.
 
-Run: `npm test -- src/canvas/actions/canvasAction.schema.test.ts`
+- [ ] **Step 5: Replace executor branches and run the complete contract slice**
 
-Expected: PASS.
-
-- [ ] **Step 6: Commit the action contract**
-
-```bash
-git add src/canvas/actions/canvasAction.types.ts src/canvas/actions/canvasAction.schema.ts src/canvas/actions/canvasAction.schema.test.ts
-git commit -m "feat: add project card action contract"
-```
-
----
-
-### Task 3: Execute Project Actions in the Shared Browser/Memory Executor
-
-**Files:**
-- Modify: `src/canvas/tldraw/tldrawActionExecutor.ts`
-- Test: `src/canvas/tldraw/tldrawActionExecutor.test.ts`
-- Test: `src/canvas/bridge/CanvasBridge.test.ts`
-
-**Interfaces:**
-- Consumes: the Task 1 prop builder and Task 2 action variants.
-- Produces: creation and metadata/action mutation results used unchanged by the browser bridge and headless room adapter.
-
-- [ ] **Step 1: Write the failing executor lifecycle test**
-
-Add to `src/canvas/tldraw/tldrawActionExecutor.test.ts`:
+Route revised operations in `tldrawActionExecutor.ts`:
 
 ```ts
-it('creates and mutates a project card while preserving explicit status', () => {
-  const target = createMemoryTldrawTarget('canvas_001')
-  const actions: CanvasAction[] = [
-    { type: 'create_project_card', id: 'shape:project_1', x: 40, y: 80, title: 'Launch',
-      status: 'active', priority: 'high', dueDate: '2026-07-31',
-      actions: [{ id: 'action_copy', text: 'Write copy' }] },
-    { type: 'append_project_action', shapeId: 'shape:project_1', actionId: 'action_ship', text: 'Ship' },
-    { type: 'update_project_action_text', shapeId: 'shape:project_1', actionId: 'action_ship', text: 'Publish' },
-    { type: 'set_project_action_done', shapeId: 'shape:project_1', actionId: 'action_copy', done: true },
-    { type: 'update_project_card', shapeId: 'shape:project_1', priority: 'medium', dueDate: null },
-    { type: 'remove_project_action', shapeId: 'shape:project_1', actionId: 'action_ship' }
-  ]
-  expect(actions.map((action) => executeTldrawAction(target, action))).toEqual([
-    { actionType: 'create_project_card', createdShapeIds: ['shape:project_1'] },
-    { actionType: 'append_project_action', updatedShapeIds: ['shape:project_1'] },
-    { actionType: 'update_project_action_text', updatedShapeIds: ['shape:project_1'] },
-    { actionType: 'set_project_action_done', updatedShapeIds: ['shape:project_1'] },
-    { actionType: 'update_project_card', updatedShapeIds: ['shape:project_1'] },
-    { actionType: 'remove_project_action', updatedShapeIds: ['shape:project_1'] }
-  ])
-  expect(readTldrawObservation(target).shapes[0]).toMatchObject({
-    id: 'shape:project_1', type: 'project_card', x: 40, y: 80, w: 360, h: 320,
-    props: {
-      title: 'Launch', status: 'active', priority: 'medium',
-      actions: [{ id: 'action_copy', text: 'Write copy', done: true }]
-    }
-  })
-  expect(readTldrawObservation(target).shapes[0].props).not.toHaveProperty('dueDate')
-})
-
-it('returns stable project action-level errors without mutation', () => {
-  const target = createMemoryTldrawTarget('canvas_001')
-  executeTldrawAction(target, { type: 'create_project_card', id: 'shape:project_1', x: 0, y: 0,
-    title: 'Launch', actions: [{ id: 'action_ship', text: 'Ship' }] })
-  expect(executeTldrawAction(target, { type: 'append_project_action', shapeId: 'shape:project_1',
-    actionId: 'action_ship', text: 'Duplicate' })).toEqual({
-    actionType: 'append_project_action', error: 'Duplicate project action action_ship'
-  })
-  expect(executeTldrawAction(target, { type: 'set_project_action_done', shapeId: 'shape:project_1',
-    actionId: 'missing', done: true })).toEqual({
-    actionType: 'set_project_action_done', error: 'Unknown project action missing'
-  })
-  expect(executeTldrawAction(target, { type: 'update_project_card', shapeId: 'shape:missing',
-    status: 'done' })).toEqual({
-    actionType: 'update_project_card', error: 'Unknown project card shape:missing'
-  })
-})
-```
-
-Add this case to `CanvasBridge.test.ts`:
-
-```ts
-it('keeps project batch result context after an action-level failure', () => {
-  const bridge = new CanvasBridge(createMemoryTldrawTarget('canvas_001'))
-  const response = bridge.handleActionEnvelope({
-    type: 'canvas.action', requestId: 'req_project', canvasId: 'canvas_001', actions: [
-      { type: 'create_project_card', id: 'shape:project_1', x: 0, y: 0, title: 'Launch',
-        actions: [{ id: 'action_ship', text: 'Ship' }] },
-      { type: 'append_project_action', shapeId: 'shape:project_1', actionId: 'action_ship', text: 'Duplicate' },
-      { type: 'set_project_action_done', shapeId: 'shape:project_1', actionId: 'action_ship', done: true }
-    ]
-  })
-  if ('error' in response) throw new Error('expected action results')
-  expect(response.result).toMatchObject({ ok: false, results: [
-    { actionType: 'create_project_card', createdShapeIds: ['shape:project_1'] },
-    { actionType: 'append_project_action', error: 'Duplicate project action action_ship' },
-    { actionType: 'set_project_action_done', updatedShapeIds: ['shape:project_1'] }
-  ] })
-  expect(response.observation.state.shapes[0].props.actions).toEqual([
-    { id: 'action_ship', text: 'Ship', done: true }
-  ])
-})
-```
-
-- [ ] **Step 2: Run executor and bridge tests and verify failure**
-
-Run: `npm test -- src/canvas/tldraw/tldrawActionExecutor.test.ts src/canvas/bridge/CanvasBridge.test.ts`
-
-Expected: FAIL because `executeTldrawAction` has no Project cases.
-
-- [ ] **Step 3: Add Project creation and routing cases**
-
-In `src/canvas/tldraw/tldrawActionExecutor.ts`, import Project types/helpers and add these switch cases:
-
-```ts
-case 'create_project_card':
-  return createShape(target, {
-    id: action.id ?? nextShapeId(target, PROJECT_CARD_TYPE), type: PROJECT_CARD_TYPE,
-    x: action.x, y: action.y, props: createProjectCardProps(action),
-    meta: { source: 'hermes' }, actionType: action.type
-  })
 case 'update_project_card':
-  return updateProjectMetadata(target, action)
-case 'append_project_action':
-case 'update_project_action_text':
-case 'set_project_action_done':
-case 'remove_project_action':
-  return mutateProjectActions(target, action)
+  return updateProjectTitle(target, action)
+case 'append_project_task':
+case 'update_project_task_text':
+case 'move_project_task':
+case 'remove_project_task':
+  return mutateProjectTasks(target, action)
 ```
 
-- [ ] **Step 4: Implement Project mutation helpers**
-
-Add to `src/canvas/tldraw/tldrawActionExecutor.ts`:
+Delete the four legacy action cases and `updateProjectMetadata`/`mutateProjectActions`. Import the Task 1 domain helpers and add:
 
 ```ts
-type ProjectMutation = Extract<CanvasAction, { type:
-  | 'append_project_action' | 'update_project_action_text'
-  | 'set_project_action_done' | 'remove_project_action' }>
+type ProjectTaskMutation = Extract<CanvasAction, {
+  type: 'append_project_task' | 'update_project_task_text' | 'move_project_task' | 'remove_project_task'
+}>
 
-function projectShape(target: TldrawExecutorTarget, shapeId: string) {
-  const shape = target.shapes.get(shapeId)
-  return shape?.type === PROJECT_CARD_TYPE ? shape : undefined
-}
-
-function updateProjectProps(target: TldrawExecutorTarget, shape: ShapeRecord,
-  props: Record<string, unknown>, actionType: CanvasAction['type']): TldrawActionResult {
-  const next = { ...shape, props }
-  target.shapes.set(shape.id, next)
-  target.editor?.updateShape({ id: shape.id as any, type: PROJECT_CARD_TYPE, props: next.props as any })
-  return { actionType, updatedShapeIds: [shape.id] }
-}
-
-function updateProjectMetadata(target: TldrawExecutorTarget,
-  action: Extract<CanvasAction, { type: 'update_project_card' }>): TldrawActionResult {
+function updateProjectTitle(target: TldrawExecutorTarget, action: Extract<CanvasAction, { type: 'update_project_card' }>) {
   const shape = projectShape(target, action.shapeId)
   if (!shape) return { actionType: action.type, error: `Unknown project card ${action.shapeId}` }
-  const props = { ...shape.props }
-  if (action.title !== undefined) props.title = action.title
-  if (action.status !== undefined) props.status = action.status
-  if (action.priority !== undefined) props.priority = action.priority
-  if (action.dueDate === null) delete props.dueDate
-  else if (action.dueDate !== undefined) props.dueDate = action.dueDate
-  return updateProjectProps(target, shape, props, action.type)
+  return updateProjectProps(target, shape, { ...shape.props, title: action.title }, action.type)
 }
 
-function mutateProjectActions(target: TldrawExecutorTarget, action: ProjectMutation): TldrawActionResult {
+function mutateProjectTasks(target: TldrawExecutorTarget, action: ProjectTaskMutation) {
   const shape = projectShape(target, action.shapeId)
   if (!shape) return { actionType: action.type, error: `Unknown project card ${action.shapeId}` }
-  const actions = Array.isArray(shape.props.actions) ? shape.props.actions as ProjectAction[] : []
-
-  if (action.type === 'append_project_action') {
-    if (actions.some((item) => item.id === action.actionId)) {
-      return { actionType: action.type, error: `Duplicate project action ${action.actionId}` }
-    }
-    return updateProjectProps(target, shape, { ...shape.props, actions: [
-      ...actions, { id: action.actionId, text: action.text, done: action.done ?? false }
-    ] }, action.type)
+  const tasks = Array.isArray(shape.props.tasks) ? shape.props.tasks as ProjectTask[] : []
+  try {
+    const nextTasks = action.type === 'append_project_task'
+      ? appendProjectTask(tasks, { id: action.taskId, text: action.text, status: action.status ?? 'todo' })
+      : action.type === 'update_project_task_text'
+        ? updateProjectTaskText(tasks, action.taskId, action.text)
+        : action.type === 'move_project_task'
+          ? moveProjectTask(tasks, action.taskId, action.status, action.beforeTaskId)
+          : removeProjectTask(tasks, action.taskId)
+    if (nextTasks === tasks) return { actionType: action.type, updatedShapeIds: [shape.id] }
+    return updateProjectProps(target, shape, { ...shape.props, tasks: nextTasks }, action.type)
+  } catch (error) {
+    return { actionType: action.type, error: error instanceof Error ? error.message : String(error) }
   }
-
-  if (!actions.some((item) => item.id === action.actionId)) {
-    return { actionType: action.type, error: `Unknown project action ${action.actionId}` }
-  }
-  const nextActions = action.type === 'remove_project_action'
-    ? actions.filter((item) => item.id !== action.actionId)
-    : actions.map((item) => item.id !== action.actionId ? item
-      : action.type === 'update_project_action_text' ? { ...item, text: action.text }
-      : { ...item, done: action.done })
-  return updateProjectProps(target, shape, { ...shape.props, actions: nextActions }, action.type)
 }
 ```
 
-- [ ] **Step 5: Run executor and bridge tests**
+Run: `npm test -- src/canvas/actions/canvasAction.schema.test.ts src/canvas/tldraw/tldrawActionExecutor.test.ts && npm run lint:types`
 
-Run: `npm test -- src/canvas/tldraw/tldrawActionExecutor.test.ts src/canvas/bridge/CanvasBridge.test.ts`
+Expected: both test files PASS and TypeScript exits 0.
 
-Expected: PASS.
-
-- [ ] **Step 6: Commit the shared executor slice**
+- [ ] **Step 6: Commit the contract slice**
 
 ```bash
-git add src/canvas/tldraw/tldrawActionExecutor.ts src/canvas/tldraw/tldrawActionExecutor.test.ts src/canvas/bridge/CanvasBridge.test.ts
-git commit -m "feat: execute project card actions"
+git add src/canvas/actions/canvasAction.types.ts src/canvas/actions/canvasAction.schema.ts src/canvas/actions/canvasAction.schema.test.ts src/canvas/tldraw/tldrawActionExecutor.ts src/canvas/tldraw/tldrawActionExecutor.test.ts
+git commit -m "refactor: expose project task-board actions"
 ```
 
 ---
 
-### Task 4: Prove Headless Sync-Room Persistence
+### Task 3: Execute and Persist Project Task Operations
 
 **Files:**
+- Test: `src/canvas/bridge/CanvasBridge.test.ts`
 - Test: `server/canvas/tldrawHeadlessExecutor.test.ts`
 
 **Interfaces:**
-- Consumes: the shared schema from Task 1 and shared executor from Task 3.
-- Produces: integration evidence that no separate server implementation is required and that `project_card` records survive room persistence.
+- Consumes: the tested shared executor from Task 2.
+- Produces: sequential browser-bridge behavior and sync-room persistence with normalized task-board observations.
 
-- [ ] **Step 1: Write the failing headless persistence test**
+- [ ] **Step 1: Replace bridge and headless lifecycle tests with task-board batches**
 
-Add to `server/canvas/tldrawHeadlessExecutor.test.ts`:
+Use this action sequence in the bridge and headless tests:
 
 ```ts
-it('persists project creation and mutations without a browser bridge', async () => {
-  const responses = await executeHeadlessTldrawAction(manager, {
-    type: 'canvas.action', requestId: 'req_project', canvasId: 'canvas_001', actions: [
-      { type: 'create_project_card', id: 'shape:project_1', x: 100, y: 120,
-        title: 'Website launch', status: 'active', priority: 'high', dueDate: '2026-07-31',
-        actions: [{ id: 'action_copy', text: 'Write copy' }] },
-      { type: 'append_project_action', shapeId: 'shape:project_1', actionId: 'action_ship', text: 'Ship' },
-      { type: 'set_project_action_done', shapeId: 'shape:project_1', actionId: 'action_copy', done: true },
-      { type: 'read_canvas' }
-    ]
-  })
-  expect(responses[0]).toMatchObject({ type: 'canvas.result', requestId: 'req_project', ok: true })
-  expect(responses[1]).toMatchObject({
-    type: 'canvas.observation', state: { shapes: [{
-      id: 'shape:project_1', type: 'project_card', w: 360, h: 320,
-      props: { title: 'Website launch', status: 'active', priority: 'high', dueDate: '2026-07-31',
-        actions: [
-          { id: 'action_copy', text: 'Write copy', done: true },
-          { id: 'action_ship', text: 'Ship', done: false }
-        ] }
-    }] }
-  })
-  const stored = manager.getOrCreateRoom('canvas_001').getCurrentSnapshot().documents
-    .find((entry) => entry.state.id === 'shape:project_1')?.state as any
-  expect(stored).toMatchObject({ typeName: 'shape', type: 'project_card', props: {
-    title: 'Website launch', actions: [{ done: true }, { done: false }]
-  } })
+const actions: CanvasAction[] = [
+  {
+    type: 'create_project_card', id: 'shape:project_1', x: 40, y: 80,
+    title: 'Launch', tasks: [{ id: 'task_copy', text: 'Write copy' }]
+  },
+  { type: 'append_project_task', shapeId: 'shape:project_1', taskId: 'task_ship', text: 'Ship' },
+  { type: 'update_project_task_text', shapeId: 'shape:project_1', taskId: 'task_ship', text: 'Publish' },
+  { type: 'move_project_task', shapeId: 'shape:project_1', taskId: 'task_ship', status: 'doing' },
+  { type: 'update_project_card', shapeId: 'shape:project_1', title: 'Release' },
+  { type: 'remove_project_task', shapeId: 'shape:project_1', taskId: 'task_copy' }
+]
+```
+
+Assert the final observation contains:
+
+```ts
+{
+  id: 'shape:project_1', type: 'project_card', x: 40, y: 80, w: 960, h: 480,
+  props: {
+    title: 'Release',
+    tasks: [{ id: 'task_ship', text: 'Publish', status: 'doing' }],
+    color: 'light-violet'
+  }
+}
+```
+
+In `CanvasBridge.test.ts`, create `task_ship`, attempt a duplicate append, then move the original task to Doing. Assert `result.ok` is false, all three result items remain present, and the observation contains the moved task. In the headless test, send the complete sequence above, assert the normalized observation, then inspect the room snapshot and verify `props.tasks` contains `{ id: 'task_ship', text: 'Publish', status: 'doing' }`.
+
+- [ ] **Step 2: Run executor tests and verify failure**
+
+Run: `npm test -- src/canvas/bridge/CanvasBridge.test.ts server/canvas/tldrawHeadlessExecutor.test.ts`
+
+Expected: FAIL because the integration tests still send and assert legacy Project action fields.
+
+- [ ] **Step 3: Update bridge failure-continuation assertions**
+
+Use this exact bridge batch:
+
+```ts
+actions: [
+  { type: 'create_project_card', id: 'shape:project_1', x: 0, y: 0, title: 'Launch', tasks: [{ id: 'task_ship', text: 'Ship' }] },
+  { type: 'append_project_task', shapeId: 'shape:project_1', taskId: 'task_ship', text: 'Duplicate' },
+  { type: 'move_project_task', shapeId: 'shape:project_1', taskId: 'task_ship', status: 'doing' }
+]
+```
+
+Expect the duplicate error `Duplicate project task task_ship`, the following move result, and final `props.tasks` equal to `[{ id: 'task_ship', text: 'Ship', status: 'doing' }]`.
+
+- [ ] **Step 4: Update headless persistence assertions**
+
+```ts
+expect(responses[1]).toMatchObject({
+  type: 'canvas.observation',
+  state: { shapes: [{
+    id: 'shape:project_1', type: 'project_card', w: 960, h: 480,
+    props: { title: 'Release', tasks: [{ id: 'task_ship', text: 'Publish', status: 'doing' }] }
+  }] }
 })
 ```
 
-- [ ] **Step 2: Run the headless test**
+Inspect the stored document and assert the same `props.title` and `props.tasks` values.
 
-Run: `npm test -- server/canvas/tldrawHeadlessExecutor.test.ts`
+- [ ] **Step 5: Run executor, bridge, and headless tests**
 
-Expected: PASS after Tasks 1–3; if it fails, fix only shared schema/executor parity rather than adding a second Project mutation implementation to the server file.
+Run: `npm test -- src/canvas/bridge/CanvasBridge.test.ts server/canvas/tldrawHeadlessExecutor.test.ts && npm run lint:types`
 
-- [ ] **Step 3: Commit the integration proof**
+Expected: both test files PASS and TypeScript exits 0.
+
+- [ ] **Step 6: Commit execution and persistence**
 
 ```bash
-git add server/canvas/tldrawHeadlessExecutor.test.ts
-git commit -m "test: verify headless project persistence"
+git add src/canvas/bridge/CanvasBridge.test.ts server/canvas/tldrawHeadlessExecutor.test.ts
+git commit -m "test: verify project task-board persistence"
 ```
 
 ---
 
-### Task 5: Add the Project Shape UI and Styling
+### Task 4: Build the Four-Column Board and Pointer Dragging
 
 **Files:**
-- Create: `src/canvas/tldraw/projectCardUtils.tsx`
-- Create: `src/canvas/tldraw/projectCardUtils.test.tsx`
-- Modify: `src/canvas/tldraw/customShapeUtils.tsx`
-- Modify: `src/canvas/tldraw/customShapeUtils.test.tsx`
-- Modify: `src/canvas/components/CanvasSurface.test.tsx`
+- Create: `src/canvas/tldraw/projectCardDrag.ts`
+- Create: `src/canvas/tldraw/projectCardDrag.test.ts`
+- Create: `src/canvas/tldraw/ProjectCardBoard.tsx`
+- Create: `src/canvas/tldraw/ProjectCardBoard.test.tsx`
+- Modify: `src/canvas/tldraw/projectCardUtils.tsx`
+- Modify: `src/canvas/tldraw/projectCardUtils.test.tsx`
 - Modify: `src/styles.css`
 
 **Interfaces:**
-- Consumes: all Task 1 domain helpers and tldraw's editor/editing hooks.
-- Produces: `ProjectCardShapeUtil`, registered as the third Hermes custom shape utility.
+- `resolveProjectTaskDrop(x, y, zones) -> { status, beforeTaskId } | null` contains no DOM access.
+- `ProjectCardBoard` consumes `title`, `tasks`, `onTitleChange`, `onTasksChange`, and `onInteraction`.
+- `ProjectCardShapeUtil` remains responsible only for tldraw geometry, theme color, resize, and shape-prop writes.
 
-- [ ] **Step 1: Write failing renderer and interaction tests**
+- [ ] **Step 1: Write failing drag-geometry tests**
 
-Create `src/canvas/tldraw/projectCardUtils.test.tsx`. Mock `HTMLContainer` as a `div`, `ShapeUtil` as an empty class, `Rectangle2d` as a class retaining its constructor input, `useEditor` with spies for `updateShape`, `markEventAsHandled`, and `setEditingShape`, `useIsEditing` from a mutable `editingShapeId`, `getColorValue` from the supplied palette, and `resizeBox` as a spy returning a `360x320` props patch. Cover these exact assertions:
-
-```tsx
-expect(ProjectCardShapeUtil.type).toBe('project_card')
-expect(ProjectCardShapeUtil.props.color).toBe(DefaultColorStyle)
-expect(new ProjectCardShapeUtil({} as any).getDefaultProps()).toMatchObject({
-  w: 360, h: 320, title: 'New Project', status: 'planned', priority: 'medium', actions: [],
-  color: 'light-violet'
-})
-expect(new ProjectCardShapeUtil({} as any).isAspectRatioLocked()).toBe(false)
-```
-
-Render a normal Active/High card with two actions, one complete, and assert:
-
-```tsx
-expect(screen.getByText('Website launch')).toBeInTheDocument()
-expect(screen.getByText('Active')).toBeInTheDocument()
-expect(screen.getByText('High')).toBeInTheDocument()
-expect(screen.getByLabelText('1 of 2 project actions complete')).toHaveTextContent('1/2')
-expect(screen.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '50')
-fireEvent.click(screen.getByRole('checkbox', { name: 'Ship' }))
-expect(tldrawMock.editor.updateShape).toHaveBeenCalledWith({
-  id: 'shape:project_1', type: 'project_card', props: { actions: [
-    { id: 'action_copy', text: 'Write copy', done: true },
-    { id: 'action_ship', text: 'Ship', done: true }
-  ] }
-})
-```
-
-Render edit mode and assert title, status, priority, date, action text, Add action, Remove action, and Escape call `updateShape` or `setEditingShape(null)` with exact Project props. Assert an overdue Active card has `.is-overdue`, a Done card with the same date does not, and `onResize` calls `resizeBox` with `{ minWidth: 320, minHeight: 240 }`.
-
-- [ ] **Step 2: Run the UI tests and verify failure**
-
-Run: `npm test -- src/canvas/tldraw/projectCardUtils.test.tsx src/canvas/tldraw/customShapeUtils.test.tsx src/canvas/components/CanvasSurface.test.tsx`
-
-Expected: FAIL because `ProjectCardShapeUtil` is absent and only two custom utilities are registered.
-
-- [ ] **Step 3: Implement the Project ShapeUtil**
-
-Create `src/canvas/tldraw/projectCardUtils.tsx`. The file must:
-
-```tsx
-import {
-  HTMLContainer, Rectangle2d, ShapeUtil, getColorValue, resizeBox,
-  useEditor, useIsEditing, type TLResizeInfo, type TLShape
-} from 'tldraw'
-import type { CSSProperties, ChangeEvent, KeyboardEvent, MouseEvent, PointerEvent } from 'react'
-import {
-  PROJECT_CARD_MIN_HEIGHT, PROJECT_CARD_MIN_WIDTH, PROJECT_CARD_TYPE,
-  PROJECT_PRIORITIES, PROJECT_STATUSES, createProjectCardProps,
-  getProjectProgress, isProjectOverdue, nextProjectActionId,
-  projectCardMigrations, projectCardProps, type ProjectCardProps
-} from './projectCard.types'
-```
-
-```tsx
-declare module 'tldraw' {
-  export interface TLGlobalShapePropsMap { [PROJECT_CARD_TYPE]: ProjectCardProps }
-}
-
-export type ProjectCardShape = TLShape<typeof PROJECT_CARD_TYPE>
-
-export class ProjectCardShapeUtil extends ShapeUtil<ProjectCardShape> {
-  static override type = PROJECT_CARD_TYPE
-  static override migrations = projectCardMigrations
-  static override props = projectCardProps
-  override canEdit = () => true
-  override canResize = () => true
-  override isAspectRatioLocked = () => false
-
-  getDefaultProps() { return createProjectCardProps({ title: 'New Project' }) }
-  getGeometry(shape: ProjectCardShape) {
-    return new Rectangle2d({ width: shape.props.w, height: shape.props.h, isFilled: true })
-  }
-  getIndicatorPath() { return undefined }
-  override onResize(shape: ProjectCardShape, info: TLResizeInfo<ProjectCardShape>) {
-    const { id: _id, type: _type, ...patch } = resizeBox(shape, info, {
-      minWidth: PROJECT_CARD_MIN_WIDTH, minHeight: PROJECT_CARD_MIN_HEIGHT
-    })
-    return patch
-  }
-  component(shape: ProjectCardShape) { return <ProjectCardView shape={shape} /> }
-}
-```
-
-Add these helpers and the complete view component before `ProjectCardShapeUtil`:
-
-```tsx
-const STATUS_LABEL = { planned: 'Planned', active: 'Active', blocked: 'Blocked', done: 'Done' } as const
-const PRIORITY_LABEL = { low: 'Low', medium: 'Medium', high: 'High' } as const
-
-function ProjectIcon() {
-  return <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 6.5h14v9H3z" /><path d="M7 6.5V4.5h6v2" /></svg>
-}
-
-function ProjectCardView({ shape }: { shape: ProjectCardShape }) {
-  const editor = useEditor()
-  const isEditing = useIsEditing(shape.id)
-  const { completed, total, percent } = getProjectProgress(shape.props.actions)
-  const overdue = isProjectOverdue(shape.props.dueDate, shape.props.status)
-  const background = getColorValue(
-    editor.getCurrentTheme().colors[editor.getColorMode()], shape.props.color, 'noteFill'
-  )
-  const updateProps = (props: Partial<ProjectCardProps>) => editor.updateShape({
-    id: shape.id, type: PROJECT_CARD_TYPE, props
-  })
-  const handlers = {
-    onPointerDown: (event: PointerEvent<HTMLElement>) => editor.markEventAsHandled(event),
-    onPointerUp: (event: PointerEvent<HTMLElement>) => editor.markEventAsHandled(event)
-  }
-  const setDone = (id: string, done: boolean) => updateProps({ actions:
-    shape.props.actions.map((action) => action.id === id ? { ...action, done } : action)
-  })
-  const setActionText = (id: string, text: string) => updateProps({ actions:
-    shape.props.actions.map((action) => action.id === id ? { ...action, text } : action)
-  })
-  const addAction = (event: MouseEvent<HTMLButtonElement>) => {
-    editor.markEventAsHandled(event)
-    updateProps({ actions: [...shape.props.actions, {
-      id: nextProjectActionId(shape.props.actions), text: 'New action', done: false
-    }] })
-  }
-  const removeAction = (id: string, event: MouseEvent<HTMLButtonElement>) => {
-    editor.markEventAsHandled(event)
-    updateProps({ actions: shape.props.actions.filter((action) => action.id !== id) })
-  }
-  const closeOnEscape = (event: KeyboardEvent<HTMLElement>) => {
-    if (event.key === 'Escape') editor.setEditingShape(null)
-  }
-  const progress = <>
-    <div className="hermes-project-progress-row">
-      <span>Progress</span>
-      <span aria-label={`${completed} of ${total} project actions complete`}>{completed}/{total}</span>
-    </div>
-    <div className="hermes-project-progress" role="progressbar"
-      aria-label="Project action progress"
-      aria-valuemin={0} aria-valuemax={100} aria-valuenow={percent}>
-      <span style={{ width: `${percent}%` }} />
-    </div>
-  </>
-
-  if (!isEditing) {
-    return <HTMLContainer className="hermes-shape hermes-project-card"
-      style={{ width: shape.props.w, height: shape.props.h, backgroundColor: background,
-        '--hermes-card-accent': background } as CSSProperties}
-      onDoubleClick={(event: MouseEvent<HTMLElement>) => {
-        editor.setEditingShape(shape.id); editor.markEventAsHandled(event)
-      }}>
-      <div className="hermes-card-header">
-        <span className="hermes-card-icon"><ProjectIcon /></span>
-        <strong>{shape.props.title}</strong>
-        <span className="hermes-project-badge" data-status={shape.props.status}>{STATUS_LABEL[shape.props.status]}</span>
-      </div>
-      <div className="hermes-project-meta">
-        <span className="hermes-project-priority" data-priority={shape.props.priority}>{PRIORITY_LABEL[shape.props.priority]}</span>
-        {shape.props.dueDate && <time className={`hermes-project-due${overdue ? ' is-overdue' : ''}`}
-          dateTime={shape.props.dueDate}>Due {shape.props.dueDate}</time>}
-      </div>
-      {progress}
-      <div className="hermes-project-actions" onWheel={(event) => event.stopPropagation()}>
-        {shape.props.actions.map((action) => <label key={action.id}
-          className={`hermes-project-action${action.done ? ' is-done' : ''}`}>
-          <input type="checkbox" aria-label={action.text} checked={action.done}
-            onChange={(event: ChangeEvent<HTMLInputElement>) => setDone(action.id, event.currentTarget.checked)}
-            {...handlers} />
-          <span className="hermes-project-action-label">{action.text}</span>
-        </label>)}
-      </div>
-    </HTMLContainer>
-  }
-
-  return <HTMLContainer className="hermes-shape hermes-project-card is-editing"
-    style={{ width: shape.props.w, height: shape.props.h, backgroundColor: background,
-      '--hermes-card-accent': background } as CSSProperties}
-    onKeyDown={closeOnEscape}>
-    <div className="hermes-card-header hermes-card-header-editing">
-      <span className="hermes-card-icon"><ProjectIcon /></span>
-      <input aria-label="Project title" className="hermes-inline-title-input" value={shape.props.title}
-        onChange={(event) => updateProps({ title: event.currentTarget.value })}
-        onBlur={(event) => updateProps({ title: event.currentTarget.value.trim() || 'Untitled Project' })}
-        {...handlers} />
-    </div>
-    <div className="hermes-project-edit-fields">
-      <select aria-label="Project status" value={shape.props.status}
-        onChange={(event) => updateProps({ status: event.currentTarget.value as ProjectCardProps['status'] })}
-        {...handlers}>{PROJECT_STATUSES.map((value) => <option key={value} value={value}>{STATUS_LABEL[value]}</option>)}</select>
-      <select aria-label="Project priority" value={shape.props.priority}
-        onChange={(event) => updateProps({ priority: event.currentTarget.value as ProjectCardProps['priority'] })}
-        {...handlers}>{PROJECT_PRIORITIES.map((value) => <option key={value} value={value}>{PRIORITY_LABEL[value]}</option>)}</select>
-      <input aria-label="Project due date" type="date" value={shape.props.dueDate ?? ''}
-        onChange={(event) => updateProps({ dueDate: event.currentTarget.value || undefined })}
-        {...handlers} />
-    </div>
-    {progress}
-    <div className="hermes-project-actions" onWheel={(event) => event.stopPropagation()}>
-      {shape.props.actions.map((action) => <div key={action.id}
-        className={`hermes-project-action${action.done ? ' is-done' : ''}`}>
-        <input type="checkbox" aria-label={`Complete ${action.text}`} checked={action.done}
-          onChange={(event) => setDone(action.id, event.currentTarget.checked)} {...handlers} />
-        <input type="text" aria-label={`Project action: ${action.text}`} value={action.text}
-          onChange={(event) => setActionText(action.id, event.currentTarget.value)}
-          onBlur={(event) => setActionText(action.id, event.currentTarget.value.trim() || 'New action')}
-          {...handlers} />
-        <button type="button" aria-label={`Remove action: ${action.text}`}
-          onClick={(event) => removeAction(action.id, event)} {...handlers}>×</button>
-      </div>)}
-    </div>
-    <button type="button" className="hermes-add-task-button" aria-label="Add project action"
-      onClick={addAction} {...handlers}>+</button>
-  </HTMLContainer>
-}
-```
-
-- [ ] **Step 4: Register the Project utility**
-
-In `src/canvas/tldraw/customShapeUtils.tsx`, import `ProjectCardShapeUtil` and change the export to:
+Create `projectCardDrag.test.ts` with:
 
 ```ts
-export const hermesShapeUtils = [TodoBlockShapeUtil, LinkCardShapeUtil, ProjectCardShapeUtil]
+import { describe, expect, it } from 'vitest'
+import { resolveProjectTaskDrop } from './projectCardDrag'
+
+const zones = [
+  {
+    status: 'todo' as const,
+    rect: { left: 0, right: 200, top: 40, bottom: 300 },
+    tasks: [
+      { id: 'task_a', rect: { left: 0, right: 200, top: 60, bottom: 100 } },
+      { id: 'task_b', rect: { left: 0, right: 200, top: 110, bottom: 150 } }
+    ]
+  },
+  { status: 'doing' as const, rect: { left: 210, right: 410, top: 40, bottom: 300 }, tasks: [] }
+]
+
+describe('resolveProjectTaskDrop', () => {
+  it('returns beginning, middle, end, and empty-column targets', () => {
+    expect(resolveProjectTaskDrop(100, 65, zones)).toEqual({ status: 'todo', beforeTaskId: 'task_a' })
+    expect(resolveProjectTaskDrop(100, 115, zones)).toEqual({ status: 'todo', beforeTaskId: 'task_b' })
+    expect(resolveProjectTaskDrop(100, 250, zones)).toEqual({ status: 'todo', beforeTaskId: null })
+    expect(resolveProjectTaskDrop(300, 100, zones)).toEqual({ status: 'doing', beforeTaskId: null })
+  })
+
+  it('returns null outside all column bodies', () => {
+    expect(resolveProjectTaskDrop(500, 100, zones)).toBeNull()
+    expect(resolveProjectTaskDrop(100, 20, zones)).toBeNull()
+  })
+})
 ```
 
-Update the registration expectation in `customShapeUtils.test.tsx` to `['todo_block', 'link_card', 'project_card']`, and the `CanvasSurface.test.tsx` shape utility count from 2 to 3.
+- [ ] **Step 2: Implement the drop resolver and run its tests**
 
-- [ ] **Step 5: Add Project CSS**
+```ts
+import type { ProjectTaskStatus } from './projectCard.types'
 
-Add a focused block in `src/styles.css` beside the existing Hermes card rules. It must define these selectors and behaviors:
+export type ProjectDragRect = { left: number; right: number; top: number; bottom: number }
+export type ProjectDropZone = {
+  status: ProjectTaskStatus
+  rect: ProjectDragRect
+  tasks: Array<{ id: string; rect: ProjectDragRect }>
+}
 
-```css
-.hermes-project-card { display: flex; flex-direction: column; gap: 10px; background: color-mix(in srgb, var(--hermes-card-accent, #ddd6fe) 38%, white) !important; }
-.hermes-project-badge, .hermes-project-priority { border-radius: 999px; padding: 3px 8px; font-size: 11px; font-weight: 700; text-transform: uppercase; }
-.hermes-project-badge[data-status='planned'] { background: #eef2ff; color: #4f46e5; }
-.hermes-project-badge[data-status='active'] { background: #dcfce7; color: #15803d; }
-.hermes-project-badge[data-status='blocked'] { background: #fee2e2; color: #b91c1c; }
-.hermes-project-badge[data-status='done'] { background: #e2e8f0; color: #475569; }
-.hermes-project-priority[data-priority='low'] { background: #f1f5f9; color: #475569; }
-.hermes-project-priority[data-priority='medium'] { background: #fef3c7; color: #a16207; }
-.hermes-project-priority[data-priority='high'] { background: #ffedd5; color: #c2410c; }
-.hermes-project-meta { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 24px; }
-.hermes-project-due.is-overdue { color: #b91c1c; font-weight: 700; }
-.hermes-project-progress { height: 7px; overflow: hidden; border-radius: 999px; background: rgba(255,255,255,.65); }
-.hermes-project-progress > span { display: block; height: 100%; border-radius: inherit; background: #6c5ce7; transition: width .16s ease; }
-.hermes-project-actions { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
-.hermes-project-action { display: flex; align-items: center; gap: 8px; min-height: 34px; }
-.hermes-project-action.is-done .hermes-project-action-label, .hermes-project-action.is-done input[type='text'] { color: #64748b; text-decoration: line-through; }
-.hermes-project-edit-fields { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
-.hermes-project-edit-fields input, .hermes-project-edit-fields select, .hermes-project-action input[type='text'] { min-width: 0; border: 1px solid rgba(75,68,105,.2); border-radius: 7px; background: rgba(255,255,255,.82); }
-.hermes-project-edit-fields :focus-visible, .hermes-project-action :focus-visible { outline: 2px solid #6c5ce7; outline-offset: 1px; }
+export function resolveProjectTaskDrop(x: number, y: number, zones: ProjectDropZone[]) {
+  const zone = zones.find(({ rect }) => x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom)
+  if (!zone) return null
+  const before = zone.tasks.find(({ rect }) => y < rect.top + (rect.bottom - rect.top) / 2)
+  return { status: zone.status, beforeTaskId: before?.id ?? null }
+}
 ```
 
-- [ ] **Step 6: Run the UI tests**
-
-Run: `npm test -- src/canvas/tldraw/projectCardUtils.test.tsx src/canvas/tldraw/customShapeUtils.test.tsx src/canvas/components/CanvasSurface.test.tsx`
+Run: `npm test -- src/canvas/tldraw/projectCardDrag.test.ts`
 
 Expected: PASS.
 
-- [ ] **Step 7: Commit the Project UI slice**
+- [ ] **Step 3: Write failing board component tests**
+
+Create a stateful harness in `ProjectCardBoard.test.tsx` and assert:
+
+```tsx
+import { fireEvent, render, screen, within } from '@testing-library/react'
+import { readFileSync } from 'node:fs'
+import { useState } from 'react'
+import { afterEach, describe, expect, it, vi } from 'vitest'
+import { ProjectCardBoard } from './ProjectCardBoard'
+import type { ProjectTask } from './projectCard.types'
+
+afterEach(() => vi.restoreAllMocks())
+
+function Harness() {
+  const [title, setTitle] = useState('Website launch')
+  const [tasks, setTasks] = useState<ProjectTask[]>([
+    { id: 'task_todo', text: 'Draft', status: 'todo' },
+    { id: 'task_doing', text: 'Review', status: 'doing' },
+    { id: 'task_done', text: 'Ship', status: 'done' },
+    { id: 'task_blocked', text: 'Legal', status: 'blocked' }
+  ])
+  return <ProjectCardBoard title={title} tasks={tasks} onTitleChange={setTitle} onTasksChange={setTasks} onInteraction={() => undefined} />
+}
+
+it('renders fixed columns, counts, and status treatments', () => {
+  render(<Harness />)
+  expect(screen.getByRole('heading', { name: 'Todo 1' })).toBeInTheDocument()
+  expect(screen.getByRole('heading', { name: 'Doing 1' })).toBeInTheDocument()
+  expect(screen.getByRole('heading', { name: 'Done 1' })).toBeInTheDocument()
+  expect(screen.getByRole('heading', { name: 'Blocked 1' })).toBeInTheDocument()
+  expect(screen.getByText('Ship').closest('[data-project-task]')).toHaveAttribute('data-status', 'done')
+  expect(screen.getByText('Legal').closest('[data-project-task]')).toHaveAttribute('data-status', 'blocked')
+})
+
+it('adds a Todo task and immediately edits selected text', async () => {
+  render(<Harness />)
+  fireEvent.click(screen.getByRole('button', { name: 'Add task' }))
+  const input = await screen.findByRole('textbox', { name: 'Task text' })
+  expect(input).toHaveValue('New task')
+  expect(document.activeElement).toBe(input)
+  expect(input).toHaveProperty('selectionStart', 0)
+  expect(input).toHaveProperty('selectionEnd', 8)
+  fireEvent.change(input, { target: { value: 'Write copy' } })
+  fireEvent.keyDown(input, { key: 'Enter' })
+  expect(screen.getByText('Write copy')).toBeInTheDocument()
+  expect(screen.getByRole('heading', { name: 'Todo 2' })).toBeInTheDocument()
+})
+
+it('edits by double click, cancels with Escape, saves on blur, and deletes', () => {
+  render(<Harness />)
+  fireEvent.doubleClick(screen.getByText('Draft'))
+  const input = screen.getByRole('textbox', { name: 'Task text' })
+  fireEvent.change(input, { target: { value: 'Changed' } })
+  fireEvent.keyDown(input, { key: 'Escape' })
+  expect(screen.getByText('Draft')).toBeInTheDocument()
+  fireEvent.doubleClick(screen.getByText('Draft'))
+  fireEvent.change(screen.getByRole('textbox', { name: 'Task text' }), { target: { value: 'Final' } })
+  fireEvent.blur(screen.getByRole('textbox', { name: 'Task text' }))
+  fireEvent.click(screen.getByRole('button', { name: 'Delete task: Final' }))
+  expect(screen.queryByText('Final')).not.toBeInTheDocument()
+})
+
+it('edits the project title with save, fallback, and cancel semantics', () => {
+  render(<Harness />)
+  fireEvent.doubleClick(screen.getByText('Website launch'))
+  fireEvent.change(screen.getByRole('textbox', { name: 'Project title' }), { target: { value: 'Release' } })
+  fireEvent.keyDown(screen.getByRole('textbox', { name: 'Project title' }), { key: 'Enter' })
+  expect(screen.getByText('Release')).toBeInTheDocument()
+  fireEvent.doubleClick(screen.getByText('Release'))
+  fireEvent.change(screen.getByRole('textbox', { name: 'Project title' }), { target: { value: '   ' } })
+  fireEvent.blur(screen.getByRole('textbox', { name: 'Project title' }))
+  expect(screen.getByText('Untitled Project')).toBeInTheDocument()
+  fireEvent.doubleClick(screen.getByText('Untitled Project'))
+  fireEvent.change(screen.getByRole('textbox', { name: 'Project title' }), { target: { value: 'Cancelled' } })
+  fireEvent.keyDown(screen.getByRole('textbox', { name: 'Project title' }), { key: 'Escape' })
+  expect(screen.getByText('Untitled Project')).toBeInTheDocument()
+})
+
+it('keeps each task column vertically scrollable without horizontal board scrolling', () => {
+  const styles = readFileSync('src/styles.css', 'utf8')
+  expect(styles).toMatch(/\.hermes-project-board\s*\{[^}]*grid-template-columns:\s*repeat\(4,/s)
+  expect(styles).toMatch(/\.hermes-project-column-body\s*\{[^}]*overflow-y:\s*auto;/s)
+  expect(styles).not.toMatch(/\.hermes-project-board\s*\{[^}]*overflow-x:\s*auto;/s)
+})
+```
+
+Add these pointer assertions. Give each column `data-testid="project-column-${status}"`, `data-project-column-body`, and `data-status`; give each task `data-project-task` and `data-task-id`.
+
+```tsx
+it('moves a task by pointer and cancels outside or on Escape', () => {
+  const rect = (left: number, right: number, top: number, bottom: number) => ({
+    left, right, top, bottom, width: right - left, height: bottom - top,
+    x: left, y: top, toJSON: () => ({})
+  }) as DOMRect
+  vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(function () {
+    if (this.getAttribute('data-task-id') === 'task_todo') return rect(10, 190, 60, 100)
+    if (this.getAttribute('data-status') === 'todo') return rect(0, 200, 40, 300)
+    if (this.getAttribute('data-status') === 'doing') return rect(210, 410, 40, 300)
+    if (this.hasAttribute('data-project-column-body')) return rect(420, 620, 40, 300)
+    return rect(0, 0, 0, 0)
+  })
+  render(<Harness />)
+  const task = screen.getByText('Draft').closest('[data-project-task]') as HTMLElement
+  fireEvent.pointerDown(task, { pointerId: 1, button: 0, clientX: 50, clientY: 80 })
+  fireEvent.pointerMove(task, { pointerId: 1, clientX: 300, clientY: 100 })
+  expect(screen.getByRole('status', { name: 'Draft task' })).toBeInTheDocument()
+  fireEvent.pointerUp(task, { pointerId: 1, clientX: 300, clientY: 100 })
+  expect(within(screen.getByTestId('project-column-doing')).getByText('Draft')).toBeInTheDocument()
+
+  const moved = screen.getByText('Draft').closest('[data-project-task]') as HTMLElement
+  fireEvent.pointerDown(moved, { pointerId: 2, button: 0, clientX: 300, clientY: 100 })
+  fireEvent.pointerMove(moved, { pointerId: 2, clientX: 700, clientY: 100 })
+  fireEvent.pointerUp(moved, { pointerId: 2, clientX: 700, clientY: 100 })
+  expect(within(screen.getByTestId('project-column-doing')).getByText('Draft')).toBeInTheDocument()
+
+  fireEvent.pointerDown(moved, { pointerId: 3, button: 0, clientX: 300, clientY: 100 })
+  fireEvent.pointerMove(moved, { pointerId: 3, clientX: 100, clientY: 100 })
+  fireEvent.keyDown(screen.getByTestId('project-board'), { key: 'Escape' })
+  fireEvent.pointerUp(moved, { pointerId: 3, clientX: 100, clientY: 100 })
+  expect(within(screen.getByTestId('project-column-doing')).getByText('Draft')).toBeInTheDocument()
+})
+```
+
+Use an accessible preview role/name such as `<div role="status" aria-label={`${text} task`}>` so the `Draft task` assertion is deterministic.
+
+- [ ] **Step 4: Implement `ProjectCardBoard` editing and creation**
+
+Use local `editingTitle`, `editingTaskId`, `draft`, and `newTaskId` state. Render columns by filtering `tasks` through `PROJECT_TASK_STATUSES`; label them with:
+
+```ts
+const STATUS_LABEL = { todo: 'Todo', doing: 'Doing', done: 'Done', blocked: 'Blocked' } as const
+```
+
+Implement the exact commits:
+
+```ts
+const commitTitle = () => {
+  onTitleChange(draft.trim() || 'Untitled Project')
+  setEditingTitle(false)
+}
+
+const commitTask = (taskId: string) => {
+  onTasksChange(updateProjectTaskText(tasks, taskId, draft.trim() || 'New task'))
+  setEditingTaskId(null)
+  setNewTaskId(null)
+}
+
+const addTask = (event: React.MouseEvent<HTMLButtonElement>) => {
+  onInteraction(event)
+  const id = nextProjectTaskId(tasks)
+  onTasksChange(appendProjectTask(tasks, { id, text: 'New task', status: 'todo' }))
+  setDraft('New task')
+  setNewTaskId(id)
+  setEditingTaskId(id)
+}
+```
+
+Use an effect keyed by `editingTaskId` to call `scrollIntoView({ block: 'nearest' })`, focus, and select the matching input. Enter calls the commit helper, Escape restores the label without mutation (leaving a new task as `New task`), and blur commits. Task delete buttons call `removeProjectTask`. Double-click handlers call `onInteraction`, set the relevant draft, and open only that input.
+
+- [ ] **Step 5: Implement pointer drag state and preview**
+
+Use a ref containing `{ pointerId, taskId, startX, startY, active }`, component state containing `{ taskId, x, y, drop }`, and a board ref. Build drop zones from `[data-project-column-body]` and child `[data-project-task]` rectangles. Activate only after `Math.hypot(dx, dy) >= 5`. On a valid pointer-up call:
+
+```ts
+onTasksChange(moveProjectTask(tasks, drag.taskId, drag.drop.status, drag.drop.beforeTaskId))
+```
+
+Render the preview through `createPortal` into `document.body`:
+
+```tsx
+{drag && createPortal(
+  <div className="hermes-project-drag-preview" style={{ left: drag.x + 12, top: drag.y + 12 }}>
+    {tasks.find((task) => task.id === drag.taskId)?.text}
+  </div>,
+  document.body
+)}
+```
+
+Set `data-drop-active` on the destination column and render `.hermes-project-drop-marker` immediately before the matching `beforeTaskId`, or after the last row when it is `null`. Pointer-up outside the board, Escape, and `lostpointercapture` clear drag state without calling `onTasksChange`.
+
+- [ ] **Step 6: Reduce `ProjectCardShapeUtil` to a tested adapter**
+
+The component method must render `ProjectCardBoard` inside `HTMLContainer` and write only title/tasks:
+
+```tsx
+<ProjectCardBoard
+  title={shape.props.title}
+  tasks={shape.props.tasks}
+  onTitleChange={(title) => editor.updateShape({
+    id: shape.id, type: PROJECT_CARD_TYPE, props: { title }
+  })}
+  onTasksChange={(tasks) => editor.updateShape({
+    id: shape.id, type: PROJECT_CARD_TYPE, props: { tasks }
+  })}
+  onInteraction={(event) => editor.markEventAsHandled(event)}
+/>
+```
+
+Update `projectCardUtils.test.tsx` to expect `960x480`, minimum `760x320`, no lifecycle fields, and adapter calls containing `{ title }` or `{ tasks }`. Retain theme color, geometry, and independent resize assertions.
+
+- [ ] **Step 7: Replace Project CSS with board-specific rules**
+
+Remove selectors for status badges, priority, due date, progress, legacy action rows, and focused card edit mode. Add concrete rules for:
+
+```css
+.hermes-project-card { display: grid; grid-template-rows: auto minmax(0, 1fr) auto; overflow: hidden; }
+.hermes-project-board { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; min-height: 0; }
+.hermes-project-column { display: grid; grid-template-rows: auto minmax(0, 1fr); min-width: 0; border-radius: 12px; background: rgb(255 255 255 / 58%); }
+.hermes-project-column[data-drop-active="true"] { outline: 2px solid var(--hermes-card-accent); outline-offset: -2px; }
+.hermes-project-column-body { min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 8px; }
+.hermes-project-task { position: relative; margin-bottom: 8px; border-radius: 10px; padding: 9px 28px 9px 10px; cursor: grab; background: rgb(255 255 255 / 88%); }
+.hermes-project-task[data-status="done"] { opacity: .62; }
+.hermes-project-task[data-status="blocked"] { border-left: 3px solid #ef4444; }
+.hermes-project-task:active { cursor: grabbing; }
+.hermes-project-task-delete { position: absolute; top: 5px; right: 5px; }
+.hermes-project-drop-marker { height: 3px; margin: 3px 0 5px; border-radius: 999px; background: var(--hermes-card-accent); }
+.hermes-project-drag-preview { position: fixed; z-index: 10000; max-width: 220px; pointer-events: none; border-radius: 10px; padding: 9px 12px; box-shadow: 0 12px 28px rgb(15 23 42 / 24%); background: white; }
+.hermes-project-footer { display: flex; justify-content: center; padding-top: 10px; }
+```
+
+Add input/button `:focus-visible` styles consistent with existing Hermes controls.
+
+- [ ] **Step 8: Run component tests and type checking**
+
+Run: `npm test -- src/canvas/tldraw/projectCardDrag.test.ts src/canvas/tldraw/ProjectCardBoard.test.tsx src/canvas/tldraw/projectCardUtils.test.tsx src/canvas/tldraw/customShapeUtils.test.tsx && npm run lint:types`
+
+Expected: all four test files PASS and TypeScript exits 0.
+
+- [ ] **Step 9: Commit the board UI**
 
 ```bash
-git add src/canvas/tldraw/projectCardUtils.tsx src/canvas/tldraw/projectCardUtils.test.tsx src/canvas/tldraw/customShapeUtils.tsx src/canvas/tldraw/customShapeUtils.test.tsx src/canvas/components/CanvasSurface.test.tsx src/styles.css
-git commit -m "feat: render editable project cards"
+git add src/canvas/tldraw/projectCardDrag.ts src/canvas/tldraw/projectCardDrag.test.ts src/canvas/tldraw/ProjectCardBoard.tsx src/canvas/tldraw/ProjectCardBoard.test.tsx src/canvas/tldraw/projectCardUtils.tsx src/canvas/tldraw/projectCardUtils.test.tsx src/styles.css
+git commit -m "feat: render draggable project task boards"
 ```
 
 ---
 
-### Task 6: Integrate Project Insertion and Tidy Layout
+### Task 5: Update Canvas Integration and Published Workflows
 
 **Files:**
 - Modify: `src/canvas/components/CanvasInsertMenu.tsx`
-- Modify: `src/canvas/components/CanvasSurface.test.tsx`
-- Modify: `src/canvas/tldraw/tidyCardLayout.ts`
+- Test: `src/canvas/components/CanvasSurface.test.tsx`
 - Test: `src/canvas/tldraw/tidyCardLayout.test.ts`
-
-**Interfaces:**
-- Consumes: `create_project_card` and `PROJECT_CARD_TYPE`.
-- Produces: a Project toolbar control that creates, observes, and selects a default card plus a first Project column in tidy layout.
-
-- [ ] **Step 1: Write failing insertion and tidy tests**
-
-In `CanvasSurface.test.tsx`, expect a `Project Card` toolbar button, click it, and assert the final observation contains:
-
-```tsx
-expect.objectContaining({ type: 'project_card', props: expect.objectContaining({
-  title: 'New Project', status: 'planned', priority: 'medium', actions: []
-}) })
-```
-
-Also assert one selected shape ID. In `tidyCardLayout.test.ts`, include:
-
-```ts
-shape('shape:project_1', 'project_card', 100, 300, { w: 360, h: 320 })
-```
-
-and expect it at `{ id: 'shape:project_1', type: 'project_card', x: 100, y: 100 }`, before Todo, Note, and Link columns.
-
-- [ ] **Step 2: Run integration tests and verify failure**
-
-Run: `npm test -- src/canvas/components/CanvasSurface.test.tsx src/canvas/tldraw/tidyCardLayout.test.ts`
-
-Expected: FAIL because Project is absent from both integrations.
-
-- [ ] **Step 3: Add the Project insert option**
-
-In `CanvasInsertMenu.tsx`, extend `ComponentKind` with `'project'`, extend `InsertOption['icon']` with `'project'`, and add:
-
-```ts
-{ kind: 'project', label: 'Project Card', icon: 'project' }
-```
-
-and return this action from `buildCreateAction`:
-
-```ts
-if (kind === 'project') {
-  return { type: 'create_project_card', id, title: 'New Project', status: 'planned',
-    priority: 'medium', actions: [], x, y }
-}
-```
-
-Add this branch at the start of `ComponentIcon`:
-
-```tsx
-if (icon === 'project') {
-  return <svg viewBox="0 0 20 20" aria-hidden="true">
-    <rect x="3" y="6" width="14" height="10" rx="2" />
-    <path d="M7 6V4h6v2M3 10h14" />
-  </svg>
-}
-```
-
-Replace `getInsertPoint` and its call with:
-
-```ts
-function getInsertPoint(editor: unknown, kind: ComponentKind) {
-  const editorWithBounds = editor as {
-    getViewportPageBounds?: () => { x: number; y: number; w: number; h: number }
-  }
-  const bounds = editorWithBounds.getViewportPageBounds?.()
-  if (!bounds) return { x: 160, y: 160 }
-  const dimensions = kind === 'project' ? { w: 360, h: 320 } : { w: 280, h: 160 }
-  return {
-    x: Math.round(bounds.x + bounds.w / 2 - dimensions.w / 2),
-    y: Math.round(bounds.y + bounds.h / 2 - dimensions.h / 2)
-  }
-}
-
-const point = getInsertPoint(editor, kind)
-```
-
-- [ ] **Step 4: Add Project to tidy layout**
-
-In `tidyCardLayout.ts`, import `PROJECT_CARD_TYPE`, change:
-
-```ts
-type CardKind = 'project' | 'todo' | 'note' | 'link'
-const CARD_KIND_ORDER: CardKind[] = ['project', 'todo', 'note', 'link']
-```
-
-and return `'project'` when `shape.type === PROJECT_CARD_TYPE`.
-
-- [ ] **Step 5: Run insertion and tidy tests**
-
-Run: `npm test -- src/canvas/components/CanvasSurface.test.tsx src/canvas/tldraw/tidyCardLayout.test.ts`
-
-Expected: PASS.
-
-- [ ] **Step 6: Commit canvas integration**
-
-```bash
-git add src/canvas/components/CanvasInsertMenu.tsx src/canvas/components/CanvasSurface.test.tsx src/canvas/tldraw/tidyCardLayout.ts src/canvas/tldraw/tidyCardLayout.test.ts
-git commit -m "feat: integrate project cards into canvas tools"
-```
-
----
-
-### Task 7: Document Hermes Project Operations and Verify the Feature
-
-**Files:**
 - Modify: `CANVAS_API.md`
 - Modify: `README.md`
 - Modify: `docs/PRD.md`
 - Modify: `plugins/canvas-dashboard/skills/canvas-dashboard/SKILL.md`
 
 **Interfaces:**
-- Consumes: final action names and defaults from Tasks 1–6.
-- Produces: accurate operator and Hermes guidance with no undocumented Project operation.
+- Consumes: new defaults and six public actions.
+- Produces: correctly centered insertion, wider tidy spacing, and no published legacy lifecycle guidance.
 
-- [ ] **Step 1: Add canonical API examples**
+- [ ] **Step 1: Update insertion and tidy tests first**
 
-Add Project sections to `CANVAS_API.md` using these payloads:
+In `CanvasSurface.test.tsx`, assert Project insertion creates and selects a shape with:
 
-```json
-{"type":"create_project_card","id":"shape:website_launch","title":"Website Launch","status":"active","priority":"high","dueDate":"2026-07-31","x":100,"y":120,"actions":[{"id":"action_copy","text":"Finish copy"},{"id":"action_ship","text":"Ship","done":false}]}
-{"type":"update_project_card","shapeId":"shape:website_launch","status":"blocked","priority":"medium","dueDate":null}
-{"type":"append_project_action","shapeId":"shape:website_launch","actionId":"action_announce","text":"Publish announcement"}
-{"type":"update_project_action_text","shapeId":"shape:website_launch","actionId":"action_announce","text":"Publish launch announcement"}
-{"type":"set_project_action_done","shapeId":"shape:website_launch","actionId":"action_copy","done":true}
-{"type":"remove_project_action","shapeId":"shape:website_launch","actionId":"action_announce"}
+```ts
+expect(tldrawMock.shapes[0]).toMatchObject({
+  type: 'project_card',
+  x: 120,
+  y: 160,
+  props: { title: 'New Project', tasks: [], w: 960, h: 480, color: 'light-violet' }
+})
 ```
 
-Document defaults, exact enums, `dueDate: null`, stable unique action IDs, derived progress, explicit status, scroll behavior, per-action errors, and `project_card` observation props.
+The viewport is `1200x800`, so centering `960x480` yields `(120, 160)`. In `tidyCardLayout.test.ts`, change the Project test shape to `{ w: 960, h: 480 }` and expect later columns at x positions `1116`, `1532`, and `1908` while retaining the original y ordering.
 
-- [ ] **Step 2: Update user and agent documentation**
+- [ ] **Step 2: Run integration tests and verify failure**
 
-Add the create/mutate batch to `README.md`. Add `Project cards | Shipped` to the PRD capability table, update the floating insert menu row to include Project, and add requirements covering one project per card, exact status/priority values, optional real date, derived progress, scrolling, direct editing, and browser/headless actions.
+Run: `npm test -- src/canvas/components/CanvasSurface.test.tsx src/canvas/tldraw/tidyCardLayout.test.ts`
 
-In the Canvas Dashboard skill, add “projects and project actions” to When to Use and add all six canonical payloads under Actions. Tell Hermes to read the card first, preserve stable action IDs, use Project actions instead of replacing the full `props.actions` array, and verify the final observation.
+Expected: FAIL because insertion still centers `360x320` and still sends legacy fields.
 
-- [ ] **Step 3: Run focused verification**
+- [ ] **Step 3: Update Project insertion**
+
+In `CanvasInsertMenu.tsx`, use `{ width: 960, height: 480 }` for Project centering and return:
+
+```ts
+{
+  type: 'create_project_card',
+  id,
+  title: 'New Project',
+  tasks: [],
+  x,
+  y
+}
+```
+
+No production tidy-layout change is necessary because it already reads the Project shape's stored width; only its regression expectation changes.
+
+- [ ] **Step 4: Rewrite public Project examples**
+
+Document exactly these payloads in `CANVAS_API.md`, `README.md`, and the Canvas Dashboard skill:
+
+```json
+{"type":"create_project_card","id":"shape:website","title":"Website Launch","x":100,"y":120,"tasks":[{"id":"task_copy","text":"Finish copy"},{"id":"task_review","text":"Review","status":"doing"}]}
+{"type":"update_project_card","shapeId":"shape:website","title":"Website Release"}
+{"type":"append_project_task","shapeId":"shape:website","taskId":"task_ship","text":"Ship"}
+{"type":"update_project_task_text","shapeId":"shape:website","taskId":"task_ship","text":"Publish release"}
+{"type":"move_project_task","shapeId":"shape:website","taskId":"task_ship","status":"done","beforeTaskId":null}
+{"type":"remove_project_task","shapeId":"shape:website","taskId":"task_ship"}
+```
+
+State the status order, default Todo behavior, stable ID rule, `beforeTaskId` semantics, and browser/headless parity. Remove project status, priority, due-date, progress, action-completion, and checklist examples. Update PRD goals, capability note, requirements, acceptance criteria, and insert-menu dimensions to describe the four-column board.
+
+- [ ] **Step 5: Run integration tests and scan for stale contract terms**
 
 Run:
 
 ```bash
-npm test -- src/canvas/tldraw/projectCard.types.test.ts src/canvas/actions/canvasAction.schema.test.ts src/canvas/tldraw/tldrawSchema.test.ts src/canvas/tldraw/tldrawActionExecutor.test.ts src/canvas/bridge/CanvasBridge.test.ts server/canvas/tldrawHeadlessExecutor.test.ts src/canvas/tldraw/projectCardUtils.test.tsx src/canvas/tldraw/customShapeUtils.test.tsx src/canvas/components/CanvasSurface.test.tsx src/canvas/tldraw/tidyCardLayout.test.ts
+npm test -- src/canvas/components/CanvasSurface.test.tsx src/canvas/tldraw/tidyCardLayout.test.ts
+rg -n "append_project_action|update_project_action_text|set_project_action_done|remove_project_action|Project status|Project priority|Project due|project progress" CANVAS_API.md README.md docs/PRD.md plugins/canvas-dashboard/skills/canvas-dashboard/SKILL.md src
 ```
 
-Expected: all focused test files PASS.
+Expected: both test files PASS and `rg` returns no legacy Project contract references. Todo task completion references may remain.
 
-- [ ] **Step 4: Run repository-wide verification**
-
-Run each command separately:
+- [ ] **Step 6: Commit integration and documentation**
 
 ```bash
-npm run lint:types
-npm test
-npm run build
+git add src/canvas/components/CanvasInsertMenu.tsx src/canvas/components/CanvasSurface.test.tsx src/canvas/tldraw/tidyCardLayout.test.ts CANVAS_API.md README.md docs/PRD.md plugins/canvas-dashboard/skills/canvas-dashboard/SKILL.md
+git commit -m "docs: publish project task-board workflows"
+```
+
+---
+
+### Task 6: Full Verification and Handoff
+
+**Files:**
+- Verify all modified files.
+- Modify only files implicated by a failing check.
+
+**Interfaces:**
+- Confirms the revised schema, UI, browser/headless routes, persistence, regressions, and docs are coherent.
+
+- [ ] **Step 1: Run the focused feature suite**
+
+```bash
+npm test -- src/canvas/tldraw/projectCard.types.test.ts src/canvas/actions/canvasAction.schema.test.ts src/canvas/tldraw/tldrawSchema.test.ts src/canvas/tldraw/tldrawActionExecutor.test.ts src/canvas/bridge/CanvasBridge.test.ts server/canvas/tldrawHeadlessExecutor.test.ts src/canvas/tldraw/projectCardDrag.test.ts src/canvas/tldraw/ProjectCardBoard.test.tsx src/canvas/tldraw/projectCardUtils.test.tsx src/canvas/tldraw/customShapeUtils.test.tsx src/canvas/components/CanvasSurface.test.tsx src/canvas/tldraw/tidyCardLayout.test.ts
+```
+
+Expected: all named files PASS with zero failed tests.
+
+- [ ] **Step 2: Run type checking**
+
+Run: `npm run lint:types`
+
+Expected: exit 0 with no TypeScript diagnostics.
+
+- [ ] **Step 3: Run the complete test suite**
+
+Run: `npm test`
+
+Expected: every test file passes. Run outside the filesystem sandbox if the gateway integration test cannot bind its localhost socket.
+
+- [ ] **Step 4: Build the production application**
+
+Run: `npm run build`
+
+Expected: TypeScript and Vite exit 0. The existing Vite large-chunk advisory is non-blocking.
+
+- [ ] **Step 5: Inspect repository quality and commit any verification fix**
+
+```bash
 git diff --check
 git status --short
 ```
 
-Expected: type checking exits 0, the complete Vitest suite passes, the production build exits 0, diff check prints nothing, and status lists only intended Project implementation/docs changes if the final docs commit has not yet been made.
+Expected: no whitespace errors and no uncommitted files after any necessary focused fix commit.
 
-- [ ] **Step 5: Commit documentation and any verified final adjustments**
+- [ ] **Step 6: Finish the branch workflow**
 
-```bash
-git add CANVAS_API.md README.md docs/PRD.md plugins/canvas-dashboard/skills/canvas-dashboard/SKILL.md
-git commit -m "docs: document project card workflows"
-```
-
-- [ ] **Step 6: Confirm the branch is clean**
-
-Run: `git status --short`
-
-Expected: no output.
+Invoke `superpowers:verification-before-completion`, then `superpowers:finishing-a-development-branch`. Report exact test counts and build status before offering repository handoff choices.
