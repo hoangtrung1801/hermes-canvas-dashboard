@@ -4,6 +4,7 @@ import {
   linkCardMigrations,
   todoBlockMigrations
 } from './customShape.types'
+import { projectCardMigrations, projectCardProps } from './projectCard.types'
 
 const taskValidator = T.object({
   id: T.string,
@@ -40,6 +41,10 @@ export function createHermesTldrawSchema() {
           color: DefaultColorStyle,
           backgroundColor: T.string.optional()
         }
+      },
+      project_card: {
+        migrations: projectCardMigrations,
+        props: projectCardProps
       }
     },
     bindings: defaultBindingSchemas
