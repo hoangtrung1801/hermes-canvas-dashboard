@@ -11,6 +11,9 @@ describe('index.html branding metadata', () => {
     expect(indexHtml).toContain(
       'content="Hermes Canvas Productivity is a real-time visual workspace for planning, organizing, and executing agent-driven work on an infinite canvas."'
     )
-    expect(indexHtml).toContain('<link rel="icon" type="image/svg+xml" href="/favicon.svg" />')
+    expect(indexHtml).toContain(
+      '<link rel="icon" type="image/png" sizes="64x64" href="/favicon.png" />'
+    )
+    expect(indexHtml).toContain('<link rel="apple-touch-icon" href="/hermes-canvas-icon.png" />')
   })
 })

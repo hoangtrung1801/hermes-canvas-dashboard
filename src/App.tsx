@@ -51,7 +51,12 @@ export default function App() {
       <header className="app-header">
         <div className="brand-group">
           <div className="logo-glow"></div>
-          <div className="logo-symbol">H</div>
+          <img
+            className="brand-icon"
+            src="/hermes-canvas-icon.png"
+            alt=""
+            aria-hidden="true"
+          />
           <div>
             <p className="eyebrow">Infinite canvas workspace</p>
             <h1 id="app-title">Hermes Canvas Productivity</h1>
