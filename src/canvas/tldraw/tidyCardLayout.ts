@@ -1,4 +1,5 @@
 import { LINK_CARD_TYPE, TODO_BLOCK_TYPE } from './customShape.types'
+import { PROJECT_CARD_TYPE } from './projectCard.types'
 
 export type TidyCardShape = {
   id: string
@@ -15,13 +16,14 @@ export type TidyCardPlacement = {
   y: number
 }
 
-type CardKind = 'todo' | 'note' | 'link'
+type CardKind = 'project' | 'todo' | 'note' | 'link'
 
-const CARD_KIND_ORDER: CardKind[] = ['todo', 'note', 'link']
+const CARD_KIND_ORDER: CardKind[] = ['project', 'todo', 'note', 'link']
 const COLUMN_GAP = 56
 const ROW_GAP = 32
 
 function cardKind(shape: TidyCardShape): CardKind | null {
+  if (shape.type === PROJECT_CARD_TYPE) return 'project'
   if (shape.type === TODO_BLOCK_TYPE) return 'todo'
   if (shape.type === LINK_CARD_TYPE) return 'link'
   if (shape.type === 'geo' && shape.props.geo === 'rectangle') return 'note'

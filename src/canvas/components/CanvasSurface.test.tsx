@@ -304,6 +304,7 @@ describe('CanvasSurface', () => {
     expect(screen.getByRole('button', { name: 'Todo Block' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Link Card' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Note Card' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Project Card' })).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Insert component' })).not.toBeInTheDocument()
   })
 
@@ -352,6 +353,32 @@ describe('CanvasSurface', () => {
     expect(tldrawMock.editor.getSelectedShapeIds()).toHaveLength(1)
   })
 
+  it('inserts a default project card from the floating canvas menu and selects it', async () => {
+    render(<App />)
+
+    act(() => {
+      screen.getByRole('button', { name: 'Project Card' }).click()
+    })
+
+    await waitFor(() => {
+      expect(useBridgeStore.getState().lastObservation?.shapes).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            type: 'project_card',
+            props: expect.objectContaining({
+              title: 'New Project',
+              status: 'planned',
+              priority: 'medium',
+              actions: []
+            })
+          })
+        ])
+      )
+    })
+
+    expect(tldrawMock.editor.getSelectedShapeIds()).toHaveLength(1)
+  })
+
   it('shows the floating custom toolbar in fullscreen canvas view', async () => {
     window.history.pushState({}, '', '/?view=canvas')
 
@@ -365,7 +392,7 @@ describe('CanvasSurface', () => {
   it('tidies cards into columns grouped by type', async () => {
     render(<App />)
 
-    for (const optionName of [/Link Card/, /Todo Block/, /Note Card/]) {
+    for (const optionName of [/Link Card/, /Todo Block/, /Note Card/, /Project Card/]) {
       act(() => screen.getByRole('button', { name: optionName }).click())
     }
 
@@ -374,9 +401,12 @@ describe('CanvasSurface', () => {
     const todo = tldrawMock.shapes.find((shape) => shape.type === 'todo_block')
     const note = tldrawMock.shapes.find((shape) => shape.type === 'geo')
     const link = tldrawMock.shapes.find((shape) => shape.type === 'link_card')
+    const project = tldrawMock.shapes.find((shape) => shape.type === 'project_card')
 
+    expect(project.x).toBeLessThan(todo.x)
     expect(todo.x).toBeLessThan(note.x)
     expect(note.x).toBeLessThan(link.x)
+    expect(project.y).toBe(todo.y)
     expect(todo.y).toBe(note.y)
     expect(note.y).toBe(link.y)
     expect(tldrawMock.editor.markHistoryStoppingPoint).toHaveBeenCalledWith('tidy card layout')

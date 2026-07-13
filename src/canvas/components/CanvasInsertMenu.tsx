@@ -1,15 +1,16 @@
 import type { CanvasAction } from '../actions/canvasAction.types'
 import { useBridgeStore } from '../state/bridgeStore'
 
-type ComponentKind = 'todo' | 'link' | 'note'
+type ComponentKind = 'project' | 'todo' | 'link' | 'note'
 
 type InsertOption = {
   kind: ComponentKind
   label: string
-  icon: 'todo' | 'link' | 'note'
+  icon: 'project' | 'todo' | 'link' | 'note'
 }
 
 const INSERT_OPTIONS: InsertOption[] = [
+  { kind: 'project', label: 'Project Card', icon: 'project' },
   { kind: 'todo', label: 'Todo Block', icon: 'todo' },
   { kind: 'link', label: 'Link Card', icon: 'link' },
   { kind: 'note', label: 'Note Card', icon: 'note' }
@@ -19,16 +20,17 @@ function nextInsertId(kind: ComponentKind) {
   return `shape:${kind}_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 7)}`
 }
 
-function getInsertPoint(editor: unknown) {
+function getInsertPoint(editor: unknown, kind: ComponentKind) {
   const editorWithBounds = editor as {
     getViewportPageBounds?: () => { x: number; y: number; w: number; h: number }
   }
   const bounds = editorWithBounds.getViewportPageBounds?.()
   if (!bounds) return { x: 160, y: 160 }
 
+  const dimensions = kind === 'project' ? { width: 360, height: 320 } : { width: 280, height: 160 }
   return {
-    x: Math.round(bounds.x + bounds.w / 2 - 140),
-    y: Math.round(bounds.y + bounds.h / 2 - 80)
+    x: Math.round(bounds.x + bounds.w / 2 - dimensions.width / 2),
+    y: Math.round(bounds.y + bounds.h / 2 - dimensions.height / 2)
   }
 }
 
@@ -49,6 +51,19 @@ function buildCreateAction(kind: ComponentKind, id: string, x: number, y: number
     }
   }
 
+  if (kind === 'project') {
+    return {
+      type: 'create_project_card',
+      id,
+      title: 'New Project',
+      status: 'planned',
+      priority: 'medium',
+      actions: [],
+      x,
+      y
+    }
+  }
+
   return {
     type: 'create_link_card',
     id,
@@ -61,6 +76,15 @@ function buildCreateAction(kind: ComponentKind, id: string, x: number, y: number
 }
 
 function ComponentIcon({ icon }: { icon: InsertOption['icon'] }) {
+  if (icon === 'project') {
+    return (
+      <svg viewBox="0 0 20 20" aria-hidden="true">
+        <rect x="3" y="6" width="14" height="10" rx="2" />
+        <path d="M7 6V4h6v2M3 10h14" />
+      </svg>
+    )
+  }
+
   if (icon === 'todo') {
     return (
       <svg viewBox="0 0 20 20" aria-hidden="true">
@@ -100,7 +124,7 @@ export function CanvasInsertMenu() {
   const insertComponent = (kind: ComponentKind) => {
     if (!bridge || !adapter || !editor) return
 
-    const point = getInsertPoint(editor)
+    const point = getInsertPoint(editor, kind)
     const shapeId = nextInsertId(kind)
     const createAction = buildCreateAction(kind, shapeId, point.x, point.y)
     const envelope = {
