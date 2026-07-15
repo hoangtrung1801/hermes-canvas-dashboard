@@ -270,11 +270,25 @@ describe('auto-frame change subscription', () => {
       y: 64,
       meta: {}
     }
+    const removedArrow = {
+      id: 'shape:arrow',
+      typeName: 'shape',
+      type: 'arrow',
+      parentId: frameId,
+      x: 80,
+      y: 120,
+      props: {},
+      meta: {}
+    }
 
     emit({
       added: {},
       updated: {},
-      removed: { [frameId]: removedFrame, [removedCard.id]: removedCard }
+      removed: {
+        [frameId]: removedFrame,
+        [removedCard.id]: removedCard,
+        [removedArrow.id]: removedArrow
+      }
     })
     vi.runAllTimers()
 
@@ -287,6 +301,11 @@ describe('auto-frame change subscription', () => {
       parentId: frameId,
       x: 32,
       y: 64
+    })
+    expect(shapes.find((shape) => shape.id === removedArrow.id)).toMatchObject({
+      parentId: 'page:page',
+      x: 180,
+      y: 320
     })
     unsubscribe()
   })

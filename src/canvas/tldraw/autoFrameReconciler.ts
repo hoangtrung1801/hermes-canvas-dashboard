@@ -229,7 +229,7 @@ export function isAutoFrameRelevantChange(entry: StoreChangeEntry) {
     .some(([before, after]) => isRelevantRecord(before) || isRelevantRecord(after))
 }
 
-function restoreCardsRemovedWithManagedFrame(editor: Editor, entry: StoreChangeEntry) {
+function restoreChildrenRemovedWithManagedFrame(editor: Editor, entry: StoreChangeEntry) {
   const removed = Object.values(entry.changes.removed)
   const removedFrameIds = new Set(
     removed
@@ -249,26 +249,26 @@ function restoreCardsRemovedWithManagedFrame(editor: Editor, entry: StoreChangeE
       .map((record) => [record.id, record])
   )
   const existingIds = new Set(editor.getCurrentPageShapesSorted().map((shape) => String(shape.id)))
-  const cards = removed.filter((record) => {
+  const children = removed.filter((record) => {
     if (!record.type || !record.parentId || !removedFrameIds.has(record.parentId)) return false
     if (existingIds.has(record.id)) return false
-    return getAutoFrameCardKind({ type: record.type, props: record.props ?? {} }) !== null
+    return record.typeName === 'shape'
   })
-  if (cards.length === 0) return false
+  if (children.length === 0) return false
 
   applyingEditors.add(editor)
   try {
     editor.run(() => {
-      editor.createShapes(cards.map((card) => {
-        const parent = removedFrames.get(card.parentId!)!
+      editor.createShapes(children.map((child) => {
+        const parent = removedFrames.get(child.parentId!)!
         return {
-          id: card.id as any,
-          type: card.type as any,
+          id: child.id as any,
+          type: child.type as any,
           parentId: editor.getCurrentPageId(),
-          x: numberOr(card.x) + numberOr(parent.x),
-          y: numberOr(card.y) + numberOr(parent.y),
-          props: card.props ?? {},
-          meta: card.meta ?? {}
+          x: numberOr(child.x) + numberOr(parent.x),
+          y: numberOr(child.y) + numberOr(parent.y),
+          props: child.props ?? {},
+          meta: child.meta ?? {}
         }
       }) as any)
     }, { history: 'ignore' })
@@ -291,13 +291,13 @@ export function subscribeToAutoFrameChanges(options: {
   const stop = options.editor.store.listen((entry) => {
     if (applyingEditors.has(options.editor)) return
     const typedEntry = entry as unknown as StoreChangeEntry
-    const restoredCards = restoreCardsRemovedWithManagedFrame(options.editor, typedEntry)
-    if (!restoredCards && !isAutoFrameRelevantChange(typedEntry)) return
+    const restoredChildren = restoreChildrenRemovedWithManagedFrame(options.editor, typedEntry)
+    if (!restoredChildren && !isAutoFrameRelevantChange(typedEntry)) return
     if (timer) clearTimeout(timer)
     timer = setTimeout(() => {
       timer = undefined
       options.reconcile()
-    }, restoredCards ? 0 : options.debounceMs ?? 80)
+    }, restoredChildren ? 0 : options.debounceMs ?? 80)
   }, { source: 'all', scope: 'document' })
 
   return () => {

@@ -246,4 +246,29 @@ describe('planAutoFrameLayout', () => {
     expect(plan.frames[1].y).toBeGreaterThan(plan.frames[0].y)
     expect(plan.frames[2].x).toBeGreaterThan(plan.frames[1].x)
   })
+
+  it('does not drift a settled frame on repeated tidy runs', () => {
+    const generated = frame(
+      'shape:hermes-auto-frame-page-page-todo',
+      'todo',
+      100,
+      200,
+      { w: 400, h: 276, name: 'Todos', color: 'yellow' }
+    )
+    const plan = planAutoFrameLayout({
+      pageId: PAGE_ID,
+      mode: 'tidy',
+      shapes: [
+        generated,
+        shape('shape:todo', 'todo_block', 32, 64, { w: 320, h: 180 }, {
+          parentId: generated.id,
+          pageX: 132,
+          pageY: 264
+        })
+      ]
+    })
+
+    expect(plan.frames[0]).toMatchObject({ x: 100, y: 200 })
+    expect(plan.cardUpdates).toEqual([])
+  })
 })

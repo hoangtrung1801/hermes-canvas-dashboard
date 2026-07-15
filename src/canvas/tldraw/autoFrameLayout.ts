@@ -305,8 +305,8 @@ export function planAutoFrameLayout(input: AutoFrameLayoutInput): AutoFramePlan 
   }
 
   if (input.mode === 'tidy' && frames.length > 0) {
-    const originX = Math.min(...cards.map(({ shape }) => shape.pageX))
-    const originY = Math.min(...cards.map(({ shape }) => shape.pageY))
+    const originX = Math.min(...frames.map((frame) => frame.x))
+    const originY = Math.min(...frames.map((frame) => frame.y))
     packFrames(frames, originX, originY)
   }
 
