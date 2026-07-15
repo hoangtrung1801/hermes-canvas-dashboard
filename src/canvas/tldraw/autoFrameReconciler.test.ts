@@ -244,4 +244,50 @@ describe('auto-frame change subscription', () => {
     expect(reconcile).toHaveBeenCalledTimes(1)
     unsubscribe()
   })
+
+  it('restores cards when deleting a generated frame also removes its children', () => {
+    vi.useFakeTimers()
+    const { editor, shapes, emit } = createEditorDouble([])
+    const adapter = createMemoryTldrawTarget('canvas_001')
+    const reconcile = () => reconcileAutoFrames({ editor, adapter })
+    const unsubscribe = subscribeToAutoFrameChanges({ editor, reconcile })
+    const frameId = 'shape:hermes-auto-frame-page-page-todo'
+    const removedFrame = {
+      id: frameId,
+      typeName: 'shape',
+      type: 'frame',
+      parentId: 'page:page',
+      x: 100,
+      y: 200,
+      props: { w: 400, h: 276, name: 'Todos', color: 'yellow' },
+      meta: { hermesAutoFrame: { version: 1, kind: 'todo' } }
+    }
+    const removedCard = {
+      ...todo('shape:todo', 32),
+      typeName: 'shape',
+      parentId: frameId,
+      x: 32,
+      y: 64,
+      meta: {}
+    }
+
+    emit({
+      added: {},
+      updated: {},
+      removed: { [frameId]: removedFrame, [removedCard.id]: removedCard }
+    })
+    vi.runAllTimers()
+
+    expect(shapes.find((shape) => shape.id === frameId)).toMatchObject({
+      type: 'frame',
+      x: 100,
+      y: 200
+    })
+    expect(shapes.find((shape) => shape.id === removedCard.id)).toMatchObject({
+      parentId: frameId,
+      x: 32,
+      y: 64
+    })
+    unsubscribe()
+  })
 })

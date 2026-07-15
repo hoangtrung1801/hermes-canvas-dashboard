@@ -256,8 +256,8 @@ export function planAutoFrameLayout(input: AutoFrameLayoutInput): AutoFramePlan 
     usedIds.add(id)
     const config = KIND_CONFIG[kind]
     const grid = layoutCards(kindCards, kind, id)
-    let x = existing?.x ?? Math.min(...kindCards.map((card) => card.pageX))
-    const y = existing?.y ?? Math.min(...kindCards.map((card) => card.pageY))
+    let x = existing?.x ?? Math.min(...kindCards.map((card) => card.pageX)) - FRAME_PADDING
+    const y = existing?.y ?? Math.min(...kindCards.map((card) => card.pageY)) - FRAME_CONTENT_TOP
     let w = grid.w
     let h = grid.h
 

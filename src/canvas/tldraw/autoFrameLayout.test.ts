@@ -103,6 +103,19 @@ describe('planAutoFrameLayout', () => {
     expect(plan.frames[0]).toMatchObject({ w: 728, h: 480 })
   })
 
+  it('wraps a new continuous frame without shifting the first card on the page', () => {
+    const plan = planAutoFrameLayout({
+      pageId: PAGE_ID,
+      mode: 'continuous',
+      shapes: [shape('shape:todo', 'todo_block', 500, 300, { w: 320, h: 180 })]
+    })
+
+    expect(plan.frames[0]).toMatchObject({ x: 468, y: 236 })
+    expect(plan.cardUpdates[0]).toMatchObject({ x: 32, y: 64 })
+    expect(plan.frames[0].x + plan.cardUpdates[0].x).toBe(500)
+    expect(plan.frames[0].y + plan.cardUpdates[0].y).toBe(300)
+  })
+
   it('keeps projects in one column and falls back for invalid dimensions', () => {
     const plan = planAutoFrameLayout({
       pageId: PAGE_ID,

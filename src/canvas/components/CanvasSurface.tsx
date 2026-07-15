@@ -21,6 +21,7 @@ import { createMemoryTldrawTarget, readTldrawObservation } from '../tldraw/tldra
 import { hermesShapeUtils } from '../tldraw/customShapeUtils'
 import { HERMES_PASTEL_THEME_ID, hermesPastelTheme } from '../tldraw/pastelTheme'
 import { useBridgeStore } from '../state/bridgeStore'
+import { useCanvasAutoFrames } from './useCanvasAutoFrames'
 
 const socket = new BridgeWebSocketClient()
 const CANVAS_ID = 'canvas_001'
@@ -33,6 +34,7 @@ export function CanvasSurface() {
   const setObservation = useBridgeStore((state) => state.setObservation)
   const setStatus = useBridgeStore((state) => state.setStatus)
   const addLog = useBridgeStore((state) => state.addLog)
+  useCanvasAutoFrames()
 
   const syncShapeUtils = useMemo(() => [...defaultShapeUtils, ...hermesShapeUtils], [])
   const store = useSync({

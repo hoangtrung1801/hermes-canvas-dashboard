@@ -229,6 +229,59 @@ export function isAutoFrameRelevantChange(entry: StoreChangeEntry) {
     .some(([before, after]) => isRelevantRecord(before) || isRelevantRecord(after))
 }
 
+function restoreCardsRemovedWithManagedFrame(editor: Editor, entry: StoreChangeEntry) {
+  const removed = Object.values(entry.changes.removed)
+  const removedFrameIds = new Set(
+    removed
+      .filter(
+        (record) =>
+          record.typeName === 'shape' &&
+          record.type === 'frame' &&
+          readAutoFrameKind(record.meta ?? {}) !== null
+      )
+      .map((record) => record.id)
+  )
+  if (removedFrameIds.size === 0) return false
+
+  const removedFrames = new Map(
+    removed
+      .filter((record) => removedFrameIds.has(record.id))
+      .map((record) => [record.id, record])
+  )
+  const existingIds = new Set(editor.getCurrentPageShapesSorted().map((shape) => String(shape.id)))
+  const cards = removed.filter((record) => {
+    if (!record.type || !record.parentId || !removedFrameIds.has(record.parentId)) return false
+    if (existingIds.has(record.id)) return false
+    return getAutoFrameCardKind({ type: record.type, props: record.props ?? {} }) !== null
+  })
+  if (cards.length === 0) return false
+
+  applyingEditors.add(editor)
+  try {
+    editor.run(() => {
+      editor.createShapes(cards.map((card) => {
+        const parent = removedFrames.get(card.parentId!)!
+        return {
+          id: card.id as any,
+          type: card.type as any,
+          parentId: editor.getCurrentPageId(),
+          x: numberOr(card.x) + numberOr(parent.x),
+          y: numberOr(card.y) + numberOr(parent.y),
+          props: card.props ?? {},
+          meta: card.meta ?? {}
+        }
+      }) as any)
+    }, { history: 'ignore' })
+  } finally {
+    applyingEditors.delete(editor)
+  }
+  return true
+}
+
+function numberOr(value: unknown) {
+  return typeof value === 'number' && Number.isFinite(value) ? value : 0
+}
+
 export function subscribeToAutoFrameChanges(options: {
   editor: Editor
   reconcile: () => void
@@ -237,12 +290,14 @@ export function subscribeToAutoFrameChanges(options: {
   let timer: ReturnType<typeof setTimeout> | undefined
   const stop = options.editor.store.listen((entry) => {
     if (applyingEditors.has(options.editor)) return
-    if (!isAutoFrameRelevantChange(entry as unknown as StoreChangeEntry)) return
+    const typedEntry = entry as unknown as StoreChangeEntry
+    const restoredCards = restoreCardsRemovedWithManagedFrame(options.editor, typedEntry)
+    if (!restoredCards && !isAutoFrameRelevantChange(typedEntry)) return
     if (timer) clearTimeout(timer)
     timer = setTimeout(() => {
       timer = undefined
       options.reconcile()
-    }, options.debounceMs ?? 80)
+    }, restoredCards ? 0 : options.debounceMs ?? 80)
   }, { source: 'all', scope: 'document' })
 
   return () => {

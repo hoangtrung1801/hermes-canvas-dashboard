@@ -22,6 +22,10 @@ const syncMock = vi.hoisted(() => ({
 const tldrawMock = vi.hoisted(() => {
   const shapes: any[] = []
   const selectedShapeIds: string[] = []
+  const storeListeners = new Set<(entry: any) => void>()
+  const emitShapeChange = (changes: any) => {
+    for (const listener of storeListeners) listener({ changes, source: 'user' })
+  }
   const createDefaultThemeColors = () => {
     const paletteColor = { noteFill: '#ffffff' }
     return {
@@ -55,17 +59,31 @@ const tldrawMock = vi.hoisted(() => {
   }
   const editor = {
     createShape(shape: any) {
-      shapes.push({ ...shape, props: shape.props ?? {}, meta: shape.meta ?? {} })
+      const created = {
+        typeName: 'shape',
+        parentId: 'page:page',
+        ...shape,
+        props: shape.props ?? {},
+        meta: shape.meta ?? {}
+      }
+      shapes.push(created)
+      emitShapeChange({ added: { [created.id]: created }, updated: {}, removed: {} })
+    },
+    createShapes(records: any[]) {
+      for (const record of records) this.createShape(record)
     },
     updateShape(patch: any) {
       const index = shapes.findIndex((shape) => shape.id === patch.id)
       if (index >= 0) {
-        shapes[index] = {
-          ...shapes[index],
+        const before = shapes[index]
+        const after = {
+          ...before,
           ...patch,
-          props: { ...shapes[index].props, ...(patch.props ?? {}) },
-          meta: { ...shapes[index].meta, ...(patch.meta ?? {}) }
+          props: { ...before.props, ...(patch.props ?? {}) },
+          meta: { ...before.meta, ...(patch.meta ?? {}) }
         }
+        shapes[index] = after
+        emitShapeChange({ added: {}, updated: { [patch.id]: [before, after] }, removed: {} })
       }
     },
     updateShapes(patches: any[]) {
@@ -76,11 +94,28 @@ const tldrawMock = vi.hoisted(() => {
     deleteShapes(ids: string[]) {
       for (const id of ids) {
         const index = shapes.findIndex((shape) => shape.id === id)
-        if (index >= 0) shapes.splice(index, 1)
+        if (index >= 0) {
+          const [removed] = shapes.splice(index, 1)
+          emitShapeChange({ added: {}, updated: {}, removed: { [id]: removed } })
+        }
       }
+    },
+    getCurrentPageId() {
+      return 'page:page'
     },
     getCurrentPageShapesSorted() {
       return shapes
+    },
+    getShapePageBounds(id: string) {
+      const current = shapes.find((shape) => shape.id === id)
+      if (!current) return undefined
+      const parent = shapes.find((shape) => shape.id === current.parentId)
+      return {
+        x: current.x + (parent?.type === 'frame' ? parent.x : 0),
+        y: current.y + (parent?.type === 'frame' ? parent.y : 0),
+        w: Number(current.props.w) || 0,
+        h: Number(current.props.h) || 0
+      }
     },
     getSelectedShapeIds() {
       return selectedShapeIds
@@ -95,6 +130,21 @@ const tldrawMock = vi.hoisted(() => {
     setCurrentTheme: vi.fn(),
     updateInstanceState: vi.fn(),
     setCamera() {},
+    run: vi.fn((fn: () => void) => fn()),
+    store: {
+      listen: vi.fn((listener: (entry: any) => void) => {
+        storeListeners.add(listener)
+        return () => storeListeners.delete(listener)
+      }),
+      update: vi.fn((id: string, updater: (record: any) => any) => {
+        const index = shapes.findIndex((shape) => shape.id === id)
+        if (index < 0) return
+        const before = shapes[index]
+        const after = updater(before)
+        shapes[index] = after
+        emitShapeChange({ added: {}, updated: { [id]: [before, after] }, removed: {} })
+      })
+    },
     markHistoryStoppingPoint: vi.fn(),
     zoomToFit: vi.fn(),
     select(...ids: string[]) {
@@ -120,6 +170,7 @@ const tldrawMock = vi.hoisted(() => {
       }
     },
     shapes,
+    storeListeners,
     selectedShapeIds,
     props: null as any
   }
@@ -173,6 +224,7 @@ describe('CanvasSurface', () => {
     socketSpies.send.mockClear()
     syncMock.calls = []
     tldrawMock.shapes.splice(0)
+    tldrawMock.storeListeners.clear()
     tldrawMock.selectedShapeIds.splice(0)
     tldrawMock.props = null
     tldrawMock.editor.updateTheme.mockClear()
@@ -329,6 +381,29 @@ describe('CanvasSurface', () => {
     })
   })
 
+  it('automatically groups newly inserted cards in a managed native frame', async () => {
+    render(<App />)
+
+    act(() => screen.getByRole('button', { name: 'Todo Block' }).click())
+    act(() => screen.getByRole('button', { name: 'Todo Block' }).click())
+
+    await waitFor(() => {
+      expect(tldrawMock.shapes.filter((shape) => shape.type === 'frame')).toHaveLength(1)
+    })
+
+    const generated = tldrawMock.shapes.find((shape) => shape.type === 'frame')
+    expect(generated).toMatchObject({
+      props: { name: 'Todos', color: 'yellow', w: 728, h: 276 },
+      meta: { hermesAutoFrame: { version: 1, kind: 'todo' } }
+    })
+    expect(tldrawMock.shapes.filter((shape) => shape.type === 'todo_block')).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ parentId: generated.id, x: 32, y: 64 }),
+        expect.objectContaining({ parentId: generated.id, x: 376, y: 64 })
+      ])
+    )
+  })
+
   it('inserts a rectangle note card from the floating canvas menu and selects it', async () => {
     render(<App />)
 
@@ -391,7 +466,7 @@ describe('CanvasSurface', () => {
     expect(toolbar.closest('.fullscreen-canvas-container')).toBeInTheDocument()
   })
 
-  it('tidies cards into columns grouped by type', async () => {
+  it('tidies cards into ordered managed frames', async () => {
     render(<App />)
 
     for (const optionName of [/Link Card/, /Todo Block/, /Note Card/, /Project Card/]) {
@@ -400,19 +475,29 @@ describe('CanvasSurface', () => {
 
     act(() => screen.getByRole('button', { name: 'Tidy cards by type' }).click())
 
-    const todo = tldrawMock.shapes.find((shape) => shape.type === 'todo_block')
-    const note = tldrawMock.shapes.find((shape) => shape.type === 'geo')
-    const link = tldrawMock.shapes.find((shape) => shape.type === 'link_card')
-    const project = tldrawMock.shapes.find((shape) => shape.type === 'project_card')
+    const frames = tldrawMock.shapes
+      .filter((shape) => shape.type === 'frame')
+      .sort((a, b) => a.x - b.x || a.y - b.y)
+    expect(frames.map((frame) => frame.props.name)).toEqual([
+      'Projects',
+      'Todos',
+      'Notes',
+      'Links'
+    ])
+    expect(frames.every((frame, index) => index === 0 || frame.x >= frames[index - 1].x + frames[index - 1].props.w + 64)).toBe(true)
+    expect(new Set(frames.map((frame) => frame.y)).size).toBe(1)
 
-    expect(project.x).toBeLessThan(todo.x)
-    expect(todo.x).toBeLessThan(note.x)
-    expect(note.x).toBeLessThan(link.x)
-    expect(project.y).toBe(todo.y)
-    expect(todo.y).toBe(note.y)
-    expect(note.y).toBe(link.y)
-    expect(tldrawMock.editor.markHistoryStoppingPoint).toHaveBeenCalledWith('tidy card layout')
+    for (const card of tldrawMock.shapes.filter((shape) => shape.type !== 'frame')) {
+      expect(frames.some((frame) => frame.id === card.parentId)).toBe(true)
+    }
+    expect(tldrawMock.editor.markHistoryStoppingPoint).toHaveBeenCalledWith('tidy auto frames')
     expect(tldrawMock.editor.zoomToFit).toHaveBeenCalledWith({ animation: { duration: 250 } })
+    expect(useBridgeStore.getState().logs).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        type: 'canvas.tidy',
+        payload: 'Arranged 4 cards in 4 frames'
+      })
+    ]))
   })
 
   it('layers the floating custom toolbar above tldraw header and menu panels', () => {

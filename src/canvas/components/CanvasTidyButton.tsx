@@ -1,5 +1,4 @@
-import { readTldrawObservation } from '../tldraw/tldrawActionExecutor'
-import { createTidyCardLayout } from '../tldraw/tidyCardLayout'
+import { reconcileAutoFrames } from '../tldraw/autoFrameReconciler'
 import { useBridgeStore } from '../state/bridgeStore'
 
 function TidyIcon() {
@@ -22,42 +21,27 @@ export function CanvasTidyButton() {
   const tidyCanvas = () => {
     if (!editor || !adapter) return
 
-    const placements = createTidyCardLayout(
-      editor.getCurrentPageShapesSorted().map((shape) => ({
-        id: String(shape.id),
-        type: shape.type,
-        x: shape.x,
-        y: shape.y,
-        props: shape.props as Record<string, unknown>
-      }))
-    )
+    const result = reconcileAutoFrames({
+      editor,
+      adapter,
+      mode: 'tidy',
+      setObservation,
+      addLog
+    })
+    if (result.error) return
 
-    if (placements.length === 0) {
-      addLog('info', 'canvas.tidy', 'No card components to arrange')
+    if (result.cardCount === 0) {
+      addLog('info', 'canvas.tidy', 'No card components to frame')
       return
     }
 
-    editor.markHistoryStoppingPoint('tidy card layout')
-    editor.updateShapes(
-      placements.map((placement) => ({
-        id: placement.id as any,
-        type: placement.type as any,
-        x: placement.x,
-        y: placement.y
-      }))
-    )
-
-    // Keep the action adapter in step with direct, collaborative tldraw changes.
-    for (const placement of placements) {
-      const record = adapter.shapes.get(placement.id)
-      if (record) {
-        adapter.shapes.set(placement.id, { ...record, x: placement.x, y: placement.y })
-      }
-    }
-
+    editor.markHistoryStoppingPoint('tidy auto frames')
     editor.zoomToFit({ animation: { duration: 250 } })
-    setObservation(readTldrawObservation(adapter))
-    addLog('info', 'canvas.tidy', `Arranged ${placements.length} cards by type`)
+    addLog(
+      'info',
+      'canvas.tidy',
+      `Arranged ${result.cardCount} cards in ${result.frameCount} frames`
+    )
   }
 
   const isReady = Boolean(editor && adapter)
