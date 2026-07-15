@@ -91,4 +91,73 @@ describe('hermesPastelTheme', () => {
       noteFill: '#dcfce7'
     })
   })
+
+  it('uses bright frame-only colors for automatic card groups in both themes', () => {
+    expect(hermesPastelTheme.colors.light['light-violet']).toMatchObject({
+      frameHeadingStroke: '#7c3aed',
+      frameHeadingFill: '#ede9fe',
+      frameStroke: '#7c3aed',
+      frameFill: '#f5f3ff',
+      frameText: '#111827'
+    })
+    expect(hermesPastelTheme.colors.light.yellow).toMatchObject({
+      frameHeadingStroke: '#eab308',
+      frameHeadingFill: '#fef3c7',
+      frameStroke: '#eab308',
+      frameFill: '#fffbeb',
+      frameText: '#111827'
+    })
+    expect(hermesPastelTheme.colors.light.green).toMatchObject({
+      frameHeadingStroke: '#16a34a',
+      frameHeadingFill: '#dcfce7',
+      frameStroke: '#16a34a',
+      frameFill: '#f0fdf4',
+      frameText: '#111827'
+    })
+    expect(hermesPastelTheme.colors.light['light-blue']).toMatchObject({
+      frameHeadingStroke: '#2563eb',
+      frameHeadingFill: '#dbeafe',
+      frameStroke: '#2563eb',
+      frameFill: '#eff6ff',
+      frameText: '#111827'
+    })
+
+    expect(hermesPastelTheme.colors.dark['light-violet']).toMatchObject({
+      frameHeadingStroke: '#a78bfa',
+      frameHeadingFill: '#2e2652',
+      frameStroke: '#a78bfa',
+      frameFill: '#1e1b2e',
+      frameText: '#f8fafc'
+    })
+    expect(hermesPastelTheme.colors.dark.yellow).toMatchObject({
+      frameHeadingStroke: '#facc15',
+      frameHeadingFill: '#342b10',
+      frameStroke: '#facc15',
+      frameFill: '#211d0f',
+      frameText: '#f8fafc'
+    })
+    expect(hermesPastelTheme.colors.dark.green).toMatchObject({
+      frameHeadingStroke: '#4ade80',
+      frameHeadingFill: '#173622',
+      frameStroke: '#4ade80',
+      frameFill: '#0f2116',
+      frameText: '#f8fafc'
+    })
+    expect(hermesPastelTheme.colors.dark['light-blue']).toMatchObject({
+      frameHeadingStroke: '#60a5fa',
+      frameHeadingFill: '#162d4f',
+      frameStroke: '#60a5fa',
+      frameFill: '#101e33',
+      frameText: '#f8fafc'
+    })
+
+    expect(hermesPastelTheme.colors.light.yellow).toMatchObject({
+      solid: '#fef3c7',
+      noteFill: '#fef3c7'
+    })
+    expect(hermesPastelTheme.colors.dark['light-blue']).toMatchObject({
+      solid: '#bfdbfe',
+      noteFill: '#bfdbfe'
+    })
+  })
 })
