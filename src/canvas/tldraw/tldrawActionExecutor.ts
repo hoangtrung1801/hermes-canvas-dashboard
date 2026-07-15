@@ -35,6 +35,7 @@ export type TldrawActionResult = {
 export type ShapeRecord = {
   id: string
   type: string
+  parentId?: string
   x: number
   y: number
   props: Record<string, unknown>
