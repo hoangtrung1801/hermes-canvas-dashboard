@@ -4,6 +4,7 @@ import {
   Tldraw,
   defaultBindingUtils,
   defaultShapeUtils,
+  FrameShapeUtil,
   inlineBase64AssetStore,
   type Editor
 } from 'tldraw'
@@ -25,6 +26,7 @@ import { useCanvasAutoFrames } from './useCanvasAutoFrames'
 
 const socket = new BridgeWebSocketClient()
 const CANVAS_ID = 'canvas_001'
+const ColoredFrameShapeUtil = FrameShapeUtil.configure({ showColors: true })
 
 export function CanvasSurface() {
   const bridge = useBridgeStore((state) => state.bridge)
@@ -36,7 +38,14 @@ export function CanvasSurface() {
   const addLog = useBridgeStore((state) => state.addLog)
   useCanvasAutoFrames()
 
-  const syncShapeUtils = useMemo(() => [...defaultShapeUtils, ...hermesShapeUtils], [])
+  const syncShapeUtils = useMemo(
+    () => [
+      ...defaultShapeUtils.filter((shapeUtil) => shapeUtil.type !== 'frame'),
+      ColoredFrameShapeUtil,
+      ...hermesShapeUtils
+    ],
+    []
+  )
   const store = useSync({
     uri: getTldrawSyncUrl(CANVAS_ID),
     assets: inlineBase64AssetStore,
@@ -132,7 +141,7 @@ export function CanvasSurface() {
   return (
     <Tldraw
       store={store}
-      shapeUtils={hermesShapeUtils}
+      shapeUtils={[...hermesShapeUtils, ColoredFrameShapeUtil]}
       onMount={(mountedEditor: Editor) => {
         mountedEditor.updateTheme(hermesPastelTheme)
         mountedEditor.setCurrentTheme(HERMES_PASTEL_THEME_ID)

@@ -23,6 +23,10 @@ const tldrawMock = vi.hoisted(() => {
   const shapes: any[] = []
   const selectedShapeIds: string[] = []
   const storeListeners = new Set<(entry: any) => void>()
+  const coloredFrameShapeUtil = { type: 'frame' }
+  const frameShapeUtil = {
+    configure: vi.fn(() => coloredFrameShapeUtil)
+  }
   const emitShapeChange = (changes: any) => {
     for (const listener of storeListeners) listener({ changes, source: 'user' })
   }
@@ -158,6 +162,8 @@ const tldrawMock = vi.hoisted(() => {
   return {
     editor,
     defaultColorStyle: { id: 'tldraw:color', defaultValue: 'black' },
+    coloredFrameShapeUtil,
+    frameShapeUtil,
     defaultTheme: {
       id: 'default',
       fontSize: 16,
@@ -209,6 +215,7 @@ vi.mock('tldraw', () => ({
   inlineBase64AssetStore: {},
   HTMLContainer: ({ children, ...props }: any) => <div {...props}>{children}</div>,
   DefaultColorStyle: tldrawMock.defaultColorStyle,
+  FrameShapeUtil: tldrawMock.frameShapeUtil,
   DEFAULT_THEME: tldrawMock.defaultTheme,
   getColorValue: (colors: any, color: string, variant: string) => colors[color]?.[variant] ?? color,
   Rectangle2d: class {
@@ -252,7 +259,17 @@ describe('CanvasSurface', () => {
     expect(syncMock.calls[0]).toMatchObject({
       uri: 'ws://localhost:8787/sync/canvas_001'
     })
-    expect(tldrawMock.props.shapeUtils).toHaveLength(3)
+    expect(tldrawMock.props.shapeUtils).toHaveLength(4)
+  })
+
+  it('enables color rendering for native frames in the canvas and synced schema', async () => {
+    render(<App />)
+
+    await screen.findByText('Bridge ready')
+
+    expect(tldrawMock.frameShapeUtil.configure).toHaveBeenCalledWith({ showColors: true })
+    expect(tldrawMock.props.shapeUtils).toContain(tldrawMock.coloredFrameShapeUtil)
+    expect((syncMock.calls[0] as any).shapeUtils).toContain(tldrawMock.coloredFrameShapeUtil)
   })
 
   it('does not connect to the Hermes websocket gateway unless a gateway url is configured', async () => {
