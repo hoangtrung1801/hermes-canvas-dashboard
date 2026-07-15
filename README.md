@@ -19,6 +19,12 @@ The gateway exposes:
 
 When the frontend is open as `role=bridge`, Hermes actions are applied live to the mounted tldraw editor. When no browser bridge is connected, the gateway applies supported actions headlessly to the same tldraw sync room, so persisted state still lands in SQLite.
 
+### Automatic card frames
+
+The live canvas automatically groups Project, Todo, Note, and Link cards into one native tldraw frame per card kind. Projects use one wide column; the other card kinds wrap into compact two-column grids. Generated frames resize as cards are created, deleted, or resized, and moving a generated frame moves its cards with it.
+
+Only Hermes-generated frames are managed. Cards placed inside a user-created frame stay there and are excluded from automatic grouping. Continuous updates preserve the positions of existing generated frames; the bottom-right **Tidy cards by type** action immediately rebuilds the card layouts and repacks all generated frames into ordered rows.
+
 If port `8787` is already in use:
 
 ```bash
