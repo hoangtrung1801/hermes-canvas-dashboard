@@ -52,6 +52,8 @@ describe('Docs Card ShapeUtil', () => {
   })
 
   it('exposes the docs shape contract and default props', () => {
+    const util = new DocsCardShapeUtil({} as any)
+
     expect(DocsCardShapeUtil.type).toBe('docs_card')
     expect(DocsCardShapeUtil.props).toMatchObject({
       w: expect.anything(),
@@ -59,7 +61,8 @@ describe('Docs Card ShapeUtil', () => {
       title: expect.anything(),
       content: expect.anything()
     })
-    expect(new DocsCardShapeUtil({} as any).getDefaultProps()).toEqual({
+    expect(util.canEdit()).toBe(false)
+    expect(util.getDefaultProps()).toEqual({
       w: 480,
       h: 640,
       title: 'New Document',
@@ -77,16 +80,21 @@ describe('Docs Card ShapeUtil', () => {
 
     fireEvent.doubleClick(screen.getByText('Release notes'))
     expect(tldrawMock.editor.setEditingShape).not.toHaveBeenCalled()
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+
+    fireEvent.wheel(screen.getByRole('region', { name: 'Markdown document' }))
+    expect(tldrawMock.editor.markEventAsHandled).toHaveBeenCalled()
 
     fireEvent.click(screen.getByRole('button', { name: 'Edit' }))
-    expect(tldrawMock.editor.setEditingShape).toHaveBeenCalledWith('shape:docs_1')
+    expect(tldrawMock.editor.setEditingShape).not.toHaveBeenCalled()
+    expect(screen.getByRole('dialog')).toBeInTheDocument()
   })
 
   it('renders the editor modal for an editing shape', () => {
-    tldrawMock.editingShapeId = 'shape:docs_1'
     const util = new DocsCardShapeUtil({} as any)
     render(util.component(shape))
 
+    fireEvent.click(screen.getByRole('button', { name: 'Edit' }))
     expect(screen.getByRole('dialog')).toBeInTheDocument()
     expect(screen.getByRole('textbox', { name: 'Markdown source' })).toHaveValue('# Heading\n\nBody')
   })
