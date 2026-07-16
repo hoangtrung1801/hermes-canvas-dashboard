@@ -60,7 +60,8 @@ describe('custom tldraw ShapeUtils', () => {
     expect(hermesShapeUtils.map((util) => util.type)).toEqual([
       'todo_block',
       'link_card',
-      'project_card'
+      'project_card',
+      'docs_card'
     ])
   })
 
