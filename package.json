@@ -21,6 +21,7 @@
     "@tldraw/utils": "^5.2.2",
     "@tldraw/validate": "^5.2.2",
     "fastify": "^5.10.0",
+    "markdown-it": "^14.3.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "tldraw": "^5.2.2",
@@ -30,6 +31,7 @@
   "devDependencies": {
     "@testing-library/jest-dom": "^6.4.8",
     "@testing-library/react": "^16.0.1",
+    "@types/markdown-it": "^14.1.2",
     "@types/node": "^24.0.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
