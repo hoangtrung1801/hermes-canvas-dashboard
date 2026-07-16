@@ -155,6 +155,24 @@ export const canvasActionSchema = z.union([
     ...position
   }),
   z.object({
+    type: z.literal('create_docs_card'),
+    id: nonBlank.optional(),
+    title: nonBlank,
+    content: z.string().optional(),
+    w: z.number().finite().positive().optional(),
+    h: z.number().finite().positive().optional(),
+    ...position
+  }).strict(),
+  z.object({
+    type: z.literal('update_docs_card'),
+    shapeId,
+    title: nonBlank.optional(),
+    content: z.string().optional()
+  }).strict().refine(
+    (value) => value.title !== undefined || value.content !== undefined,
+    { message: 'update_docs_card requires title or content' }
+  ),
+  z.object({
     type: z.literal('create_project_card'),
     id: nonBlank.optional(),
     title: nonBlank,

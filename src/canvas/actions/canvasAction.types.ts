@@ -129,6 +129,24 @@ export type CreateNoteCardAction = {
   size?: 's' | 'm' | 'l' | 'xl'
 }
 
+export type CreateDocsCardAction = {
+  type: 'create_docs_card'
+  id?: string
+  x: number
+  y: number
+  title: string
+  content?: string
+  w?: number
+  h?: number
+}
+
+export type UpdateDocsCardAction = {
+  type: 'update_docs_card'
+  shapeId: string
+  title?: string
+  content?: string
+}
+
 export type CreateProjectCardAction = {
   type: 'create_project_card'
   id?: string
@@ -194,6 +212,8 @@ export type CanvasAction =
   | RemoveTodoTaskAction
   | CreateLinkCardAction
   | CreateNoteCardAction
+  | CreateDocsCardAction
+  | UpdateDocsCardAction
   | CreateProjectCardAction
   | UpdateProjectCardAction
   | AppendProjectTaskAction

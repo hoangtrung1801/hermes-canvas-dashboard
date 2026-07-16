@@ -13,6 +13,10 @@ import {
 } from './tldrawObservation'
 import { createNoteCardProps } from './nativeNoteCard'
 import {
+  DOCS_CARD_TYPE,
+  createDocsCardProps
+} from './docsCard.types'
+import {
   PROJECT_CARD_TYPE,
   appendProjectTask,
   createProjectCardProps,
@@ -103,6 +107,18 @@ export function executeTldrawAction(target: TldrawExecutorTarget, action: Canvas
         meta: { source: 'hermes' },
         actionType: action.type
       })
+    case 'create_docs_card':
+      return createShape(target, {
+        id: action.id ?? nextShapeId(target, DOCS_CARD_TYPE),
+        type: DOCS_CARD_TYPE,
+        x: action.x,
+        y: action.y,
+        props: createDocsCardProps(action),
+        meta: { source: 'hermes' },
+        actionType: action.type
+      })
+    case 'update_docs_card':
+      return updateDocsCard(target, action)
     case 'create_project_card':
       return createShape(target, {
         id: action.id ?? nextShapeId(target, PROJECT_CARD_TYPE),
@@ -270,6 +286,30 @@ function mutateTodoShape(
     tasks.filter((task) => task.id !== action.taskId),
     action.type
   )
+}
+
+function updateDocsCard(
+  target: TldrawExecutorTarget,
+  action: Extract<CanvasAction, { type: 'update_docs_card' }>
+): TldrawActionResult {
+  const existing = target.shapes.get(action.shapeId)
+  if (!existing || existing.type !== DOCS_CARD_TYPE) {
+    return { actionType: action.type, error: `Unknown docs card ${action.shapeId}` }
+  }
+
+  const nextProps = {
+    ...existing.props,
+    ...(action.title !== undefined ? { title: action.title.trim() } : {}),
+    ...(action.content !== undefined ? { content: action.content } : {})
+  }
+  const next = { ...existing, props: nextProps }
+  target.shapes.set(existing.id, next)
+  target.editor?.updateShape({
+    id: existing.id as any,
+    type: DOCS_CARD_TYPE as any,
+    props: nextProps as any
+  })
+  return { actionType: action.type, updatedShapeIds: [existing.id] }
 }
 
 function updateTodoTasks(

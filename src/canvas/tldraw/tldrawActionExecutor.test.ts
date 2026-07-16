@@ -262,6 +262,59 @@ describe('tldraw action executor', () => {
     })
   })
 
+  it('creates and updates a Docs Card in the memory executor', () => {
+    const target = createMemoryTldrawTarget('canvas_001')
+
+    expect(executeTldrawAction(target, {
+      type: 'create_docs_card',
+      id: 'shape:docs_1',
+      title: '  Release notes ',
+      content: '# Draft',
+      x: 100,
+      y: 120,
+      w: 200,
+      h: 200
+    })).toEqual({
+      actionType: 'create_docs_card',
+      createdShapeIds: ['shape:docs_1']
+    })
+
+    expect(target.shapes.get('shape:docs_1')).toMatchObject({
+      type: 'docs_card',
+      x: 100,
+      y: 120,
+      props: {
+        title: 'Release notes',
+        content: '# Draft',
+        w: 320,
+        h: 360
+      }
+    })
+
+    expect(executeTldrawAction(target, {
+      type: 'update_docs_card',
+      shapeId: 'shape:docs_1',
+      content: '# Published'
+    })).toEqual({
+      actionType: 'update_docs_card',
+      updatedShapeIds: ['shape:docs_1']
+    })
+
+    expect(target.shapes.get('shape:docs_1')?.props.content).toBe('# Published')
+  })
+
+  it('returns Docs Card update errors without mutation', () => {
+    const target = createMemoryTldrawTarget('canvas_001')
+    expect(executeTldrawAction(target, {
+      type: 'update_docs_card',
+      shapeId: 'shape:missing',
+      title: 'Updated'
+    })).toEqual({
+      actionType: 'update_docs_card',
+      error: 'Unknown docs card shape:missing'
+    })
+  })
+
   it('returns action-level errors for unknown shapes and unsupported headless editor actions', () => {
     const target = createMemoryTldrawTarget('canvas_001')
 

@@ -94,6 +94,44 @@ describe('tldraw canvas action schema', () => {
     })
   })
 
+  it('accepts Docs Card creation and partial updates', () => {
+    expect(canvasActionSchema.parse({
+      type: 'create_docs_card',
+      title: 'Release notes',
+      content: '# Notes',
+      x: 20,
+      y: 40
+    })).toMatchObject({
+      type: 'create_docs_card',
+      title: 'Release notes',
+      content: '# Notes'
+    })
+
+    expect(canvasActionSchema.parse({
+      type: 'update_docs_card',
+      shapeId: 'shape:docs_1',
+      content: '# Updated'
+    })).toEqual({
+      type: 'update_docs_card',
+      shapeId: 'shape:docs_1',
+      content: '# Updated'
+    })
+  })
+
+  it('rejects blank Docs Card titles and empty updates', () => {
+    expect(() => canvasActionSchema.parse({
+      type: 'create_docs_card',
+      title: ' ',
+      x: 20,
+      y: 40
+    })).toThrow()
+
+    expect(() => canvasActionSchema.parse({
+      type: 'update_docs_card',
+      shapeId: 'shape:docs_1'
+    })).toThrow()
+  })
+
   it('accepts and trims the complete project task-board contract', () => {
     const parsed = canvasActionBatchSchema.parse([
       {
