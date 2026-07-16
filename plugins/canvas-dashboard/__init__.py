@@ -14,7 +14,7 @@ _CANVAS_DASHBOARD_CONTEXT = """Canvas Dashboard plugin hint:
 This request appears to target the Hermes tldraw Canvas Gateway. Load the `canvas-dashboard` skill before acting and prefer the Canvas Gateway API through the `canvas_action` tool instead of Hermes's session `todo` tool unless the user explicitly asks for the in-session todo list. Read canvas shape state before changes and verify changes from the returned canvas observation. After a successful canvas action, reply with only a brief confirmation and do not expose action payloads, shape ids, observations, metadata, screenshots, or implementation details unless the user explicitly asks. If `canvas-dashboard` is unavailable, load `canvas-dashboard-operations` as the fallback skill."""
 
 _CANVAS_TRIGGER_RE = re.compile(
-    r"(?:\bcanvas\b|\bdashboard\b|\btodo\b|\btask\b|\bchecklist\b|\bnote\b|\bcard\b|\bblock\b|\barrow\b)",
+    r"(?:\bcanvas\b|\bdashboard\b|\btodo\b|\btask\b|\bchecklist\b|\bnote\b|\bcard\b|\bblock\b|\barrow\b|\bdocs?\b|\bdocument\b|\bmarkdown\b)",
     re.IGNORECASE,
 )
 

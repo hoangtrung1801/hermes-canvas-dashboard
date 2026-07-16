@@ -10,11 +10,11 @@ metadata:
 
 # Canvas Dashboard
 
-Use this skill to operate a running Hermes Canvas Gateway. The gateway applies actions live through a connected browser bridge, or headlessly against the same tldraw sync room when no browser bridge is connected. Canvas state persists through tldraw sync, usually into the gateway SQLite database.
+Use this skill to operate a running Hermes Canvas Gateway. The gateway applies actions live through a connected browser bridge, or headlessly against the same tldraw sync room when no browser bridge is connected. Canvas state persists through tldraw sync, usually into the gateway SQLite database. Docs Cards are the long-form Markdown surface for saving messages, documents, and other long text.
 
 ## When to Use
 
-Use this skill when the user asks to inspect or change the Hermes Canvas Dashboard, tldraw canvas, projects, project tasks, notes, todo blocks, checklist items, link cards, shapes, selections, or camera view.
+Use this skill when the user asks to inspect or change the Hermes Canvas Dashboard, tldraw canvas, projects, project tasks, notes, todo blocks, checklist items, Docs Cards, Markdown documents, link cards, shapes, selections, or camera view.
 
 Prefer the Hermes `canvas_action` plugin tool when it is available. Use the bundled CLI only when the tool is unavailable or when the user explicitly wants a terminal command. Do not use Hermes' session `todo` tool unless the user asks for the agent-local todo list.
 
@@ -55,6 +55,8 @@ uv run --with websocket-client scripts/canvas_dashboard_tool.py --actions '[{"ty
 5. Inspect the returned JSON. Read `canvas.result.results[]` for per-action ids and errors. Read `canvas.observation.state.shapes[]`, `selectedShapeIds`, and `camera` for current state. Use returned `createdShapeIds`, `updatedShapeIds`, `deletedShapeIds`, `createdBindingIds`, and `deletedBindingIds` for follow-up actions.
 
 6. Verify writes from the final `canvas.observation`. If the requested visual result matters, finish with `zoom_to_fit` or `set_camera` and a final `read_canvas`.
+
+For Docs Cards, preserve the Markdown source exactly in `content`, including line breaks. Use the dedicated create/update actions instead of a generic shape patch when changing the document. The canvas card renders Markdown in a scrollable body; double-clicking opens a read-only, scrollable reader side panel, while the visible `Edit` button opens the title and Markdown source editor.
 
 ## User Response
 
@@ -154,6 +156,22 @@ Map `tag` to the first line, `title` to the second line, and `content` to the de
 {"type":"create_note_card","id":"shape:plan","title":"Plan","tag":"Note","content":"Dashboard plan","x":80,"y":80}
 ```
 
+### create_docs_card
+
+Creates a long-form Markdown Docs Card. `title`, `x`, and `y` are required. `content` is optional and defaults to empty Markdown. The default canvas size is 480 × 640; optional `w` and `h` are independently resizable and normalize to minimums of 320 × 360.
+
+```json
+{"type":"create_docs_card","id":"shape:release_notes","title":"Release notes","content":"# Release notes\n\n- Added Markdown support","x":120,"y":120,"w":480,"h":640}
+```
+
+### update_docs_card
+
+Updates a Docs Card by `shapeId`. Supply at least one of `title` or `content`. Titles are trimmed before storage; Markdown content is preserved exactly as supplied.
+
+```json
+{"type":"update_docs_card","shapeId":"shape:release_notes","title":"Published release notes","content":"# Published\n\nThe release is live."}
+```
+
 ### create_shape
 
 ```json
@@ -240,6 +258,7 @@ uv run --with websocket-client scripts/canvas_dashboard_tool.py --actions '[{"ty
 - `select_shapes` does not work headlessly; it requires a browser editor bridge.
 - Result item contains `error`: the envelope was valid, but that action failed. Inspect shape ids and action payloads before retrying.
 - Project task mutations require the current project shape ID and stable task ID from the latest observation; read again before retrying a missing-target error.
+- Docs Card updates require a current `docs_card` shape ID. Keep long Markdown in `content`; do not replace it with a shortened excerpt.
 - `ok` is `false` or a `canvas.error` envelope appears: stop and inspect the JSON before sending more writes.
 
 ## Verification
@@ -249,5 +268,6 @@ After every write, confirm:
 - The tool returned `ok: true`.
 - No item in `canvas.result.results[]` contains `error`.
 - The final `canvas.observation.state.shapes[]` contains the expected shape ids and props.
+- Docs Cards appear with `type: "docs_card"` and complete `props.title` and `props.content` in observations.
 - Deleted shape ids are absent from the final observation.
 - Camera or selection actions are reflected in `state.camera` or `state.selectedShapeIds` when those fields are expected to change.

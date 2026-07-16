@@ -77,6 +77,10 @@ class CanvasDashboardPluginTests(unittest.TestCase):
         )
         for action_name in ("set_camera", "select_shapes", "clear_selection"):
             self.assertIn(f"### {action_name}", skill_text)
+        for action_name in ("create_docs_card", "update_docs_card"):
+            self.assertIn(f"### {action_name}", skill_text)
+        self.assertIn("read-only, scrollable reader side panel", skill_text)
+        self.assertIn('type: "docs_card"', skill_text)
         self.assertNotIn(self.removed_action, skill_text)
         self.assertNotIn(self.removed_label, skill_text)
         self.assertNotIn(self.removed_phrase, skill_text)
