@@ -1,7 +1,8 @@
 import { LINK_CARD_TYPE, TODO_BLOCK_TYPE } from './customShape.types'
+import { DOCS_CARD_TYPE } from './docsCard.types'
 import { PROJECT_CARD_TYPE } from './projectCard.types'
 
-export type AutoFrameCardKind = 'project' | 'todo' | 'note' | 'link'
+export type AutoFrameCardKind = 'project' | 'todo' | 'docs' | 'note' | 'link'
 export type AutoFrameMode = 'continuous' | 'tidy'
 
 export type AutoFrameLayoutShape = {
@@ -51,11 +52,12 @@ export type AutoFrameLayoutInput = {
 }
 
 export const AUTO_FRAME_META_KEY = 'hermesAutoFrame'
-export const AUTO_FRAME_KIND_ORDER = ['project', 'todo', 'note', 'link'] as const
+export const AUTO_FRAME_KIND_ORDER = ['project', 'todo', 'docs', 'note', 'link'] as const
 
 const KIND_CONFIG: Record<AutoFrameCardKind, { title: string; color: string }> = {
   project: { title: 'Projects', color: 'light-violet' },
   todo: { title: 'Todos', color: 'yellow' },
+  docs: { title: 'Docs', color: 'orange' },
   note: { title: 'Notes', color: 'green' },
   link: { title: 'Links', color: 'light-blue' }
 }
@@ -83,6 +85,7 @@ export function readAutoFrameKind(meta: Record<string, unknown>): AutoFrameCardK
 export function getAutoFrameCardKind(shape: Pick<AutoFrameLayoutShape, 'type' | 'props'>) {
   if (shape.type === PROJECT_CARD_TYPE) return 'project' as const
   if (shape.type === TODO_BLOCK_TYPE) return 'todo' as const
+  if (shape.type === DOCS_CARD_TYPE) return 'docs' as const
   if (shape.type === LINK_CARD_TYPE) return 'link' as const
   if (shape.type === 'geo' && shape.props.geo === 'rectangle') return 'note' as const
   return null

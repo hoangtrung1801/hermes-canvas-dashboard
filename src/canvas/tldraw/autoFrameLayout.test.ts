@@ -49,6 +49,7 @@ describe('planAutoFrameLayout', () => {
       shapes: [
         shape('shape:project', 'project_card', 0, 0, { w: 960, h: 480 }),
         shape('shape:todo', 'todo_block', 1000, 0, { w: 320, h: 180 }),
+        shape('shape:docs', 'docs_card', 1300, 0, { w: 480, h: 640 }),
         shape('shape:note', 'geo', 1400, 0, { geo: 'rectangle', w: 320, h: 180 }),
         shape('shape:link', 'link_card', 1800, 0, { w: 320, h: 180 }),
         shape('shape:ellipse', 'geo', 2200, 0, { geo: 'ellipse', w: 320, h: 180 })
@@ -58,9 +59,15 @@ describe('planAutoFrameLayout', () => {
     expect(plan.frames.map(({ kind, title }) => ({ kind, title }))).toEqual([
       { kind: 'project', title: 'Projects' },
       { kind: 'todo', title: 'Todos' },
+      { kind: 'docs', title: 'Docs' },
       { kind: 'note', title: 'Notes' },
       { kind: 'link', title: 'Links' }
     ])
+    expect(plan.frames.find(({ kind }) => kind === 'docs')).toMatchObject({
+      color: 'orange',
+      w: 544,
+      h: 736
+    })
     expect(plan.cardUpdates.map(({ id }) => id)).not.toContain('shape:ellipse')
   })
 
@@ -237,12 +244,13 @@ describe('planAutoFrameLayout', () => {
       shapes: [
         shape('shape:project', 'project_card', 0, 0, { w: 2500, h: 480 }),
         shape('shape:todo', 'todo_block', 2800, 0, { w: 800, h: 180 }),
+        shape('shape:docs', 'docs_card', 1000, 800, { w: 480, h: 640 }),
         shape('shape:note', 'geo', 0, 800, { geo: 'rectangle', w: 320, h: 180 }),
         shape('shape:link', 'link_card', 500, 800, { w: 320, h: 180 })
       ]
     })
 
-    expect(plan.frames.map(({ kind }) => kind)).toEqual(['project', 'todo', 'note', 'link'])
+    expect(plan.frames.map(({ kind }) => kind)).toEqual(['project', 'todo', 'docs', 'note', 'link'])
     expect(plan.frames[1].y).toBeGreaterThan(plan.frames[0].y)
     expect(plan.frames[2].x).toBeGreaterThan(plan.frames[1].x)
   })
