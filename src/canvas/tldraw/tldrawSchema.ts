@@ -1,6 +1,9 @@
 import { DefaultColorStyle, createTLSchema, defaultBindingSchemas, defaultShapeSchemas } from '@tldraw/tlschema'
 import { T } from '@tldraw/validate'
 import {
+  docsCardMigrations,
+} from './docsCard.types'
+import {
   linkCardMigrations,
   todoBlockMigrations
 } from './customShape.types'
@@ -45,6 +48,15 @@ export function createHermesTldrawSchema() {
       project_card: {
         migrations: projectCardMigrations,
         props: projectCardProps
+      },
+      docs_card: {
+        migrations: docsCardMigrations,
+        props: {
+          w: T.number,
+          h: T.number,
+          title: T.string,
+          content: T.string
+        }
       }
     },
     bindings: defaultBindingSchemas
