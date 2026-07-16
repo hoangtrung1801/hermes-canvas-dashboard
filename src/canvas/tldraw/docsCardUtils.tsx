@@ -4,6 +4,7 @@ import {
   ShapeUtil,
   resizeBox,
   useEditor,
+  useIsEditing,
   type TLResizeInfo,
   type TLShape
 } from 'tldraw'
@@ -79,17 +80,9 @@ export class DocsCardShapeUtil extends ShapeUtil<DocsCardShape> {
     content: T.string
   }
 
-  override canEdit = () => false
+  override canEdit = () => true
   override canResize = () => true
   override isAspectRatioLocked = () => false
-
-  override onDoubleClick(shape: DocsCardShape) {
-    return {
-      id: shape.id,
-      type: DOCS_CARD_TYPE as 'docs_card',
-      props: shape.props
-    }
-  }
 
   getDefaultProps(): DocsCardProps {
     return createDocsCardProps({
@@ -134,6 +127,7 @@ export class DocsCardShapeUtil extends ShapeUtil<DocsCardShape> {
 
 function DocsCardComponent({ shape }: DocsCardComponentProps) {
   const editor = useEditor()
+  const isTldrawEditing = useIsEditing(shape.id)
   const [isEditorOpen, setIsEditorOpen] = useState(false)
   const [isReaderOpen, setIsReaderOpen] = useState(false)
   const preview = renderDocsMarkdown(shape.props.content)
@@ -150,6 +144,10 @@ function DocsCardComponent({ shape }: DocsCardComponentProps) {
   }
 
   const closeEditor = () => setIsEditorOpen(false)
+  const closeReader = () => {
+    setIsReaderOpen(false)
+    editor.setEditingShape(null)
+  }
 
   return (
     <>
@@ -206,11 +204,11 @@ function DocsCardComponent({ shape }: DocsCardComponentProps) {
         />,
         document.body
       )}
-      {isReaderOpen && (
+      {(isReaderOpen || isTldrawEditing) && (
         <DocsCardReaderPanel
           title={shape.props.title}
           content={shape.props.content}
-          onClose={() => setIsReaderOpen(false)}
+          onClose={closeReader}
         />
       )}
     </>

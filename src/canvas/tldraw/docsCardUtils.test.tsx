@@ -61,7 +61,7 @@ describe('Docs Card ShapeUtil', () => {
       title: expect.anything(),
       content: expect.anything()
     })
-    expect(util.canEdit()).toBe(false)
+    expect(util.canEdit()).toBe(true)
     expect(util.getDefaultProps()).toEqual({
       w: 480,
       h: 640,
@@ -84,6 +84,8 @@ describe('Docs Card ShapeUtil', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Close document reader' }))
     expect(screen.queryByRole('dialog', { name: 'Release notes' })).not.toBeInTheDocument()
+    expect(tldrawMock.editor.setEditingShape).toHaveBeenCalledWith(null)
+    tldrawMock.editor.setEditingShape.mockClear()
 
     fireEvent.wheel(screen.getByRole('region', { name: 'Markdown document' }))
     expect(tldrawMock.editor.markEventAsHandled).toHaveBeenCalled()
