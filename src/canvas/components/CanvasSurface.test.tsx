@@ -259,7 +259,7 @@ describe('CanvasSurface', () => {
     expect(syncMock.calls[0]).toMatchObject({
       uri: 'ws://localhost:8787/sync/canvas_001'
     })
-    expect(tldrawMock.props.shapeUtils).toHaveLength(4)
+    expect(tldrawMock.props.shapeUtils).toHaveLength(5)
   })
 
   it('enables color rendering for native frames in the canvas and synced schema', async () => {
@@ -374,6 +374,7 @@ describe('CanvasSurface', () => {
     expect(screen.getByRole('button', { name: 'Link Card' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Note Card' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Project Card' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Docs Card' })).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Insert component' })).not.toBeInTheDocument()
   })
 
@@ -436,6 +437,34 @@ describe('CanvasSurface', () => {
             props: expect.objectContaining({
               geo: 'rectangle',
               richText: expect.objectContaining({ type: 'doc' })
+            })
+          })
+        ])
+      )
+    })
+
+    expect(tldrawMock.editor.getSelectedShapeIds()).toHaveLength(1)
+  })
+
+  it('inserts a default Docs Card from the floating canvas menu and selects it', async () => {
+    render(<App />)
+
+    act(() => {
+      screen.getByRole('button', { name: 'Docs Card' }).click()
+    })
+
+    await waitFor(() => {
+      expect(useBridgeStore.getState().lastObservation?.shapes).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            type: 'docs_card',
+            x: 360,
+            y: 80,
+            w: 480,
+            h: 640,
+            props: expect.objectContaining({
+              title: 'New Document',
+              content: ''
             })
           })
         ])

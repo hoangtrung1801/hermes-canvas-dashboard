@@ -1,19 +1,20 @@
 import type { CanvasAction } from '../actions/canvasAction.types'
 import { useBridgeStore } from '../state/bridgeStore'
 
-type ComponentKind = 'project' | 'todo' | 'link' | 'note'
+type ComponentKind = 'project' | 'todo' | 'link' | 'note' | 'docs'
 
 type InsertOption = {
   kind: ComponentKind
   label: string
-  icon: 'project' | 'todo' | 'link' | 'note'
+  icon: 'project' | 'todo' | 'link' | 'note' | 'docs'
 }
 
 const INSERT_OPTIONS: InsertOption[] = [
   { kind: 'project', label: 'Project Card', icon: 'project' },
   { kind: 'todo', label: 'Todo Block', icon: 'todo' },
   { kind: 'link', label: 'Link Card', icon: 'link' },
-  { kind: 'note', label: 'Note Card', icon: 'note' }
+  { kind: 'note', label: 'Note Card', icon: 'note' },
+  { kind: 'docs', label: 'Docs Card', icon: 'docs' }
 ]
 
 function nextInsertId(kind: ComponentKind) {
@@ -27,7 +28,11 @@ function getInsertPoint(editor: unknown, kind: ComponentKind) {
   const bounds = editorWithBounds.getViewportPageBounds?.()
   if (!bounds) return { x: 160, y: 160 }
 
-  const dimensions = kind === 'project' ? { width: 960, height: 480 } : { width: 280, height: 160 }
+  const dimensions = kind === 'project'
+    ? { width: 960, height: 480 }
+    : kind === 'docs'
+      ? { width: 480, height: 640 }
+      : { width: 280, height: 160 }
   return {
     x: Math.round(bounds.x + bounds.w / 2 - dimensions.width / 2),
     y: Math.round(bounds.y + bounds.h / 2 - dimensions.height / 2)
@@ -57,6 +62,17 @@ function buildCreateAction(kind: ComponentKind, id: string, x: number, y: number
       id,
       title: 'New Project',
       tasks: [],
+      x,
+      y
+    }
+  }
+
+  if (kind === 'docs') {
+    return {
+      type: 'create_docs_card',
+      id,
+      title: 'New Document',
+      content: '',
       x,
       y
     }
@@ -97,6 +113,15 @@ function ComponentIcon({ icon }: { icon: InsertOption['icon'] }) {
       <svg viewBox="0 0 20 20" aria-hidden="true">
         <rect x="4" y="3" width="12" height="14" rx="2" />
         <path d="M7 7h6M7 10h5M7 13h3" />
+      </svg>
+    )
+  }
+
+  if (icon === 'docs') {
+    return (
+      <svg viewBox="0 0 20 20" aria-hidden="true">
+        <path d="M5 2.75h6l4 4V17H5z" />
+        <path d="M11 2.75v4h4M7.5 10h5M7.5 13h5" />
       </svg>
     )
   }
