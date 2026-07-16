@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState, type ChangeEvent, type KeyboardEvent } from 'react'
 import { createPortal } from 'react-dom'
-import { renderDocsMarkdown } from '../tldraw/docsMarkdown'
 
 export type DocsCardDraft = {
   title: string
@@ -67,8 +66,6 @@ export function DocsCardModal({ title, content, onCommit, onClose }: DocsCardMod
     }
   }
 
-  const preview = renderDocsMarkdown(draft.content)
-
   return createPortal(
     <div
       className="hermes-modal-backdrop"
@@ -90,7 +87,7 @@ export function DocsCardModal({ title, content, onCommit, onClose }: DocsCardMod
         <header className="hermes-docs-modal-header">
           <div>
             <h2 id="docs-card-modal-title">Edit document</h2>
-            <p>Write Markdown and review the rendered document.</p>
+            <p>Edit the title and Markdown source.</p>
           </div>
           <button type="button" aria-label="Close document editor" onClick={close}>
             ×
@@ -106,29 +103,15 @@ export function DocsCardModal({ title, content, onCommit, onClose }: DocsCardMod
           />
         </label>
 
-        <div className="hermes-docs-modal-panes">
-          <label className="hermes-docs-modal-pane hermes-docs-source-pane">
-            <span>Markdown source</span>
-            <textarea
-              aria-label="Markdown source"
-              value={draft.content}
-              onChange={updateContent}
-              spellCheck={false}
-            />
-          </label>
-          <div className="hermes-docs-modal-pane hermes-docs-preview-pane">
-            <span>Preview</span>
-            {preview.error ? (
-              <p role="alert">Unable to render Markdown: {preview.error}</p>
-            ) : (
-              <div
-                aria-label="Markdown preview"
-                className="hermes-docs-content"
-                dangerouslySetInnerHTML={{ __html: preview.html }}
-              />
-            )}
-          </div>
-        </div>
+        <label className="hermes-docs-modal-pane hermes-docs-source-pane">
+          <span>Markdown source</span>
+          <textarea
+            aria-label="Markdown source"
+            value={draft.content}
+            onChange={updateContent}
+            spellCheck={false}
+          />
+        </label>
       </section>
     </div>,
     document.body

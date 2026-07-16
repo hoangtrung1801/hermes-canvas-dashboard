@@ -15,7 +15,7 @@ The existing tldraw schema, sync persistence, canvas action protocol, browser an
 - Add a dedicated `docs_card` shape for long-form Markdown content.
 - Store one document as a title and Markdown source in one persisted tldraw shape.
 - Render the full document in a vertically scrollable canvas card.
-- Provide a side-by-side Markdown editor and rendered preview in an accessible modal.
+- Provide a focused Markdown editor in an accessible modal, with rendered Markdown shown on the canvas.
 - Autosave title and content while the user types.
 - Create Docs Cards from both the canvas insert menu and the Hermes `canvas.action` API.
 - Keep live-browser and headless action execution behavior equivalent.
@@ -74,20 +74,19 @@ Stored titles are non-empty after trimming. Markdown content may be empty and ot
 
 The canvas card contains:
 
-1. A header with a document icon, title, and an `Open editor` control.
+1. A header with a document icon, title, and an `Edit` control.
 2. A body that renders the entire Markdown document.
-3. An empty state, `Double-click to add content`, when content is empty.
+3. An empty state, `Click Edit to add content`, when content is empty.
 
 The body is vertically scrollable. Wheel and pointer interactions used inside the reading surface stop propagation to tldraw so users can read without panning or zooming the canvas. Normal selection and movement remain available from the card chrome. The card title and body are not edited inline.
 
-Double-clicking the card, or activating `Open editor`, opens an accessible modal dialog rendered through a portal. The modal contains:
+Activating `Edit` opens an accessible modal dialog rendered through a portal. The modal contains:
 
 - A title input.
-- A left Markdown source textarea.
-- A right rendered preview pane.
+- A Markdown source textarea.
 - A close button.
 
-The panes are side by side and remain usable at the supported minimum modal width. Escape and the close button close the modal. Changes autosave with a short debounce while typing; closing the modal never discards changes because committed values have already been written to the shape. Pointer events from inputs, buttons, text selection, and scrolling are marked as handled so they do not move or deselect the shape.
+The canvas display remains the rendered Markdown reading surface and is vertically scrollable. Escape and the close button close the modal. Changes autosave with a short debounce while typing; closing the modal never discards changes because committed values have already been written to the shape. Pointer events from inputs, buttons, text selection, and scrolling are marked as handled so they do not move or deselect the shape.
 
 The preview supports headings, paragraphs, emphasis, links, unordered and ordered lists, blockquotes, inline code, and fenced code blocks. Raw HTML is escaped or disabled. Links use safe URL handling and accessible external-link behavior. If parsing fails, the source remains untouched and the preview displays a compact error state.
 
@@ -164,7 +163,7 @@ Observations include the shape's `id`, type, position, dimensions, title, comple
 - `update_docs_card` must specify at least one field.
 - Create/update execution rejects missing shapes and shapes of the wrong type.
 - Failed actions return an action-level error and do not partially mutate the target shape.
-- Markdown parser failures affect only the preview; source editing and autosave remain available.
+- Markdown parser failures affect only the canvas display; source editing and autosave remain available.
 - Unsafe or unsupported links are rendered as non-navigable text or rejected by the preview renderer.
 
 Envelope validation uses existing request-level behavior. Browser and headless routes return equivalent action results and observations.
@@ -189,9 +188,9 @@ Envelope validation uses existing request-level behavior. Browser and headless r
 
 - Card renders title, full scrollable body, and empty state
 - Wheel events inside the body do not pan the canvas
-- Modal opens from double-click and button activation
+- Modal opens from `Edit` button activation, but not from double-clicking the card
 - Title/content changes autosave after debounce
-- Side-by-side source and preview panes render supported Markdown
+- Title and source fields preserve supported Markdown for the scrollable canvas display
 - Code blocks, links, and empty/error states are accessible and safe
 - Escape and close behavior leave committed edits intact
 
@@ -203,4 +202,4 @@ Envelope validation uses existing request-level behavior. Browser and headless r
 
 ## Definition of done
 
-A user can insert a Docs Card, paste a long Markdown document, read the complete document by scrolling on the canvas, edit its title and source in a side-by-side modal, close and reopen it with content preserved, and see the same document through Hermes actions and observations. Existing Note Cards and other card types retain their current behavior.
+A user can insert a Docs Card, paste a long Markdown document, read the complete document by scrolling on the canvas, click Edit to change its title and source, close and reopen it with content preserved, and see the same document through Hermes actions and observations. Existing Note Cards and other card types retain their current behavior.

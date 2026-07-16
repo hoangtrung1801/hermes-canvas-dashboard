@@ -2015,33 +2015,23 @@ body {
   box-shadow: 0 0 0 3px rgba(76, 142, 217, 0.13);
 }
 
-.hermes-docs-modal-panes {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  min-height: 0;
-  gap: 14px;
-  padding: 0 20px 20px;
-}
-
 .hermes-docs-modal-pane {
   min-height: 0;
   overflow: auto;
 }
 
+.hermes-docs-source-pane {
+  grid-template-rows: auto minmax(0, 1fr);
+  padding: 0 20px 20px;
+}
+
 .hermes-docs-source-pane textarea {
-  flex: 1 1 auto;
   min-height: 0;
+  height: 100%;
   resize: none;
   font-family: 'JetBrains Mono', monospace;
   font-size: 12px;
   line-height: 1.55;
-}
-
-.hermes-docs-preview-pane {
-  padding: 0 12px 12px;
-  border: 1px solid #edf0f5;
-  border-radius: 10px;
-  background: #fffdf8;
 }
 
 @media (max-width: 760px) {
@@ -2050,11 +2040,6 @@ body {
     height: calc(100vh - 24px);
   }
 
-  .hermes-docs-modal-panes {
-    grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: minmax(240px, 1fr) minmax(240px, 1fr);
-    overflow-y: auto;
-  }
 }
 
 @media (prefers-reduced-motion: reduce) {

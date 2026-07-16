@@ -46,7 +46,7 @@ describe('DocsCardModal', () => {
     expect(onClose).toHaveBeenCalled()
   })
 
-  it('renders Markdown preview and closes on Escape', () => {
+  it('shows only title and Markdown source fields, then closes on Escape', () => {
     const onClose = vi.fn()
 
     render(
@@ -59,7 +59,10 @@ describe('DocsCardModal', () => {
     )
 
     expect(screen.getByRole('dialog')).toHaveAttribute('aria-modal', 'true')
-    expect(screen.getByRole('heading', { name: 'New' })).toBeInTheDocument()
+    expect(screen.getByRole('textbox', { name: 'Document title' })).toHaveValue('Draft')
+    expect(screen.getByRole('textbox', { name: 'Markdown source' })).toHaveValue('# New')
+    expect(screen.getAllByRole('textbox')).toHaveLength(2)
+    expect(screen.queryByLabelText('Markdown preview')).not.toBeInTheDocument()
 
     fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Escape' })
     expect(onClose).toHaveBeenCalled()

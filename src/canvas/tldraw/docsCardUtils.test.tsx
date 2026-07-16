@@ -67,7 +67,7 @@ describe('Docs Card ShapeUtil', () => {
     })
   })
 
-  it('renders Markdown content and enters editing mode on request', () => {
+  it('renders Markdown content and enters editing mode only from Edit', () => {
     const util = new DocsCardShapeUtil({} as any)
     render(util.component(shape))
 
@@ -75,7 +75,10 @@ describe('Docs Card ShapeUtil', () => {
     expect(screen.getByRole('heading', { name: 'Heading' })).toBeInTheDocument()
     expect(screen.getByText('Body')).toBeInTheDocument()
 
-    fireEvent.click(screen.getByRole('button', { name: 'Open editor' }))
+    fireEvent.doubleClick(screen.getByText('Release notes'))
+    expect(tldrawMock.editor.setEditingShape).not.toHaveBeenCalled()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Edit' }))
     expect(tldrawMock.editor.setEditingShape).toHaveBeenCalledWith('shape:docs_1')
   })
 

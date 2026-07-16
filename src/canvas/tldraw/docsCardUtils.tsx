@@ -127,7 +127,6 @@ export class DocsCardShapeUtil extends ShapeUtil<DocsCardShape> {
       <>
         <HTMLContainer
           className="hermes-shape hermes-docs-card"
-          onDoubleClick={(event) => enterShapeEditMode(editor, shape, event)}
         >
           <header className="hermes-card-header hermes-docs-header">
             <span className="hermes-card-icon">
@@ -141,7 +140,7 @@ export class DocsCardShapeUtil extends ShapeUtil<DocsCardShape> {
               onPointerDown={(event) => markCanvasEventHandled(editor, event)}
               onPointerUp={(event) => markCanvasEventHandled(editor, event)}
             >
-              Open editor
+              Edit
             </button>
           </header>
           <div className="hermes-docs-body" onWheel={(event) => event.stopPropagation()}>
@@ -153,7 +152,7 @@ export class DocsCardShapeUtil extends ShapeUtil<DocsCardShape> {
                 dangerouslySetInnerHTML={{ __html: preview.html }}
               />
             ) : (
-              <p className="hermes-docs-empty">Double-click to add content</p>
+              <p className="hermes-docs-empty">Click Edit to add content</p>
             )}
           </div>
         </HTMLContainer>
