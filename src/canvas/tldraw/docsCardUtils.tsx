@@ -12,6 +12,7 @@ import type { MouseEvent, PointerEvent } from 'react'
 import { useState } from 'react'
 import { createPortal } from 'react-dom'
 import { DocsCardModal, type DocsCardDraft } from '../components/DocsCardModal'
+import { DocsCardReaderPanel } from '../components/DocsCardReaderPanel'
 import {
   DOCS_CARD_DEFAULT_HEIGHT,
   DOCS_CARD_DEFAULT_WIDTH,
@@ -56,6 +57,15 @@ function openDocsCardEditor(
   event: MouseEvent<HTMLElement>
 ) {
   setEditorOpen(true)
+  editor.markEventAsHandled(event)
+}
+
+function openDocsCardReader(
+  setReaderOpen: (open: boolean) => void,
+  editor: ReturnType<typeof useEditor>,
+  event: MouseEvent<HTMLElement>
+) {
+  setReaderOpen(true)
   editor.markEventAsHandled(event)
 }
 
@@ -125,6 +135,7 @@ export class DocsCardShapeUtil extends ShapeUtil<DocsCardShape> {
 function DocsCardComponent({ shape }: DocsCardComponentProps) {
   const editor = useEditor()
   const [isEditorOpen, setIsEditorOpen] = useState(false)
+  const [isReaderOpen, setIsReaderOpen] = useState(false)
   const preview = renderDocsMarkdown(shape.props.content)
 
   const commitDraft = (draft: DocsCardDraft) => {
@@ -142,7 +153,10 @@ function DocsCardComponent({ shape }: DocsCardComponentProps) {
 
   return (
     <>
-      <HTMLContainer className="hermes-shape hermes-docs-card">
+      <HTMLContainer
+        className="hermes-shape hermes-docs-card"
+        onDoubleClick={(event) => openDocsCardReader(setIsReaderOpen, editor, event)}
+      >
         <header className="hermes-card-header hermes-docs-header">
           <span className="hermes-card-icon">
             <DocumentIcon />
@@ -152,6 +166,10 @@ function DocsCardComponent({ shape }: DocsCardComponentProps) {
             type="button"
             className="hermes-docs-open-button"
             onClick={(event) => openDocsCardEditor(setIsEditorOpen, editor, event)}
+            onDoubleClick={(event) => {
+              event.stopPropagation()
+              editor.markEventAsHandled(event)
+            }}
             onPointerDown={(event) => markCanvasEventHandled(editor, event)}
             onPointerUp={(event) => markCanvasEventHandled(editor, event)}
           >
@@ -187,6 +205,13 @@ function DocsCardComponent({ shape }: DocsCardComponentProps) {
           onClose={closeEditor}
         />,
         document.body
+      )}
+      {isReaderOpen && (
+        <DocsCardReaderPanel
+          title={shape.props.title}
+          content={shape.props.content}
+          onClose={() => setIsReaderOpen(false)}
+        />
       )}
     </>
   )

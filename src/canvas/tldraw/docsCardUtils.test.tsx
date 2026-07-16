@@ -80,7 +80,10 @@ describe('Docs Card ShapeUtil', () => {
 
     fireEvent.doubleClick(screen.getByText('Release notes'))
     expect(tldrawMock.editor.setEditingShape).not.toHaveBeenCalled()
-    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    expect(screen.getByRole('dialog', { name: 'Release notes' })).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Close document reader' }))
+    expect(screen.queryByRole('dialog', { name: 'Release notes' })).not.toBeInTheDocument()
 
     fireEvent.wheel(screen.getByRole('region', { name: 'Markdown document' }))
     expect(tldrawMock.editor.markEventAsHandled).toHaveBeenCalled()

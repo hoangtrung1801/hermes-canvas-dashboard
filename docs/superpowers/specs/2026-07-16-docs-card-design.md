@@ -88,6 +88,8 @@ Activating `Edit` opens an accessible modal dialog rendered through a portal. Th
 
 The canvas display remains the rendered Markdown reading surface and is vertically scrollable. Escape and the close button close the modal. Changes autosave with a short debounce while typing; closing the modal never discards changes because committed values have already been written to the shape. Pointer events from inputs, buttons, text selection, and scrolling are marked as handled so they do not move or deselect the shape.
 
+Double-clicking the card opens a read-only Markdown reader side panel. The panel displays the card title and full rendered document in its own vertically scrollable reading region. It contains no editing fields and closes through its close button, Escape, or clicking the dimmed area outside the panel. This provides a larger reading surface when the canvas card is too small for comfortable scrolling.
+
 The preview supports headings, paragraphs, emphasis, links, unordered and ordered lists, blockquotes, inline code, and fenced code blocks. Raw HTML is escaped or disabled. Links use safe URL handling and accessible external-link behavior. If parsing fails, the source remains untouched and the preview displays a compact error state.
 
 ## Canvas actions
@@ -188,9 +190,11 @@ Envelope validation uses existing request-level behavior. Browser and headless r
 
 - Card renders title, full scrollable body, and empty state
 - Wheel events inside the body do not pan the canvas
-- Modal opens from `Edit` button activation, but not from double-clicking the card
+- Reader side panel opens from double-clicking the card without entering edit mode
+- Editor modal opens from `Edit` button activation
 - Title/content changes autosave after debounce
 - Title and source fields preserve supported Markdown for the scrollable canvas display
+- Reader side panel renders the full document and scrolls independently
 - Code blocks, links, and empty/error states are accessible and safe
 - Escape and close behavior leave committed edits intact
 
@@ -202,4 +206,4 @@ Envelope validation uses existing request-level behavior. Browser and headless r
 
 ## Definition of done
 
-A user can insert a Docs Card, paste a long Markdown document, read the complete document by scrolling on the canvas, click Edit to change its title and source, close and reopen it with content preserved, and see the same document through Hermes actions and observations. Existing Note Cards and other card types retain their current behavior.
+A user can insert a Docs Card, paste a long Markdown document, read the complete document by scrolling on the canvas or double-clicking to open the reader side panel, click Edit to change its title and source, close and reopen it with content preserved, and see the same document through Hermes actions and observations. Existing Note Cards and other card types retain their current behavior.
