@@ -106,6 +106,34 @@ describe('ProjectCardBoard', () => {
     expect(screen.queryByText('Final')).not.toBeInTheDocument()
   })
 
+  it('keeps task text pointer sequences available for inline editing', () => {
+    render(<Harness />)
+
+    const taskText = screen.getByText('Draft')
+    fireEvent.pointerDown(taskText, {
+      pointerId: 4,
+      button: 0,
+      clientX: 50,
+      clientY: 80
+    })
+    fireEvent.pointerMove(taskText, {
+      pointerId: 4,
+      clientX: 70,
+      clientY: 100
+    })
+
+    expect(screen.queryByRole('status', { name: 'Draft task' })).not.toBeInTheDocument()
+
+    fireEvent.pointerUp(taskText, {
+      pointerId: 4,
+      clientX: 70,
+      clientY: 100
+    })
+    fireEvent.doubleClick(taskText)
+
+    expect(screen.getByRole('textbox', { name: 'Task text' })).toHaveFocus()
+  })
+
   it('edits the project title with save, fallback, and cancel semantics', () => {
     render(<Harness />)
 

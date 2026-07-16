@@ -172,7 +172,7 @@ export function ProjectCardBoard({
 
   const startPointerDrag = (task: ProjectTask, event: PointerEvent<HTMLDivElement>) => {
     if (event.button !== 0) return
-    if ((event.target as HTMLElement).closest('button,input')) return
+    if ((event.target as HTMLElement).closest('button,input,[data-project-task-text]')) return
     onInteraction(event)
     pointerSession.current = {
       pointerId: event.pointerId,
@@ -332,7 +332,12 @@ export function ProjectCardBoard({
                           onPointerDown={onInteraction}
                         />
                       ) : (
-                        <span onDoubleClick={(event) => startTaskEdit(task, event)}>
+                        <span
+                          data-project-task-text
+                          onPointerDown={onInteraction}
+                          onPointerUp={onInteraction}
+                          onDoubleClick={(event) => startTaskEdit(task, event)}
+                        >
                           {task.text}
                         </span>
                       )}
