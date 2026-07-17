@@ -1,3 +1,4 @@
+import asyncio
 import json
 
 import pytest
@@ -22,6 +23,20 @@ class FakeSocket:
 
     async def close(self):
         self.closed = True
+
+
+class BlockingSocket(FakeSocket):
+    def __init__(self):
+        super().__init__([])
+        self.sent_event = asyncio.Event()
+
+    async def send(self, value):
+        await super().send(value)
+        self.sent_event.set()
+
+    async def recv(self):
+        await asyncio.Event().wait()
+        raise AssertionError("unreachable")
 
 
 @pytest.mark.asyncio
@@ -135,3 +150,27 @@ async def test_mutation_disconnect_after_send_is_not_retried():
 
     assert len(socket.sent) == 1
     assert connections == 1
+
+
+@pytest.mark.asyncio
+async def test_mutation_cancelled_after_send_is_indeterminate():
+    socket = BlockingSocket()
+
+    async def connect(_):
+        return socket
+
+    client = CanvasGatewayClient(
+        "ws://gateway/canvas",
+        connector=connect,
+        request_id_factory=lambda: "req_fixed",
+    )
+    task = asyncio.create_task(
+        client.execute("canvas_001", [{"type": "create_note_card"}])
+    )
+    await socket.sent_event.wait()
+    task.cancel()
+
+    with pytest.raises(CanvasIndeterminateWrite):
+        await task
+
+    assert socket.closed is True

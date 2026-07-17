@@ -2,7 +2,11 @@ import asyncio
 
 import pytest
 
-from agent_service.canvas_tools import CanvasToolContext, build_canvas_tools
+from agent_service.canvas_tools import (
+    CanvasActionLimitExceeded,
+    CanvasToolContext,
+    build_canvas_tools,
+)
 from agent_service.models import CanvasExecution
 
 
@@ -182,8 +186,24 @@ async def test_tool_context_rejects_actions_over_turn_limit(empty_execution):
     )
     await context.execute([{"type": "read_canvas"}], read_only=True)
 
-    with pytest.raises(ValueError, match="action limit"):
+    with pytest.raises(CanvasActionLimitExceeded, match="action limit"):
         await context.execute([{"type": "read_canvas"}], read_only=True)
+
+
+@pytest.mark.asyncio
+async def test_action_limit_is_returned_to_the_model_after_partial_success(
+    empty_execution,
+):
+    context = CanvasToolContext(
+        FakeClient(empty_execution), "canvas_001", empty_execution.observation, 1, 24000
+    )
+    tool = tools_for(context)["read_canvas"]
+
+    await tool.ainvoke({})
+    result = await tool.ainvoke({})
+
+    assert "Canvas action limit of 1 exceeded" in result
+    assert context.action_count == 1
 
 
 @pytest.mark.asyncio

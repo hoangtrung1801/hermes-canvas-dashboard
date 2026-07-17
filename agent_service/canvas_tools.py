@@ -4,7 +4,7 @@ from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
 from typing import Any, Literal, TypeVar
 
-from langchain_core.tools import BaseTool, StructuredTool
+from langchain_core.tools import BaseTool, StructuredTool, ToolException
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from agent_service.canvas_client import CanvasGatewayClient
@@ -13,6 +13,10 @@ from agent_service.models import CanvasObservation, CanvasShape
 
 TArgs = TypeVar("TArgs", bound="ToolArgs")
 ToolHandler = Callable[[TArgs], Awaitable[str]]
+
+
+class CanvasActionLimitExceeded(ToolException):
+    """The turn used its safe canvas-action budget."""
 
 TldrawColor = Literal[
     "black",
@@ -271,7 +275,10 @@ class CanvasToolContext:
             if self.cancel_event and self.cancel_event.is_set():
                 raise asyncio.CancelledError
             if self.action_count + len(actions) > self.max_actions:
-                raise ValueError(f"Canvas action limit of {self.max_actions} exceeded")
+                raise CanvasActionLimitExceeded(
+                    f"Canvas action limit of {self.max_actions} exceeded. "
+                    "Explain which earlier actions succeeded and what remains undone."
+                )
             self.action_count += len(actions)
             execution = await self.client.execute(
                 self.canvas_id, actions, read_only=read_only
@@ -658,6 +665,7 @@ def _structured_tool(
         name=name,
         description=description,
         args_schema=schema,
+        handle_tool_error=True,
     )
 
 

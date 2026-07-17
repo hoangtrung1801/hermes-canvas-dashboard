@@ -601,5 +601,11 @@ function mutateProjectTasks(
 }
 
 function nextShapeId(target: TldrawExecutorTarget, type: string): string {
-  return `shape:${type}_${String(target.shapes.size + 1).padStart(4, '0')}`
+  let sequence = target.shapes.size + 1
+  let candidate = `shape:${type}_${String(sequence).padStart(4, '0')}`
+  while (target.shapes.has(candidate)) {
+    sequence += 1
+    candidate = `shape:${type}_${String(sequence).padStart(4, '0')}`
+  }
+  return candidate
 }

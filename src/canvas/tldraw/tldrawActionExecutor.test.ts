@@ -17,6 +17,19 @@ describe('tldraw action executor', () => {
     expect(target.shapes.get('shape:box')).toMatchObject({ x: 10, y: 20, props: { w: 100, h: 80 } })
   })
 
+  it('skips occupied IDs when generating a shape ID', () => {
+    const target = createMemoryTldrawTarget('canvas_001')
+    executeTldrawAction(target, {
+      type: 'create_shape',
+      shape: { id: 'shape:geo_0002', type: 'geo' }
+    })
+
+    expect(executeTldrawAction(target, {
+      type: 'create_shape',
+      shape: { type: 'geo' }
+    })).toEqual({ actionType: 'create_shape', createdShapeIds: ['shape:geo_0003'] })
+  })
+
   it('creates, updates, and observes rotation and opacity', () => {
     const target = createMemoryTldrawTarget('canvas_001')
 

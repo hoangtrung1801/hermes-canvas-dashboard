@@ -205,13 +205,12 @@ def create_app(
             except asyncio.CancelledError:
                 terminal_status = "cancelled"
                 await _repository(application).finish_run(run.id, "cancelled")
-                if not stream_task or stream_task.cancelling() == 0:
-                    yield encode_sse(
-                        StreamEvent(
-                            event="run.cancelled",
-                            data={"run_id": run.id, "message": "Run cancelled"},
-                        )
+                yield encode_sse(
+                    StreamEvent(
+                        event="run.cancelled",
+                        data={"run_id": run.id, "message": "Run cancelled"},
                     )
+                )
             except CanvasIndeterminateWrite:
                 terminal_status = "failed"
                 error_code = "indeterminate_write"
@@ -285,10 +284,9 @@ def create_app(
                         "error_code": error_code,
                     },
                 )
-                if not stream_task or stream_task.cancelling() == 0:
-                    yield encode_sse(
-                        StreamEvent(event="stream.done", data={"run_id": run.id})
-                    )
+                yield encode_sse(
+                    StreamEvent(event="stream.done", data={"run_id": run.id})
+                )
 
         return StreamingResponse(
             generate(),

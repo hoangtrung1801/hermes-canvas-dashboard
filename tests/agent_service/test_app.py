@@ -1,6 +1,7 @@
 import asyncio
 import json
 from pathlib import Path
+from threading import Event, Thread
 
 from fastapi.testclient import TestClient
 from fastapi.middleware.cors import CORSMiddleware
@@ -23,6 +24,22 @@ class IndeterminateRuntime:
         if False:
             yield
         raise CanvasIndeterminateWrite("raw transport details")
+
+    async def get_display_messages(self, conversation_id):
+        del conversation_id
+        return []
+
+
+class BlockingRuntime:
+    def __init__(self) -> None:
+        self.started = Event()
+
+    async def stream_turn(self, **kwargs):
+        del kwargs
+        self.started.set()
+        await asyncio.Event().wait()
+        if False:
+            yield
 
     async def get_display_messages(self, conversation_id):
         del conversation_id
@@ -183,3 +200,32 @@ def test_indeterminate_write_is_not_retryable(test_dependencies) -> None:
         "retryable": False,
     }
     assert "raw transport details" not in response.text
+
+
+def test_cancelled_stream_emits_terminal_events_before_closing(test_dependencies) -> None:
+    runtime = BlockingRuntime()
+    dependencies = {**test_dependencies, "runtime": runtime}
+    app = create_app(**dependencies)
+    holder: dict[str, object] = {}
+
+    with TestClient(app) as client:
+        conversation = client.post("/api/canvases/canvas_001/conversations").json()
+
+        def stream_request() -> None:
+            holder["response"] = client.post(
+                f"/api/conversations/{conversation['id']}/messages:stream",
+                json={"message": "Create a card"},
+            )
+
+        thread = Thread(target=stream_request)
+        thread.start()
+        assert runtime.started.wait(timeout=2)
+        run_id = next(iter(app.state.run_tasks))
+
+        assert client.post(f"/api/runs/{run_id}/cancel").status_code == 202
+        thread.join(timeout=2)
+
+    assert not thread.is_alive()
+    response = holder["response"]
+    events = _sse_events(response.text)  # type: ignore[union-attr]
+    assert [event for event, _ in events][-2:] == ["run.cancelled", "stream.done"]

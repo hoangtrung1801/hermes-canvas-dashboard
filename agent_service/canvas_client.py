@@ -77,7 +77,11 @@ class CanvasGatewayClient:
                     return await self._collect_response(socket, request_id)
             except CanvasGatewayError:
                 raise
-            except asyncio.CancelledError:
+            except asyncio.CancelledError as error:
+                if sent and not read_only:
+                    raise CanvasIndeterminateWrite(
+                        "Canvas mutation was cancelled after send"
+                    ) from error
                 raise
             except Exception as error:
                 last_error = error
