@@ -3,6 +3,31 @@ import type { CanvasAction } from '../actions/canvasAction.types'
 import { createMemoryTldrawTarget, executeTldrawAction, readTldrawObservation } from './tldrawActionExecutor'
 
 describe('tldraw action executor', () => {
+  it('fills tldraw defaults for partial built-in shape props', () => {
+    const target = createMemoryTldrawTarget('canvas_001')
+
+    executeTldrawAction(target, {
+      type: 'create_shape',
+      shape: {
+        id: 'shape:box',
+        type: 'geo',
+        x: 10,
+        y: 20,
+        props: { geo: 'rectangle', w: 100, h: 80 }
+      }
+    })
+
+    expect(target.shapes.get('shape:box')?.props).toMatchObject({
+      geo: 'rectangle',
+      w: 100,
+      h: 80,
+      dash: 'draw',
+      color: 'black',
+      fill: 'none',
+      size: 'm'
+    })
+  })
+
   it('includes mounted editor viewport bounds in observations', () => {
     const target = createMemoryTldrawTarget('canvas_001')
     target.editor = {

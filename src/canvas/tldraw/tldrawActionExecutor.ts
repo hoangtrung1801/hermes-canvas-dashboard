@@ -1,3 +1,5 @@
+import { toRichText } from '@tldraw/tlschema'
+import { getIndices } from '@tldraw/utils'
 import type { Editor } from 'tldraw'
 import type { CanvasAction } from '../actions/canvasAction.types'
 import {
@@ -73,7 +75,7 @@ export function executeTldrawAction(target: TldrawExecutorTarget, action: Canvas
         type: action.shape.type,
         x: action.shape.x ?? 0,
         y: action.shape.y ?? 0,
-        props: action.shape.props ?? {},
+        props: withBuiltinDefaults(action.shape.type, action.shape.props ?? {}),
         meta: action.shape.meta ?? {},
         actionType: action.type
       })
@@ -205,6 +207,154 @@ export function executeTldrawAction(target: TldrawExecutorTarget, action: Canvas
       return { actionType: action.type, error: 'create_binding is not implemented in the first executor pass' }
     case 'delete_bindings':
       return { actionType: action.type, error: 'delete_bindings is not implemented in the first executor pass' }
+  }
+}
+
+function withBuiltinDefaults(
+  shapeType: string,
+  props: Record<string, unknown>
+): Record<string, unknown> {
+  const defaults = getBuiltinDefaultProps(shapeType)
+  return defaults ? { ...defaults, ...props } : props
+}
+
+function getBuiltinDefaultProps(shapeType: string): Record<string, unknown> | null {
+  switch (shapeType) {
+    case 'arrow':
+      return {
+        kind: 'arc',
+        elbowMidPoint: 0.5,
+        dash: 'draw',
+        size: 'm',
+        fill: 'none',
+        color: 'black',
+        labelColor: 'black',
+        bend: 0,
+        start: { x: 0, y: 0 },
+        end: { x: 2, y: 0 },
+        arrowheadStart: 'none',
+        arrowheadEnd: 'arrow',
+        richText: toRichText(''),
+        labelPosition: 0.5,
+        font: 'draw',
+        scale: 1
+      }
+    case 'bookmark':
+      return { url: '', w: 300, h: 320, assetId: null }
+    case 'draw':
+      return {
+        segments: [],
+        color: 'black',
+        fill: 'none',
+        dash: 'draw',
+        size: 'm',
+        isComplete: false,
+        isClosed: false,
+        isPen: false,
+        scale: 1,
+        scaleX: 1,
+        scaleY: 1
+      }
+    case 'embed':
+      return { w: 300, h: 300, url: '' }
+    case 'frame':
+      return { w: 320, h: 180, name: '', color: 'black' }
+    case 'geo':
+      return {
+        w: 100,
+        h: 100,
+        geo: 'rectangle',
+        dash: 'draw',
+        growY: 0,
+        url: '',
+        scale: 1,
+        color: 'black',
+        labelColor: 'black',
+        fill: 'none',
+        size: 'm',
+        font: 'draw',
+        align: 'middle',
+        verticalAlign: 'middle',
+        richText: toRichText('')
+      }
+    case 'group':
+      return {}
+    case 'highlight':
+      return {
+        segments: [],
+        color: 'black',
+        size: 'm',
+        isComplete: false,
+        isPen: false,
+        scale: 1,
+        scaleX: 1,
+        scaleY: 1
+      }
+    case 'image':
+      return {
+        w: 100,
+        h: 100,
+        assetId: null,
+        playing: true,
+        url: '',
+        crop: null,
+        flipX: false,
+        flipY: false,
+        altText: ''
+      }
+    case 'line': {
+      const [start, end] = getIndices(2)
+      return {
+        dash: 'draw',
+        size: 'm',
+        color: 'black',
+        spline: 'line',
+        points: {
+          [start]: { id: start, index: start, x: 0, y: 0 },
+          [end]: { id: end, index: end, x: 0.1, y: 0.1 }
+        },
+        scale: 1
+      }
+    }
+    case 'note':
+      return {
+        color: 'black',
+        richText: toRichText(''),
+        size: 'm',
+        font: 'draw',
+        align: 'middle',
+        verticalAlign: 'middle',
+        labelColor: 'black',
+        growY: 0,
+        fontSizeAdjustment: 1,
+        url: '',
+        scale: 1,
+        textLastEditedBy: null
+      }
+    case 'text':
+      return {
+        color: 'black',
+        size: 'm',
+        w: 8,
+        font: 'draw',
+        textAlign: 'start',
+        autoSize: true,
+        scale: 1,
+        richText: toRichText('')
+      }
+    case 'video':
+      return {
+        w: 100,
+        h: 100,
+        assetId: null,
+        autoplay: true,
+        url: '',
+        altText: '',
+        time: 0,
+        playing: true
+      }
+    default:
+      return null
   }
 }
 

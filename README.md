@@ -19,6 +19,70 @@ The gateway exposes:
 
 When the frontend is open as `role=bridge`, Hermes actions are applied live to the mounted tldraw editor. When no browser bridge is connected, the gateway applies supported actions headlessly to the same tldraw sync room, so persisted state still lands in SQLite.
 
+## AI Canvas Assistant
+
+The default canvas view includes a conversation sidebar backed by a Python LangChain agent. The agent reads the current tldraw state before each turn and can inspect or mutate built-in shapes plus Hermes Todo, Link, Note, Docs, and Project cards through typed tools. Conversation history and LangGraph checkpoints persist in SQLite.
+
+### Configure the model
+
+Copy the example environment file and set these required values for an OpenAI-compatible model that supports tool calling:
+
+```bash
+cp .env.example .env
+```
+
+- `AI_MODEL_BASE_URL`: OpenAI-compatible API base URL.
+- `AI_MODEL_API_KEY`: provider API key; local providers may accept a placeholder.
+- `AI_MODEL_NAME`: a model with reliable structured tool-calling support.
+
+The remaining `AI_*` values in `.env.example` configure service binding, CORS, persistence, timeouts, and per-turn safety limits. `VITE_AI_SERVICE_URL` is embedded by Vite at build/start time.
+
+### Start locally
+
+Install both JavaScript and Python dependencies once:
+
+```bash
+npm install
+uv sync --extra dev
+```
+
+Then start the gateway, agent service, and frontend in that order, each in a separate terminal:
+
+```bash
+npm run server
+```
+
+```bash
+uv run python -m agent_service
+```
+
+```bash
+VITE_AI_SERVICE_URL=http://127.0.0.1:8000 npm run dev
+```
+
+Open the Vite URL and use the **Canvas assistant** sidebar. The gateway remains responsible for applying validated canvas actions; when the browser bridge is absent, supported actions execute headlessly and appear after tldraw sync reconnects.
+
+Check the services independently:
+
+```bash
+curl http://127.0.0.1:8787/health
+curl http://127.0.0.1:8000/health
+```
+
+By default, tldraw sync state is stored at `data/tldraw-sync.sqlite`, while conversations, runs, and LangGraph checkpoints are stored at `data/agent-chat.sqlite`. Override these with `CANVAS_GATEWAY_DATA_DIR` and `AI_DATABASE_PATH` respectively.
+
+Stopping a response prevents later agent tools from beginning once cancellation is observed. Canvas actions that were already confirmed are durable and are not rolled back.
+
+### Verify the assistant stack
+
+```bash
+.venv/bin/ruff check agent_service tests
+.venv/bin/python -m pytest -q
+npm test
+npm run lint:types
+npm run build
+```
+
 ### Automatic card frames
 
 The live canvas automatically groups Project, Todo, Note, and Link cards into one native tldraw frame per card kind. Projects use one wide column; the other card kinds wrap into compact two-column grids. Generated frames resize as cards are created, deleted, or resized, and moving a generated frame moves its cards with it.

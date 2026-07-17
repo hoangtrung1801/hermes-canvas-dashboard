@@ -11,3 +11,9 @@ data/
 
 *.log
 *.tsbuildinfo
+
+# Python agent environment and runtime artifacts
+.venv/
+__pycache__/
+*.py[cod]
+agent-chat.sqlite*

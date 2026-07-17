@@ -1,7 +1,9 @@
 import { createCanvasGateway } from './canvas/canvasGateway'
 
 const port = Number(process.env.CANVAS_GATEWAY_PORT ?? 8787)
-const gateway = createCanvasGateway(port)
+const gateway = createCanvasGateway(port, {
+  dataDir: process.env.CANVAS_GATEWAY_DATA_DIR
+})
 
 console.log(`Canvas gateway listening on ws://localhost:${port}/canvas`)
 console.log(`tldraw sync listening on ws://localhost:${port}/sync/canvas_001`)
