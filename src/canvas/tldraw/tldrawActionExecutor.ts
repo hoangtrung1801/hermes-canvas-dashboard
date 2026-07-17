@@ -209,6 +209,7 @@ export function executeTldrawAction(target: TldrawExecutorTarget, action: Canvas
 }
 
 export function readTldrawObservation(target: TldrawExecutorTarget): CanvasObservationState {
+  const viewportPageBounds = target.editor?.getViewportPageBounds()
   const editorShapes = target.editor
     ? target.editor.getCurrentPageShapesSorted().map((shape) => ({
         id: String(shape.id),
@@ -225,6 +226,14 @@ export function readTldrawObservation(target: TldrawExecutorTarget): CanvasObser
     pageId: target.pageId,
     selectedShapeIds: target.editor ? target.editor.getSelectedShapeIds().map(String) : target.selectedShapeIds,
     camera: target.editor ? target.editor.getCamera() : target.camera,
+    viewportPageBounds: viewportPageBounds
+      ? {
+          x: viewportPageBounds.x,
+          y: viewportPageBounds.y,
+          w: viewportPageBounds.w,
+          h: viewportPageBounds.h
+        }
+      : undefined,
     shapes: editorShapes
   })
 }

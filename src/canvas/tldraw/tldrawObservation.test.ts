@@ -8,6 +8,7 @@ describe('tldraw observation', () => {
       pageId: 'page:page',
       selectedShapeIds: ['shape:link_1'],
       camera: { x: 10, y: 20, z: 1.5 },
+      viewportPageBounds: { x: 40, y: 50, w: 800, h: 600 },
       shapes: [
         {
           id: 'shape:link_1',
@@ -25,6 +26,7 @@ describe('tldraw observation', () => {
       pageId: 'page:page',
       selectedShapeIds: ['shape:link_1'],
       camera: { x: 10, y: 20, z: 1.5 },
+      viewportPageBounds: { x: 40, y: 50, w: 800, h: 600 },
       shapes: [
         {
           id: 'shape:link_1',

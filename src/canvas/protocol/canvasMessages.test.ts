@@ -29,11 +29,13 @@ describe('canvasMessages', () => {
         pageId: 'page:page',
         selectedShapeIds: [],
         camera: { x: 0, y: 0, z: 1 },
+        viewportPageBounds: { x: 10, y: 20, w: 800, h: 600 },
         shapes: []
       }
     })
 
     expect(parsed.state.shapes).toEqual([])
+    expect(parsed.state.viewportPageBounds).toEqual({ x: 10, y: 20, w: 800, h: 600 })
   })
 
   it('parses canvas.ready and canvas.error envelopes', () => {

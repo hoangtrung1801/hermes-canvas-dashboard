@@ -7,6 +7,13 @@ const cameraSchema = z.object({
   z: z.number()
 })
 
+const viewportSchema = z.object({
+  x: z.number(),
+  y: z.number(),
+  w: z.number(),
+  h: z.number()
+})
+
 const shapeSummarySchema = z.object({
   id: z.string(),
   type: z.string(),
@@ -57,6 +64,7 @@ export const canvasObservationEnvelopeSchema = z.object({
     pageId: z.string(),
     selectedShapeIds: z.array(z.string()),
     camera: cameraSchema,
+    viewportPageBounds: viewportSchema.optional(),
     shapes: z.array(shapeSummarySchema)
   })
 })

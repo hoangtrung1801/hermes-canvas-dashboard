@@ -3,6 +3,23 @@ import type { CanvasAction } from '../actions/canvasAction.types'
 import { createMemoryTldrawTarget, executeTldrawAction, readTldrawObservation } from './tldrawActionExecutor'
 
 describe('tldraw action executor', () => {
+  it('includes mounted editor viewport bounds in observations', () => {
+    const target = createMemoryTldrawTarget('canvas_001')
+    target.editor = {
+      getCurrentPageShapesSorted: () => [],
+      getSelectedShapeIds: () => [],
+      getCamera: () => ({ x: 1, y: 2, z: 1 }),
+      getViewportPageBounds: () => ({ x: 10, y: 20, w: 800, h: 600 })
+    } as never
+
+    expect(readTldrawObservation(target).viewportPageBounds).toEqual({
+      x: 10,
+      y: 20,
+      w: 800,
+      h: 600
+    })
+  })
+
   it('creates, updates, moves, deletes, and reads shapes', () => {
     const target = createMemoryTldrawTarget('canvas_001')
     const actions: CanvasAction[] = [

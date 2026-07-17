@@ -4,6 +4,13 @@ export type CanvasCamera = {
   z: number
 }
 
+export type CanvasViewport = {
+  x: number
+  y: number
+  w: number
+  h: number
+}
+
 export type CanvasShapeSummary = {
   id: string
   type: string
@@ -20,6 +27,7 @@ export type CanvasObservationState = {
   pageId: string
   selectedShapeIds: string[]
   camera: CanvasCamera
+  viewportPageBounds?: CanvasViewport
   shapes: CanvasShapeSummary[]
 }
 
@@ -37,6 +45,7 @@ export function createCanvasObservationFromRecords(input: {
   pageId: string
   selectedShapeIds?: string[]
   camera?: Partial<CanvasCamera>
+  viewportPageBounds?: CanvasViewport
   shapes: ShapeRecordLike[]
 }): CanvasObservationState {
   return {
@@ -48,6 +57,7 @@ export function createCanvasObservationFromRecords(input: {
       y: input.camera?.y ?? 0,
       z: input.camera?.z ?? 1
     },
+    ...(input.viewportPageBounds ? { viewportPageBounds: input.viewportPageBounds } : {}),
     shapes: input.shapes.map((shape) => ({
       id: shape.id,
       type: shape.type,
