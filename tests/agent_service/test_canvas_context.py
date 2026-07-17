@@ -67,6 +67,19 @@ def test_summary_truncates_long_content_before_shape_ids():
     assert all(shape.id in text for shape in state.shapes)
 
 
+def test_summary_never_slices_shape_ids_when_the_id_index_exceeds_the_budget():
+    state = observation()
+    for index in range(20):
+        shape = state.shapes[0].model_copy(deep=True)
+        shape.id = f"shape:long_identifier_{index:02d}"
+        state.shapes.append(shape)
+
+    text = summarize_canvas(state, max_chars=80)
+
+    assert "[canvas context truncated]" in text
+    assert all(shape.id in text for shape in state.shapes)
+
+
 def test_grid_positions_are_stable():
     positions = arrange_positions(
         observation(),

@@ -44,6 +44,22 @@ class FakeClient:
         return self.execution
 
 
+class ConcurrentClient(FakeClient):
+    def __init__(self, execution: CanvasExecution):
+        super().__init__(execution)
+        self.active = 0
+        self.max_active = 0
+
+    async def execute(self, canvas_id, actions, *, read_only=False):
+        self.active += 1
+        self.max_active = max(self.max_active, self.active)
+        await asyncio.sleep(0.01)
+        try:
+            return await super().execute(canvas_id, actions, read_only=read_only)
+        finally:
+            self.active -= 1
+
+
 def tools_for(context: CanvasToolContext):
     return {tool.name: tool for tool in build_canvas_tools(context)}
 
@@ -188,3 +204,43 @@ async def test_cancelled_context_never_sends_an_action(empty_execution):
         await context.execute([{"type": "zoom_to_fit"}])
 
     assert client.calls == []
+
+
+@pytest.mark.asyncio
+async def test_tool_context_serializes_parallel_gateway_calls(empty_execution):
+    client = ConcurrentClient(empty_execution)
+    context = CanvasToolContext(
+        client, "canvas_001", empty_execution.observation, 40, 24000
+    )
+
+    await asyncio.gather(
+        context.execute([{"type": "read_canvas"}], read_only=True),
+        context.execute([{"type": "read_canvas"}], read_only=True),
+    )
+
+    assert client.max_active == 1
+    assert context.action_count == 2
+
+
+@pytest.mark.asyncio
+async def test_create_tools_reject_an_observed_shape_id(empty_execution):
+    payload = empty_execution.observation.model_dump(by_alias=True)
+    payload["shapes"] = [
+        {
+            "id": "shape:existing",
+            "type": "geo",
+            "x": 0,
+            "y": 0,
+            "props": {},
+            "meta": {},
+        }
+    ]
+    observation = type(empty_execution.observation).model_validate(payload)
+    context = CanvasToolContext(
+        FakeClient(empty_execution), "canvas_001", observation, 40, 24000
+    )
+
+    with pytest.raises(ValueError, match="already exists"):
+        await tools_for(context)["create_builtin_shape"].ainvoke(
+            {"id": "shape:existing", "shape_type": "geo"}
+        )

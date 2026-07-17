@@ -19,6 +19,8 @@ const shapeSummarySchema = z.object({
   type: z.string(),
   x: z.number(),
   y: z.number(),
+  rotation: z.number().default(0),
+  opacity: z.number().min(0).max(1).default(1),
   w: z.number().optional(),
   h: z.number().optional(),
   props: z.record(z.unknown()),

@@ -147,11 +147,11 @@ function toTlShapeRecord(
     type: shape.type,
     x: shape.x,
     y: shape.y,
-    rotation: existing?.rotation ?? 0,
+    rotation: shape.rotation,
     parentId: existing?.parentId ?? pageId,
     index: existing?.index ?? nextIndexByShapeId.get(shape.id) ?? ZERO_INDEX_KEY,
     isLocked: existing?.isLocked ?? false,
-    opacity: existing?.opacity ?? 1,
+    opacity: shape.opacity,
     props: shape.props,
     meta: shape.meta
   } as unknown as TLRecord

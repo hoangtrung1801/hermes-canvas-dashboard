@@ -15,6 +15,8 @@ describe('tldraw observation', () => {
           type: 'link_card',
           x: 100,
           y: 120,
+          rotation: 0.25,
+          opacity: 0.8,
           props: { w: 300, h: 120, title: 'Docs', url: 'https://tldraw.dev' },
           meta: { source: 'hermes' }
         }
@@ -33,6 +35,8 @@ describe('tldraw observation', () => {
           type: 'link_card',
           x: 100,
           y: 120,
+          rotation: 0.25,
+          opacity: 0.8,
           w: 300,
           h: 120,
           props: { w: 300, h: 120, title: 'Docs', url: 'https://tldraw.dev' },

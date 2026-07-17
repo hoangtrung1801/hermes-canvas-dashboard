@@ -51,6 +51,8 @@ class CanvasShape(CanvasModel):
     type: str
     x: float
     y: float
+    rotation: float = 0
+    opacity: float = Field(default=1, ge=0, le=1)
     w: float | None = None
     h: float | None = None
     props: dict[str, Any] = Field(default_factory=dict)

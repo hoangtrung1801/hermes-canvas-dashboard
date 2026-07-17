@@ -10,10 +10,11 @@ from typing import Any
 from fastapi import FastAPI, HTTPException, Response, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
+from dotenv import dotenv_values
 from pydantic import BaseModel, Field, field_validator
 
 from agent_service.agent import AgentRuntime
-from agent_service.canvas_client import CanvasGatewayClient
+from agent_service.canvas_client import CanvasGatewayClient, CanvasIndeterminateWrite
 from agent_service.config import Settings, get_settings
 from agent_service.models import StreamEvent
 from agent_service.persistence import open_checkpointer
@@ -78,17 +79,7 @@ def create_app(
     application.state.cancel_events = {}
     application.state.run_tasks = {}
 
-    origins = (
-        settings.allowed_origins
-        if settings is not None
-        else [
-            value.strip()
-            for value in os.getenv(
-                "AI_ALLOWED_ORIGINS", "http://localhost:5173"
-            ).split(",")
-            if value.strip()
-        ]
-    )
+    origins = settings.allowed_origins if settings is not None else _default_origins()
     application.add_middleware(
         CORSMiddleware,
         allow_origins=origins,
@@ -168,7 +159,8 @@ def create_app(
         async def generate() -> AsyncIterator[bytes]:
             terminal_status = "completed"
             error_code: str | None = None
-            application.state.run_tasks[run.id] = asyncio.current_task()
+            stream_task = asyncio.current_task()
+            application.state.run_tasks[run.id] = stream_task
             try:
                 yield encode_sse(
                     StreamEvent(
@@ -213,10 +205,41 @@ def create_app(
             except asyncio.CancelledError:
                 terminal_status = "cancelled"
                 await _repository(application).finish_run(run.id, "cancelled")
+                if not stream_task or stream_task.cancelling() == 0:
+                    yield encode_sse(
+                        StreamEvent(
+                            event="run.cancelled",
+                            data={"run_id": run.id, "message": "Run cancelled"},
+                        )
+                    )
+            except CanvasIndeterminateWrite:
+                terminal_status = "failed"
+                error_code = "indeterminate_write"
+                await _repository(application).finish_run(
+                    run.id, "failed", error_code=error_code
+                )
+                logger.warning(
+                    "canvas_agent_indeterminate_write",
+                    extra={
+                        "run_id": run.id,
+                        "conversation_id": conversation_id,
+                        "canvas_id": conversation.canvas_id,
+                        "status": "failed",
+                        "error_code": error_code,
+                    },
+                )
                 yield encode_sse(
                     StreamEvent(
-                        event="run.cancelled",
-                        data={"run_id": run.id, "message": "Run cancelled"},
+                        event="run.failed",
+                        data={
+                            "run_id": run.id,
+                            "code": error_code,
+                            "message": (
+                                "A canvas action may have completed. "
+                                "Refresh and inspect the canvas before retrying."
+                            ),
+                            "retryable": False,
+                        },
                     )
                 )
             except Exception as error:
@@ -247,9 +270,6 @@ def create_app(
                     )
                 )
             finally:
-                yield encode_sse(
-                    StreamEvent(event="stream.done", data={"run_id": run.id})
-                )
                 application.state.run_tasks.pop(run.id, None)
                 application.state.cancel_events.pop(run.id, None)
                 if lock.locked():
@@ -265,6 +285,10 @@ def create_app(
                         "error_code": error_code,
                     },
                 )
+                if not stream_task or stream_task.cancelling() == 0:
+                    yield encode_sse(
+                        StreamEvent(event="stream.done", data={"run_id": run.id})
+                    )
 
         return StreamingResponse(
             generate(),
@@ -283,6 +307,14 @@ def create_app(
         if cancel_event is None:
             raise HTTPException(status_code=404, detail="Active run not found")
         cancel_event.set()
+        task = application.state.run_tasks.get(run_id)
+        if task is not None:
+            task.cancel()
+            if isinstance(task, asyncio.Task):
+                try:
+                    await asyncio.wait_for(asyncio.shield(task), timeout=2)
+                except (asyncio.CancelledError, asyncio.TimeoutError):
+                    pass
         return Response(status_code=status.HTTP_202_ACCEPTED)
 
     return application
@@ -290,6 +322,12 @@ def create_app(
 
 def _repository(application: FastAPI) -> ConversationRepository:
     return application.state.repository
+
+
+def _default_origins() -> list[str]:
+    dotenv_origin = dotenv_values(".env").get("AI_ALLOWED_ORIGINS")
+    raw = os.getenv("AI_ALLOWED_ORIGINS") or dotenv_origin or "http://localhost:5173"
+    return [value.strip() for value in raw.split(",") if value.strip()]
 
 
 def _runtime(application: FastAPI) -> AgentRuntime:

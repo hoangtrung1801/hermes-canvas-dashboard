@@ -44,6 +44,8 @@ export type ShapeRecord = {
   parentId?: string
   x: number
   y: number
+  rotation: number
+  opacity: number
   props: Record<string, unknown>
   meta: Record<string, unknown>
 }
@@ -75,6 +77,8 @@ export function executeTldrawAction(target: TldrawExecutorTarget, action: Canvas
         type: action.shape.type,
         x: action.shape.x ?? 0,
         y: action.shape.y ?? 0,
+        rotation: action.shape.rotation ?? 0,
+        opacity: action.shape.opacity ?? 1,
         props: withBuiltinDefaults(action.shape.type, action.shape.props ?? {}),
         meta: action.shape.meta ?? {},
         actionType: action.type
@@ -85,6 +89,8 @@ export function executeTldrawAction(target: TldrawExecutorTarget, action: Canvas
         type: TODO_BLOCK_TYPE,
         x: action.x,
         y: action.y,
+        rotation: 0,
+        opacity: 1,
         props: createTodoBlockProps(action),
         meta: { source: 'hermes' },
         actionType: action.type
@@ -95,6 +101,8 @@ export function executeTldrawAction(target: TldrawExecutorTarget, action: Canvas
         type: LINK_CARD_TYPE,
         x: action.x,
         y: action.y,
+        rotation: 0,
+        opacity: 1,
         props: createLinkCardProps(action),
         meta: { source: 'hermes' },
         actionType: action.type
@@ -105,6 +113,8 @@ export function executeTldrawAction(target: TldrawExecutorTarget, action: Canvas
         type: 'geo',
         x: action.x,
         y: action.y,
+        rotation: 0,
+        opacity: 1,
         props: createNoteCardProps(action as any) as unknown as Record<string, unknown>,
         meta: { source: 'hermes' },
         actionType: action.type
@@ -115,6 +125,8 @@ export function executeTldrawAction(target: TldrawExecutorTarget, action: Canvas
         type: DOCS_CARD_TYPE,
         x: action.x,
         y: action.y,
+        rotation: 0,
+        opacity: 1,
         props: createDocsCardProps(action),
         meta: { source: 'hermes' },
         actionType: action.type
@@ -127,6 +139,8 @@ export function executeTldrawAction(target: TldrawExecutorTarget, action: Canvas
         type: PROJECT_CARD_TYPE,
         x: action.x,
         y: action.y,
+        rotation: 0,
+        opacity: 1,
         props: createProjectCardProps(action),
         meta: { source: 'hermes' },
         actionType: action.type
@@ -145,6 +159,8 @@ export function executeTldrawAction(target: TldrawExecutorTarget, action: Canvas
         ...existing,
         x: action.patch.x ?? existing.x,
         y: action.patch.y ?? existing.y,
+        rotation: action.patch.rotation ?? existing.rotation,
+        opacity: action.patch.opacity ?? existing.opacity,
         props: { ...existing.props, ...(action.patch.props ?? {}) },
         meta: { ...existing.meta, ...(action.patch.meta ?? {}) }
       }
@@ -154,6 +170,8 @@ export function executeTldrawAction(target: TldrawExecutorTarget, action: Canvas
         type: next.type as any,
         x: next.x,
         y: next.y,
+        rotation: next.rotation,
+        opacity: next.opacity,
         props: next.props as any,
         meta: next.meta as any
       })
@@ -366,6 +384,8 @@ export function readTldrawObservation(target: TldrawExecutorTarget): CanvasObser
         type: shape.type,
         x: shape.x,
         y: shape.y,
+        rotation: shape.rotation,
+        opacity: shape.opacity,
         props: shape.props as Record<string, unknown>,
         meta: shape.meta as Record<string, unknown>
       }))
@@ -393,12 +413,17 @@ function createShape(
   input: ShapeRecord & { actionType: CanvasAction['type'] }
 ): TldrawActionResult {
   const { actionType, ...shape } = input
+  if (target.shapes.has(shape.id)) {
+    return { actionType, error: `Shape ${shape.id} already exists` }
+  }
   target.shapes.set(shape.id, shape)
   target.editor?.createShape({
     id: shape.id as any,
     type: shape.type as any,
     x: shape.x,
     y: shape.y,
+    rotation: shape.rotation,
+    opacity: shape.opacity,
     props: shape.props as any,
     meta: shape.meta as any
   })

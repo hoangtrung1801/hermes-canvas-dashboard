@@ -74,6 +74,52 @@ describe('executeHeadlessTldrawAction', () => {
     expect(snapshot.documents.some((entry) => entry.state.id === 'shape:note_1')).toBe(true)
   })
 
+  it('persists generic shape rotation and opacity across headless updates', async () => {
+    await executeHeadlessTldrawAction(manager, {
+      type: 'canvas.action',
+      requestId: 'req_create_visuals',
+      canvasId: 'canvas_001',
+      actions: [{
+        type: 'create_shape',
+        shape: {
+          id: 'shape:visual',
+          type: 'geo',
+          rotation: 0.5,
+          opacity: 0.75,
+          props: { geo: 'rectangle', w: 100, h: 80 }
+        }
+      }]
+    })
+
+    const responses = await executeHeadlessTldrawAction(manager, {
+      type: 'canvas.action',
+      requestId: 'req_update_visuals',
+      canvasId: 'canvas_001',
+      actions: [{
+        type: 'update_shape',
+        shapeId: 'shape:visual',
+        patch: { rotation: 1.25, opacity: 0.4 }
+      }, { type: 'read_canvas' }]
+    })
+
+    expect(responses[1]).toMatchObject({
+      type: 'canvas.observation',
+      state: {
+        shapes: [expect.objectContaining({
+          id: 'shape:visual',
+          rotation: 1.25,
+          opacity: 0.4
+        })]
+      }
+    })
+    const stored = manager
+      .getOrCreateRoom('canvas_001')
+      .getCurrentSnapshot()
+      .documents.find((entry) => (entry.state as { id?: string }).id === 'shape:visual')
+      ?.state
+    expect(stored).toMatchObject({ rotation: 1.25, opacity: 0.4 })
+  })
+
   it('returns canvas.error for invalid action envelopes', async () => {
     const responses = await executeHeadlessTldrawAction(manager, {
       type: 'canvas.action',

@@ -1,9 +1,32 @@
 import asyncio
 import json
+from pathlib import Path
 
 from fastapi.testclient import TestClient
+from fastapi.middleware.cors import CORSMiddleware
 
 from agent_service.app import create_app
+from agent_service.canvas_client import CanvasIndeterminateWrite
+
+
+class CancelRecordingTask:
+    def __init__(self) -> None:
+        self.cancelled = False
+
+    def cancel(self) -> None:
+        self.cancelled = True
+
+
+class IndeterminateRuntime:
+    async def stream_turn(self, **kwargs):
+        del kwargs
+        if False:
+            yield
+        raise CanvasIndeterminateWrite("raw transport details")
+
+    async def get_display_messages(self, conversation_id):
+        del conversation_id
+        return []
 
 
 def _sse_events(body: str) -> list[tuple[str, dict[str, object]]]:
@@ -91,9 +114,12 @@ def test_busy_conversation_returns_conflict_and_cancel_sets_event(
 
         cancel_event = asyncio.Event()
         app.state.cancel_events["run_active"] = cancel_event
+        task = CancelRecordingTask()
+        app.state.run_tasks["run_active"] = task
         response = client.post("/api/runs/run_active/cancel")
         assert response.status_code == 202
         assert cancel_event.is_set()
+        assert task.cancelled is True
         assert client.post("/api/runs/missing/cancel").status_code == 404
 
 
@@ -113,3 +139,47 @@ def test_unknown_ids_and_invalid_messages_are_rejected(test_dependencies) -> Non
         url = f"/api/conversations/{conversation['id']}/messages:stream"
         assert client.post(url, json={"message": "   "}).status_code == 422
         assert client.post(url, json={"message": "x" * 20_001}).status_code == 422
+
+
+def test_default_app_reads_cors_origins_from_dotenv(tmp_path: Path, monkeypatch) -> None:
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.delenv("AI_ALLOWED_ORIGINS", raising=False)
+    (tmp_path / ".env").write_text(
+        "AI_ALLOWED_ORIGINS=https://canvas.example,https://admin.example\n"
+    )
+
+    app = create_app()
+
+    cors = next(
+        middleware
+        for middleware in app.user_middleware
+        if middleware.cls is CORSMiddleware
+    )
+    assert cors.kwargs["allow_origins"] == [
+        "https://canvas.example",
+        "https://admin.example",
+    ]
+
+
+def test_indeterminate_write_is_not_retryable(test_dependencies) -> None:
+    dependencies = {**test_dependencies, "runtime": IndeterminateRuntime()}
+    app = create_app(**dependencies)
+    with TestClient(app) as client:
+        conversation = client.post("/api/canvases/canvas_001/conversations").json()
+        response = client.post(
+            f"/api/conversations/{conversation['id']}/messages:stream",
+            json={"message": "Create a card"},
+        )
+
+    events = _sse_events(response.text)
+    failed = next(data for event, data in events if event == "run.failed")
+    assert failed == {
+        "run_id": events[0][1]["run_id"],
+        "code": "indeterminate_write",
+        "message": (
+            "A canvas action may have completed. "
+            "Refresh and inspect the canvas before retrying."
+        ),
+        "retryable": False,
+    }
+    assert "raw transport details" not in response.text

@@ -98,6 +98,8 @@ function syncAdapterFromEditor(editor: Editor, adapter: TldrawExecutorTarget) {
       parentId: String(shape.parentId),
       x: shape.x,
       y: shape.y,
+      rotation: shape.rotation,
+      opacity: shape.opacity,
       props: shape.props as Record<string, unknown>,
       meta: shape.meta as Record<string, unknown>
     })

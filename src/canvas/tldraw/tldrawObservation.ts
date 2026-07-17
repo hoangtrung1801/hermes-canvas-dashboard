@@ -16,6 +16,8 @@ export type CanvasShapeSummary = {
   type: string
   x: number
   y: number
+  rotation: number
+  opacity: number
   w?: number
   h?: number
   props: Record<string, unknown>
@@ -36,6 +38,8 @@ type ShapeRecordLike = {
   type: string
   x?: number
   y?: number
+  rotation?: number
+  opacity?: number
   props?: Record<string, unknown>
   meta?: Record<string, unknown>
 }
@@ -63,6 +67,8 @@ export function createCanvasObservationFromRecords(input: {
       type: shape.type,
       x: shape.x ?? 0,
       y: shape.y ?? 0,
+      rotation: shape.rotation ?? 0,
+      opacity: shape.opacity ?? 1,
       w: numberProp(shape.props, 'w'),
       h: numberProp(shape.props, 'h'),
       props: { ...(shape.props ?? {}) },

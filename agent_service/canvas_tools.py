@@ -1,7 +1,7 @@
 import asyncio
 import json
 from collections.abc import Awaitable, Callable
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any, Literal, TypeVar
 
 from langchain_core.tools import BaseTool, StructuredTool
@@ -260,27 +260,35 @@ class CanvasToolContext:
     max_context_chars: int
     action_count: int = 0
     cancel_event: asyncio.Event | None = None
+    _execution_lock: asyncio.Lock = field(
+        default_factory=asyncio.Lock, init=False, repr=False
+    )
 
     async def execute(
         self, actions: list[dict[str, Any]], *, read_only: bool = False
     ) -> str:
-        if self.cancel_event and self.cancel_event.is_set():
-            raise asyncio.CancelledError
-        if self.action_count + len(actions) > self.max_actions:
-            raise ValueError(f"Canvas action limit of {self.max_actions} exceeded")
-        self.action_count += len(actions)
-        execution = await self.client.execute(self.canvas_id, actions, read_only=read_only)
-        self.observation = execution.observation
-        return json.dumps(
-            {
-                "results": [
-                    result.model_dump(by_alias=True, exclude_none=True)
-                    for result in execution.results
-                ],
-                "canvas": summarize_canvas(self.observation, self.max_context_chars),
-            },
-            ensure_ascii=False,
-        )
+        async with self._execution_lock:
+            if self.cancel_event and self.cancel_event.is_set():
+                raise asyncio.CancelledError
+            if self.action_count + len(actions) > self.max_actions:
+                raise ValueError(f"Canvas action limit of {self.max_actions} exceeded")
+            self.action_count += len(actions)
+            execution = await self.client.execute(
+                self.canvas_id, actions, read_only=read_only
+            )
+            self.observation = execution.observation
+            return json.dumps(
+                {
+                    "results": [
+                        result.model_dump(by_alias=True, exclude_none=True)
+                        for result in execution.results
+                    ],
+                    "canvas": summarize_canvas(
+                        self.observation, self.max_context_chars
+                    ),
+                },
+                ensure_ascii=False,
+            )
 
 
 def build_canvas_tools(context: CanvasToolContext) -> list[BaseTool]:
@@ -305,6 +313,7 @@ def build_canvas_tools(context: CanvasToolContext) -> list[BaseTool]:
         return await context.execute([{"type": "zoom_to_fit"}])
 
     async def create_builtin(args: CreateBuiltinShapeArgs) -> str:
+        _require_new_shape_id(context, args.id)
         shape = _drop_none(
             {
                 "id": args.id,
@@ -359,6 +368,7 @@ def build_canvas_tools(context: CanvasToolContext) -> list[BaseTool]:
         )
 
     async def create_todo(args: CreateTodoBlockArgs) -> str:
+        _require_new_shape_id(context, args.id)
         action = _drop_none(
             {
                 "type": "create_todo_block",
@@ -415,6 +425,7 @@ def build_canvas_tools(context: CanvasToolContext) -> list[BaseTool]:
         )
 
     async def create_link(args: CreateLinkCardArgs) -> str:
+        _require_new_shape_id(context, args.id)
         return await context.execute(
             [
                 _drop_none(
@@ -436,6 +447,7 @@ def build_canvas_tools(context: CanvasToolContext) -> list[BaseTool]:
         )
 
     async def create_note(args: CreateNoteCardArgs) -> str:
+        _require_new_shape_id(context, args.id)
         return await context.execute(
             [
                 _drop_none(
@@ -455,6 +467,7 @@ def build_canvas_tools(context: CanvasToolContext) -> list[BaseTool]:
         )
 
     async def create_docs(args: CreateDocsCardArgs) -> str:
+        _require_new_shape_id(context, args.id)
         return await context.execute(
             [
                 _drop_none(
@@ -488,6 +501,7 @@ def build_canvas_tools(context: CanvasToolContext) -> list[BaseTool]:
         )
 
     async def create_project(args: CreateProjectCardArgs) -> str:
+        _require_new_shape_id(context, args.id)
         return await context.execute(
             [
                 _drop_none(
@@ -650,6 +664,11 @@ def _structured_tool(
 def _require_shapes(context: CanvasToolContext, shape_ids: list[str]) -> None:
     for shape_id in shape_ids:
         _require_shape(context, shape_id)
+
+
+def _require_new_shape_id(context: CanvasToolContext, shape_id: str | None) -> None:
+    if shape_id and any(shape.id == shape_id for shape in context.observation.shapes):
+        raise ValueError(f"Shape {shape_id} already exists")
 
 
 def _require_shape(

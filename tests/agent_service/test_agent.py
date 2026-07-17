@@ -172,10 +172,14 @@ async def test_stream_turn_prereads_canvas_and_emits_sanitized_events(
     assert "CURRENT CANVAS" in factory_args["system_prompt"]
     assert "canvas: canvas_001" in factory_args["system_prompt"]
     assert "untrusted" in factory_args["system_prompt"].lower()
+    assert "destructive" in factory_args["system_prompt"].lower()
+    assert "partial failures" in factory_args["system_prompt"].lower()
+    assert "smallest action set" in factory_args["system_prompt"].lower()
     assert [type(item).__name__ for item in factory_args["middleware"]] == [
         "SummarizationMiddleware",
         "ToolCallLimitMiddleware",
     ]
+    assert factory_args["middleware"][1].exit_behavior == "continue"
     assert factory_args["checkpointer"] is runtime.checkpointer
     assert len(factory_args["tools"]) == 24
     assert agent.calls[0][1] == {
@@ -222,6 +226,11 @@ async def test_get_display_messages_filters_internal_tool_messages(
     checkpointer = FakeCheckpointer(
         [
             HumanMessage(id="human_1", content="Make a note"),
+            HumanMessage(
+                id="summary_1",
+                content="Here is a summary of internal tool and canvas state",
+                additional_kwargs={"lc_source": "summarization"},
+            ),
             AIMessage(
                 id="tool_request",
                 content="",

@@ -3,6 +3,46 @@ import type { CanvasAction } from '../actions/canvasAction.types'
 import { createMemoryTldrawTarget, executeTldrawAction, readTldrawObservation } from './tldrawActionExecutor'
 
 describe('tldraw action executor', () => {
+  it('rejects duplicate shape IDs without overwriting the existing shape', () => {
+    const target = createMemoryTldrawTarget('canvas_001')
+    executeTldrawAction(target, {
+      type: 'create_shape',
+      shape: { id: 'shape:box', type: 'geo', x: 10, y: 20, props: { w: 100, h: 80 } }
+    })
+
+    expect(executeTldrawAction(target, {
+      type: 'create_shape',
+      shape: { id: 'shape:box', type: 'geo', x: 500, y: 600, props: { w: 10, h: 10 } }
+    })).toEqual({ actionType: 'create_shape', error: 'Shape shape:box already exists' })
+    expect(target.shapes.get('shape:box')).toMatchObject({ x: 10, y: 20, props: { w: 100, h: 80 } })
+  })
+
+  it('creates, updates, and observes rotation and opacity', () => {
+    const target = createMemoryTldrawTarget('canvas_001')
+
+    executeTldrawAction(target, {
+      type: 'create_shape',
+      shape: {
+        id: 'shape:box',
+        type: 'geo',
+        rotation: 0.5,
+        opacity: 0.75,
+        props: { w: 100, h: 80 }
+      }
+    })
+    executeTldrawAction(target, {
+      type: 'update_shape',
+      shapeId: 'shape:box',
+      patch: { rotation: 1.25, opacity: 0.4 }
+    })
+
+    expect(readTldrawObservation(target).shapes[0]).toMatchObject({
+      id: 'shape:box',
+      rotation: 1.25,
+      opacity: 0.4
+    })
+  })
+
   it('fills tldraw defaults for partial built-in shape props', () => {
     const target = createMemoryTldrawTarget('canvas_001')
 

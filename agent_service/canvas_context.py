@@ -54,8 +54,7 @@ def summarize_canvas(observation: CanvasObservation, max_chars: int) -> str:
         return minimal_summary
 
     ids_only = "shape_ids: " + ", ".join(shape.id for shape in ordered_shapes)
-    result = "\n".join([header, ids_only, marker])
-    return result if len(result) <= max_chars else result[:max_chars]
+    return "\n".join([header, ids_only, marker])
 
 
 def arrange_positions(
