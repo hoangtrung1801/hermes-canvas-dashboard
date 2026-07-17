@@ -1,4 +1,5 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { readFileSync } from 'node:fs'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import { useChatStore } from './chatStore'
 import { ChatSidebar } from './ChatSidebar'
@@ -74,4 +75,49 @@ it('shows the empty state and keeps conversation controls labeled', async () => 
   expect(await screen.findByText('Ask me to create, update, or arrange your canvas.')).toBeVisible()
   expect(screen.getByRole('combobox', { name: 'Conversation' })).toBeInTheDocument()
   expect(screen.getByRole('button', { name: 'New conversation' })).toBeInTheDocument()
+})
+
+it('floats the expanded assistant over the desktop canvas', () => {
+  const styles = readFileSync('src/chat/chat.css', 'utf8')
+  const sidebarRule = styles.match(/^\.chat-sidebar \{(?<body>[\s\S]*?)\n\}/m)
+
+  expect(sidebarRule?.groups?.body).toMatch(/position:\s*absolute;/)
+  expect(sidebarRule?.groups?.body).toMatch(/top:\s*14px;/)
+  expect(sidebarRule?.groups?.body).toMatch(/right:\s*14px;/)
+  expect(sidebarRule?.groups?.body).toMatch(/bottom:\s*14px;/)
+  expect(sidebarRule?.groups?.body).toMatch(/width:\s*clamp\(300px, 28vw, 360px\);/)
+  expect(sidebarRule?.groups?.body).toMatch(/border-radius:\s*24px;/)
+})
+
+it('keeps the canvas full size beneath the assistant overlay', () => {
+  const styles = readFileSync('src/chat/chat.css', 'utf8')
+  const workspaceRule = styles.match(/^\.chat-workspace \{(?<body>[\s\S]*?)\n\}/m)
+  const canvasRule = styles.match(
+    /^\.chat-workspace > \.fullscreen-canvas-container \{(?<body>[\s\S]*?)\n\}/m
+  )
+
+  expect(workspaceRule?.groups?.body).toMatch(/position:\s*relative;/)
+  expect(canvasRule?.groups?.body).toMatch(/width:\s*100%;/)
+  expect(canvasRule?.groups?.body).not.toMatch(/margin-right|padding-right/)
+})
+
+it('uses a compact floating desktop control when chat is collapsed', () => {
+  const styles = readFileSync('src/chat/chat.css', 'utf8')
+  const expandRules = [...styles.matchAll(/^\.chat-expand \{(?<body>[\s\S]*?)\n\}/gm)]
+  const expandRule = expandRules.at(-1)
+
+  expect(expandRule?.groups?.body).toMatch(/position:\s*absolute;/)
+  expect(expandRule?.groups?.body).toMatch(/top:\s*14px;/)
+  expect(expandRule?.groups?.body).toMatch(/right:\s*14px;/)
+  expect(expandRule?.groups?.body).toMatch(/border-radius:\s*16px;/)
+})
+
+it('keeps the collapsed control bottom anchored on mobile', () => {
+  const styles = readFileSync('src/chat/chat.css', 'utf8')
+  const mobileExpandRule = styles.match(
+    /@media \(max-width: 760px\) \{[\s\S]*?  \.chat-expand \{(?<body>[\s\S]*?)\n  \}/
+  )
+
+  expect(mobileExpandRule?.groups?.body).toMatch(/top:\s*auto;/)
+  expect(mobileExpandRule?.groups?.body).toMatch(/bottom:\s*max\(74px,/)
 })
