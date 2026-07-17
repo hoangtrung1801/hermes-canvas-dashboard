@@ -59,6 +59,7 @@ class AgentRuntime:
             api_key=settings.ai_model_api_key,
             base_url=settings.ai_model_base_url,
             temperature=settings.ai_model_temperature,
+            reasoning_effort=settings.ai_model_reasoning_effort,
             timeout=settings.ai_model_timeout_seconds,
             streaming=True,
         )

@@ -13,6 +13,7 @@ export class BridgeWebSocketClient {
       return
     }
 
+    this.disconnect()
     this.socket = new WebSocket(url)
     this.socket.addEventListener('open', handlers.onOpen)
     this.socket.addEventListener('close', handlers.onClose)
@@ -20,6 +21,12 @@ export class BridgeWebSocketClient {
     this.socket.addEventListener('message', (event) =>
       handlers.onMessage(String(event.data))
     )
+  }
+
+  disconnect() {
+    const socket = this.socket
+    this.socket = null
+    socket?.close()
   }
 
   send(payload: unknown) {

@@ -136,6 +136,8 @@ export function CanvasSurface() {
         }
       }
     })
+
+    return () => socket.disconnect()
   }, [bridge, target, editor, setObservation, setStatus, addLog])
 
   return (

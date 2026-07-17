@@ -1,5 +1,6 @@
 from functools import lru_cache
 from pathlib import Path
+from typing import Literal
 
 from pydantic import Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -11,7 +12,10 @@ class Settings(BaseSettings):
     ai_model_base_url: str = Field(min_length=1)
     ai_model_api_key: SecretStr = Field(min_length=1)
     ai_model_name: str = Field(min_length=1)
-    ai_model_temperature: float = Field(default=0.1, ge=0, le=2)
+    ai_model_temperature: float = Field(default=1, ge=0, le=2)
+    ai_model_reasoning_effort: Literal[
+        "none", "minimal", "low", "medium", "high", "xhigh"
+    ] | None = None
     ai_model_timeout_seconds: float = Field(default=60, gt=0)
     ai_service_host: str = "127.0.0.1"
     ai_service_port: int = Field(default=8000, ge=1, le=65535)

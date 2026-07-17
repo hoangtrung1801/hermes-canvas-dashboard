@@ -7,6 +7,7 @@ import { useBridgeStore } from '../state/bridgeStore'
 
 const socketSpies = vi.hoisted(() => ({
   connect: vi.fn(),
+  disconnect: vi.fn(),
   send: vi.fn()
 }))
 
@@ -185,6 +186,7 @@ const tldrawMock = vi.hoisted(() => {
 vi.mock('../bridge/websocketClient', () => ({
   BridgeWebSocketClient: class {
     connect = socketSpies.connect
+    disconnect = socketSpies.disconnect
     send = socketSpies.send
   }
 }))
@@ -228,6 +230,7 @@ describe('CanvasSurface', () => {
   beforeEach(() => {
     gatewayMock.url = null
     socketSpies.connect.mockClear()
+    socketSpies.disconnect.mockClear()
     socketSpies.send.mockClear()
     syncMock.calls = []
     tldrawMock.shapes.splice(0)
@@ -277,6 +280,16 @@ describe('CanvasSurface', () => {
 
     await screen.findByText('Bridge ready')
     expect(socketSpies.connect).not.toHaveBeenCalled()
+  })
+
+  it('disconnects the Hermes websocket when the canvas effect unmounts', async () => {
+    gatewayMock.url = 'ws://localhost:8787/canvas?canvasId=canvas_001&role=bridge'
+    const { unmount } = render(<App />)
+    await waitFor(() => expect(socketSpies.connect).toHaveBeenCalled())
+
+    unmount()
+
+    expect(socketSpies.disconnect).toHaveBeenCalled()
   })
 
   it('enables the built-in tldraw grid on mount', async () => {

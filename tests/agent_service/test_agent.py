@@ -7,6 +7,7 @@ import pytest
 from langchain_core.language_models.fake_chat_models import FakeListChatModel
 from langchain_core.messages import AIMessage, AIMessageChunk, HumanMessage, ToolMessage
 
+import agent_service.agent as agent_module
 from agent_service.agent import AgentRuntime
 from agent_service.config import Settings
 from agent_service.models import CanvasExecution
@@ -49,6 +50,29 @@ class FakeCheckpointer:
         return SimpleNamespace(
             checkpoint={"channel_values": {"messages": self.messages}}
         )
+
+
+def test_runtime_passes_configured_reasoning_effort_to_chat_model(
+    settings: Settings,
+    empty_execution: CanvasExecution,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    captured: dict[str, Any] = {}
+
+    def fake_chat_openai(**kwargs: Any) -> FakeListChatModel:
+        captured.update(kwargs)
+        return FakeListChatModel(responses=["unused"])
+
+    monkeypatch.setattr(agent_module, "ChatOpenAI", fake_chat_openai)
+    settings.ai_model_reasoning_effort = "none"
+
+    AgentRuntime(
+        settings=settings,
+        checkpointer=FakeCheckpointer(),
+        canvas_client=RecordingCanvasClient(empty_execution),
+    )
+
+    assert captured["reasoning_effort"] == "none"
 
 
 @pytest.fixture
