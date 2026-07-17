@@ -50,6 +50,27 @@ it('restores or creates an active canvas conversation', async () => {
   expect(useChatStore.getState().status).toBe('idle')
 })
 
+it('deduplicates concurrent initialization for the same canvas', async () => {
+  const releases: Array<(conversations: Conversation[]) => void> = []
+  const api = apiWith({
+    listConversations: vi.fn().mockImplementation(
+      () =>
+        new Promise<Conversation[]>((resolve) => {
+          releases.push(resolve)
+        })
+    )
+  })
+
+  const first = useChatStore.getState().initialize('canvas_001', api)
+  const second = useChatStore.getState().initialize('canvas_001', api)
+  await Promise.resolve()
+  releases.forEach((release) => release([]))
+  await Promise.all([first, second])
+
+  expect(api.listConversations).toHaveBeenCalledTimes(1)
+  expect(api.createConversation).toHaveBeenCalledTimes(1)
+})
+
 it('accumulates assistant text and public tool progress, then refreshes messages', async () => {
   const completedMessages = [
     { id: 'user:run:1', role: 'user' as const, content: 'Create a note' },

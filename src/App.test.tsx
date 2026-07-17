@@ -6,6 +6,10 @@ vi.mock('./canvas/components/CanvasSurface', () => ({
   CanvasSurface: () => <div data-testid="canvas-surface-stub" />
 }))
 
+vi.mock('./chat/ChatSidebar', () => ({
+  ChatSidebar: () => <aside data-testid="chat-sidebar-stub" />
+}))
+
 describe('App', () => {
   afterEach(() => {
     window.history.replaceState({}, '', '/')
@@ -15,6 +19,7 @@ describe('App', () => {
     render(<App />)
 
     expect(screen.getByTestId('canvas-surface-stub')).toBeInTheDocument()
+    expect(screen.getByTestId('chat-sidebar-stub')).toBeInTheDocument()
     expect(screen.queryByText('Canvas for Hermes')).not.toBeInTheDocument()
     expect(screen.queryByText('Bridge disconnected')).not.toBeInTheDocument()
     expect(screen.queryByText('Action Simulator')).not.toBeInTheDocument()
@@ -32,6 +37,7 @@ describe('App', () => {
     expect(screen.getByText('Bridge disconnected')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /action simulator/i })).toBeInTheDocument()
     expect(screen.getByText('Canvas Inspector')).toBeInTheDocument()
+    expect(screen.queryByTestId('chat-sidebar-stub')).not.toBeInTheDocument()
   })
 
   it('does not show removed task card simulator or inspector options', () => {

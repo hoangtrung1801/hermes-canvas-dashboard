@@ -44,6 +44,13 @@ export const useChatStore = create<ChatStore>((set, get) => ({
   api: chatApi,
 
   initialize: async (canvasId, api = chatApi) => {
+    const current = get()
+    if (
+      current.canvasId === canvasId &&
+      (current.status === 'loading' || current.activeConversationId !== null)
+    ) {
+      return
+    }
     get().abortController?.abort()
     set({
       canvasId,

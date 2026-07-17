@@ -4,6 +4,7 @@ import { CanvasTidyButton } from './canvas/components/CanvasTidyButton'
 import { Simulator } from './canvas/components/Simulator'
 import { Inspector } from './canvas/components/Inspector'
 import { useBridgeStore } from './canvas/state/bridgeStore'
+import { ChatSidebar } from './chat/ChatSidebar'
 
 const statusCopy = {
   disconnected: 'Bridge disconnected',
@@ -34,7 +35,7 @@ export default function App() {
 
   if (!isActionDebugMode) {
     return (
-      <main className="fullscreen-canvas-page">
+      <main className="fullscreen-canvas-page chat-workspace">
         <section className="fullscreen-canvas-container" aria-label="Fullscreen canvas surface">
           <div className="canvas-floating-toolbar" role="toolbar" aria-label="Canvas custom tools">
             <CanvasTidyButton />
@@ -42,6 +43,7 @@ export default function App() {
           </div>
           <CanvasSurface />
         </section>
+        <ChatSidebar canvasId="canvas_001" />
       </main>
     )
   }
