@@ -1,4 +1,4 @@
-import { toRichText } from '@tldraw/tlschema'
+import { b64Vecs, toRichText } from '@tldraw/tlschema'
 import { getIndices } from '@tldraw/utils'
 import type { Editor } from 'tldraw'
 import type { CanvasAction } from '../actions/canvasAction.types'
@@ -233,7 +233,50 @@ function withBuiltinDefaults(
   props: Record<string, unknown>
 ): Record<string, unknown> {
   const defaults = getBuiltinDefaultProps(shapeType)
-  return defaults ? { ...defaults, ...props } : props
+  const merged = defaults ? { ...defaults, ...props } : props
+  if (shapeType !== 'draw' && shapeType !== 'highlight') return merged
+  if (!Array.isArray(merged.segments)) return merged
+  return {
+    ...merged,
+    segments: merged.segments.map(normalizeStrokeSegment)
+  }
+}
+
+function normalizeStrokeSegment(value: unknown): unknown {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return value
+  const segment = value as Record<string, unknown>
+  const type = segment.type ?? 'free'
+  const { points, ...withoutLegacyPoints } = segment
+  if (typeof segment.path === 'string') {
+    return { ...withoutLegacyPoints, type }
+  }
+  if (!Array.isArray(points)) {
+    return { ...segment, type }
+  }
+
+  const normalizedPoints = points.map((point) => {
+    if (!point || typeof point !== 'object' || Array.isArray(point)) {
+      throw new Error('Draw segment points must contain finite x and y coordinates')
+    }
+    const record = point as Record<string, unknown>
+    if (
+      typeof record.x !== 'number' ||
+      !Number.isFinite(record.x) ||
+      typeof record.y !== 'number' ||
+      !Number.isFinite(record.y) ||
+      (record.z !== undefined &&
+        (typeof record.z !== 'number' || !Number.isFinite(record.z)))
+    ) {
+      throw new Error('Draw segment points must contain finite x and y coordinates')
+    }
+    return { x: record.x, y: record.y, z: record.z ?? 0.5 }
+  })
+
+  return {
+    ...withoutLegacyPoints,
+    type,
+    path: b64Vecs.encodePoints(normalizedPoints)
+  }
 }
 
 function getBuiltinDefaultProps(shapeType: string): Record<string, unknown> | null {

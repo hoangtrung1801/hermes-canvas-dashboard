@@ -1,8 +1,41 @@
+import { b64Vecs } from '@tldraw/tlschema'
 import { describe, expect, it } from 'vitest'
 import type { CanvasAction } from '../actions/canvasAction.types'
 import { createMemoryTldrawTarget, executeTldrawAction, readTldrawObservation } from './tldrawActionExecutor'
 
 describe('tldraw action executor', () => {
+  it('normalizes draw segments for the current tldraw schema', () => {
+    const target = createMemoryTldrawTarget('canvas_001')
+    const encodedPath = b64Vecs.encodePoints([
+      { x: 0, y: 0, z: 0.5 },
+      { x: 10, y: 15, z: 0.5 }
+    ])
+
+    executeTldrawAction(target, {
+      type: 'create_shape',
+      shape: {
+        id: 'shape:draw',
+        type: 'draw',
+        props: {
+          segments: [
+            { path: encodedPath },
+            { points: [{ x: 10, y: 15 }, { x: 25, y: 30, z: 0.8 }] }
+          ]
+        }
+      }
+    })
+
+    const segments = target.shapes.get('shape:draw')?.props.segments
+    expect(segments).toEqual([
+      { type: 'free', path: encodedPath },
+      { type: 'free', path: expect.any(String) }
+    ])
+    expect(b64Vecs.decodePoints((segments as Array<{ path: string }>)[1].path)).toEqual([
+      { x: 10, y: 15, z: 0.5 },
+      { x: 25, y: 30, z: expect.closeTo(0.8, 2) }
+    ])
+  })
+
   it('rejects duplicate shape IDs without overwriting the existing shape', () => {
     const target = createMemoryTldrawTarget('canvas_001')
     executeTldrawAction(target, {
