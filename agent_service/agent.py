@@ -4,10 +4,21 @@ from typing import Any, Protocol
 from uuid import uuid4
 
 from langchain.agents import create_agent
-from langchain.agents.middleware import SummarizationMiddleware, ToolCallLimitMiddleware
+from langchain.agents.middleware import (
+    AgentMiddleware,
+    SummarizationMiddleware,
+    ToolCallLimitMiddleware,
+)
 from langchain_core.language_models.chat_models import BaseChatModel
-from langchain_core.messages import AIMessage, AIMessageChunk, HumanMessage
+from langchain_core.messages import (
+    AIMessage,
+    AIMessageChunk,
+    HumanMessage,
+    RemoveMessage,
+    ToolMessage,
+)
 from langchain_openai import ChatOpenAI
+from langgraph.graph.message import REMOVE_ALL_MESSAGES
 
 from agent_service.canvas_client import CanvasGatewayClient
 from agent_service.canvas_context import summarize_canvas
@@ -38,6 +49,57 @@ class AgentLike(Protocol):
 
 
 AgentFactory = Callable[..., AgentLike]
+
+
+class RepairOrphanedToolCallsMiddleware(AgentMiddleware):
+    """Make interrupted, checkpointed tool calls valid for the next model request."""
+
+    def before_agent(
+        self, state: dict[str, Any], runtime: Any
+    ) -> dict[str, list[Any]] | None:
+        del runtime
+        messages = state.get("messages", [])
+        repaired: list[Any] = []
+        changed = False
+        index = 0
+
+        while index < len(messages):
+            message = messages[index]
+            repaired.append(message)
+            index += 1
+            if not isinstance(message, AIMessage) or not message.tool_calls:
+                continue
+
+            completed_call_ids: set[str] = set()
+            while index < len(messages) and isinstance(messages[index], ToolMessage):
+                tool_result = messages[index]
+                repaired.append(tool_result)
+                completed_call_ids.add(tool_result.tool_call_id)
+                index += 1
+
+            for tool_call in message.tool_calls:
+                call_id = str(tool_call.get("id", ""))
+                if not call_id or call_id in completed_call_ids:
+                    continue
+                repaired.append(
+                    ToolMessage(
+                        content=(
+                            "Tool execution was interrupted before a result was recorded. "
+                            "Treat its outcome as unknown and inspect the current canvas "
+                            "state before retrying."
+                        ),
+                        tool_call_id=call_id,
+                        name=str(tool_call.get("name", "tool")),
+                        status="error",
+                    )
+                )
+                changed = True
+
+        if not changed:
+            return None
+        return {
+            "messages": [RemoveMessage(id=REMOVE_ALL_MESSAGES), *repaired]
+        }
 
 
 class AgentRuntime:
@@ -105,6 +167,7 @@ class AgentRuntime:
             tools=build_canvas_tools(context),
             system_prompt=system_prompt,
             middleware=[
+                RepairOrphanedToolCallsMiddleware(),
                 SummarizationMiddleware(
                     model=self.model,
                     trigger=("messages", 40),
@@ -196,7 +259,9 @@ def _tool_events(
     updates: dict[str, Any], tool_names: dict[str, str]
 ) -> list[StreamEvent]:
     events: list[StreamEvent] = []
-    for node_update in updates.values():
+    for node_name, node_update in updates.items():
+        if node_name not in {"model", "tools"}:
+            continue
         if not isinstance(node_update, dict):
             continue
         messages = node_update.get("messages", [])

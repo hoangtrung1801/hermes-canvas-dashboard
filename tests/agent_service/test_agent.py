@@ -6,6 +6,7 @@ from typing import Any
 import pytest
 from langchain_core.language_models.fake_chat_models import FakeListChatModel
 from langchain_core.messages import AIMessage, AIMessageChunk, HumanMessage, ToolMessage
+from langgraph.graph.message import add_messages
 
 import agent_service.agent as agent_module
 from agent_service.agent import AgentRuntime
@@ -200,10 +201,11 @@ async def test_stream_turn_prereads_canvas_and_emits_sanitized_events(
     assert "partial failures" in factory_args["system_prompt"].lower()
     assert "smallest action set" in factory_args["system_prompt"].lower()
     assert [type(item).__name__ for item in factory_args["middleware"]] == [
+        "RepairOrphanedToolCallsMiddleware",
         "SummarizationMiddleware",
         "ToolCallLimitMiddleware",
     ]
-    assert factory_args["middleware"][1].exit_behavior == "continue"
+    assert factory_args["middleware"][2].exit_behavior == "continue"
     assert factory_args["checkpointer"] is runtime.checkpointer
     assert len(factory_args["tools"]) == 24
     assert agent.calls[0][1] == {
@@ -292,3 +294,117 @@ async def test_get_display_messages_filters_internal_tool_messages(
             "content": "The note is ready.",
         },
     ]
+
+
+def test_repair_middleware_inserts_error_result_for_only_missing_tool_call() -> None:
+    messages = [
+        HumanMessage(id="human_1", content="Create two notes"),
+        AIMessage(
+            id="tool_request",
+            content="",
+            tool_calls=[
+                {
+                    "name": "create_note_card",
+                    "args": {"title": "One"},
+                    "id": "call_completed",
+                    "type": "tool_call",
+                },
+                {
+                    "name": "create_note_card",
+                    "args": {"title": "Two"},
+                    "id": "call_interrupted",
+                    "type": "tool_call",
+                },
+            ],
+        ),
+        ToolMessage(
+            id="completed_result",
+            content="created",
+            tool_call_id="call_completed",
+            name="create_note_card",
+        ),
+        HumanMessage(id="human_2", content="Are you there?"),
+    ]
+    middleware_class = getattr(
+        agent_module, "RepairOrphanedToolCallsMiddleware"
+    )
+
+    update = middleware_class().before_agent({"messages": messages}, None)
+
+    assert update is not None
+    repaired = add_messages(messages, update["messages"])
+    assert [type(message).__name__ for message in repaired] == [
+        "HumanMessage",
+        "AIMessage",
+        "ToolMessage",
+        "ToolMessage",
+        "HumanMessage",
+    ]
+    assert repaired[2] is messages[2]
+    interrupted_result = repaired[3]
+    assert isinstance(interrupted_result, ToolMessage)
+    assert interrupted_result.tool_call_id == "call_interrupted"
+    assert interrupted_result.name == "create_note_card"
+    assert interrupted_result.status == "error"
+    assert "interrupted" in interrupted_result.text.lower()
+
+
+def test_repair_middleware_does_not_rewrite_complete_tool_history() -> None:
+    messages = [
+        AIMessage(
+            id="tool_request",
+            content="",
+            tool_calls=[
+                {
+                    "name": "read_canvas",
+                    "args": {},
+                    "id": "call_completed",
+                    "type": "tool_call",
+                }
+            ],
+        ),
+        ToolMessage(
+            id="tool_result",
+            content="read",
+            tool_call_id="call_completed",
+            name="read_canvas",
+        ),
+    ]
+    middleware_class = getattr(
+        agent_module, "RepairOrphanedToolCallsMiddleware"
+    )
+
+    update = middleware_class().before_agent({"messages": messages}, None)
+
+    assert update is None
+
+
+def test_tool_events_ignore_replayed_history_from_repair_middleware() -> None:
+    historical_call = AIMessage(
+        content="",
+        tool_calls=[
+            {
+                "name": "create_note_card",
+                "args": {},
+                "id": "old_call",
+                "type": "tool_call",
+            }
+        ],
+    )
+    historical_result = ToolMessage(
+        content="interrupted",
+        tool_call_id="old_call",
+        name="create_note_card",
+        status="error",
+    )
+
+    events = agent_module._tool_events(
+        {
+            "RepairOrphanedToolCallsMiddleware.before_agent": {
+                "messages": [historical_call, historical_result]
+            }
+        },
+        {},
+    )
+
+    assert events == []
