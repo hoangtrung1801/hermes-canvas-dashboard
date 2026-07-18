@@ -35,6 +35,7 @@ Create a focused test double for the tldraw hooks and primitives, then exercise 
 
 ```tsx
 import { fireEvent, render, screen } from '@testing-library/react'
+import type { ReactNode } from 'react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { CanvasContextMenu } from './CanvasContextMenu'
 
@@ -46,11 +47,11 @@ const tldrawMock = vi.hoisted(() => ({
 }))
 
 vi.mock('tldraw', () => ({
-  DefaultContextMenu: ({ children }: { children?: React.ReactNode }) => (
+  DefaultContextMenu: ({ children }: { children?: ReactNode }) => (
     <div data-testid="default-context-menu">{children}</div>
   ),
   DefaultContextMenuContent: () => <div data-testid="default-context-menu-content" />,
-  TldrawUiMenuGroup: ({ children }: { children: React.ReactNode }) => (
+  TldrawUiMenuGroup: ({ children }: { children: ReactNode }) => (
     <div data-testid="menu-group">{children}</div>
   ),
   TldrawUiMenuItem: ({ label, onSelect }: { label?: string; onSelect: () => void }) => (
