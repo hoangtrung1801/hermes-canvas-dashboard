@@ -520,7 +520,7 @@
   z-index: 20;
   top: auto;
   bottom: 14px;
-  left: 14px;
+  left: calc(50% - 70px);
   right: auto;
   width: 52px;
   height: 52px;

@@ -107,7 +107,7 @@ it('uses a compact floating desktop control when chat is collapsed', () => {
   const expandRule = expandRules.at(-1)
 
   expect(expandRule?.groups?.body).toMatch(/position:\s*absolute;/)
-  expect(expandRule?.groups?.body).toMatch(/left:\s*14px;/)
+  expect(expandRule?.groups?.body).toMatch(/left:\s*calc\(50% - 70px\);/)
   expect(expandRule?.groups?.body).toMatch(/bottom:\s*14px;/)
   expect(expandRule?.groups?.body).toMatch(/border-radius:\s*50%;/)
 })
