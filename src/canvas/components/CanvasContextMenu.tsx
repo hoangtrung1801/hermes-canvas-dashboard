@@ -29,7 +29,8 @@ export function CanvasContextMenu(props: TLUiContextMenuProps) {
 
   const copySelectedShapeId = async () => {
     const shape = editor.getOnlySelectedShape()
-    const clipboard = editor.getContainerWindow().navigator.clipboard
+    const containerWindow = editor.getContainer().ownerDocument.defaultView
+    const clipboard = containerWindow?.navigator.clipboard
 
     if (!shape || !clipboard?.writeText) {
       showCopyError()

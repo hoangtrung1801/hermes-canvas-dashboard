@@ -18,15 +18,17 @@ vi.mock('tldraw', () => ({
   TldrawUiMenuGroup: ({ children }: { children: ReactNode }) => (
     <div data-testid="menu-group">{children}</div>
   ),
-  TldrawUiMenuItem: ({ label, onSelect }: { label?: string; onSelect: () => void }) => (
+  TldrawUiMenuItem: ({ label, onSelect }: { label?: string; onSelect: (source: string) => void }) => (
     <button onClick={() => onSelect('context-menu' as never)}>{label}</button>
   ),
   useEditor: () => ({
     getOnlySelectedShape: () => tldrawMock.selectedShape,
     getSelectedShapeIds: () =>
       Array.from({ length: tldrawMock.selectedShapeCount }, (_, index) => `shape:${index}`),
-    getContainerWindow: () => ({
-      navigator: { clipboard: { writeText: tldrawMock.writeText } }
+    getContainer: () => ({
+      ownerDocument: {
+        defaultView: { navigator: { clipboard: { writeText: tldrawMock.writeText } } }
+      }
     })
   }),
   useValue: (_name: string, getValue: () => boolean) => getValue(),

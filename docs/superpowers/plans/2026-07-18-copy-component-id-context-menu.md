@@ -54,13 +54,17 @@ vi.mock('tldraw', () => ({
   TldrawUiMenuGroup: ({ children }: { children: ReactNode }) => (
     <div data-testid="menu-group">{children}</div>
   ),
-  TldrawUiMenuItem: ({ label, onSelect }: { label?: string; onSelect: () => void }) => (
+  TldrawUiMenuItem: ({ label, onSelect }: { label?: string; onSelect: (source: string) => void }) => (
     <button onClick={() => onSelect('context-menu' as never)}>{label}</button>
   ),
   useEditor: () => ({
     getOnlySelectedShape: () => tldrawMock.selectedShape,
     getSelectedShapeIds: () => Array.from({ length: tldrawMock.selectedShapeCount }, (_, index) => `shape:${index}`),
-    getContainerWindow: () => ({ navigator: { clipboard: { writeText: tldrawMock.writeText } } })
+    getContainer: () => ({
+      ownerDocument: {
+        defaultView: { navigator: { clipboard: { writeText: tldrawMock.writeText } } }
+      }
+    })
   }),
   useValue: (_name: string, getValue: () => boolean) => getValue(),
   useToasts: () => ({ addToast: tldrawMock.addToast })
@@ -172,7 +176,8 @@ export function CanvasContextMenu(props: TLUiContextMenuProps) {
 
   const copySelectedShapeId = async () => {
     const shape = editor.getOnlySelectedShape()
-    const writeText = editor.getContainerWindow().navigator.clipboard?.writeText
+    const containerWindow = editor.getContainer().ownerDocument.defaultView
+    const writeText = containerWindow?.navigator.clipboard?.writeText
 
     if (!shape || !writeText) {
       addToast({
@@ -185,7 +190,7 @@ export function CanvasContextMenu(props: TLUiContextMenuProps) {
     }
 
     try {
-      await writeText.call(editor.getContainerWindow().navigator.clipboard, shape.id)
+      await writeText.call(containerWindow?.navigator.clipboard, shape.id)
       addToast({
         title: 'Component ID copied',
         description: shape.id,
