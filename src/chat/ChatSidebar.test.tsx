@@ -82,7 +82,7 @@ it('floats the expanded assistant over the desktop canvas', () => {
   const sidebarRule = styles.match(/^\.chat-sidebar \{(?<body>[\s\S]*?)\n\}/m)
 
   expect(sidebarRule?.groups?.body).toMatch(/position:\s*absolute;/)
-  expect(sidebarRule?.groups?.body).toMatch(/top:\s*14px;/)
+  expect(sidebarRule?.groups?.body).toMatch(/top:\s*3rem;/)
   expect(sidebarRule?.groups?.body).toMatch(/left:\s*14px;/)
   expect(sidebarRule?.groups?.body).toMatch(/bottom:\s*14px;/)
   expect(sidebarRule?.groups?.body).toMatch(/width:\s*clamp\(300px, 28vw, 360px\);/)
@@ -107,8 +107,8 @@ it('uses a compact floating desktop control when chat is collapsed', () => {
   const expandRule = expandRules.at(-1)
 
   expect(expandRule?.groups?.body).toMatch(/position:\s*absolute;/)
-  expect(expandRule?.groups?.body).toMatch(/left:\s*calc\(50% - 70px\);/)
-  expect(expandRule?.groups?.body).toMatch(/bottom:\s*14px;/)
+  expect(expandRule?.groups?.body).toMatch(/left:\s*0;/)
+  expect(expandRule?.groups?.body).toMatch(/bottom:\s*3rem;/)
   expect(expandRule?.groups?.body).toMatch(/border-radius:\s*50%;/)
 })
 
@@ -121,4 +121,29 @@ it('keeps the collapsed control bottom anchored on mobile', () => {
   expect(mobileExpandRule?.groups?.body).toMatch(/left:\s*12px;/)
   expect(mobileExpandRule?.groups?.body).toMatch(/right:\s*auto;/)
   expect(mobileExpandRule?.groups?.body).toMatch(/bottom:\s*max\(74px,/)
+})
+
+it('uses a bright white chat palette', () => {
+  const styles = readFileSync('src/chat/chat.css', 'utf8')
+  const themeRule = styles.match(
+    /^\.chat-sidebar,\n\.chat-expand \{(?<body>[\s\S]*?)\n\}/m
+  )
+
+  expect(themeRule?.groups?.body).toMatch(/--chat-surface:\s*#f8fafc;/)
+  expect(themeRule?.groups?.body).toMatch(/--chat-surface-raised:\s*#ffffff;/)
+  expect(themeRule?.groups?.body).toMatch(/--chat-border:\s*rgba\(15, 23, 42, 0\.14\);/)
+  expect(themeRule?.groups?.body).toMatch(/--chat-copy:\s*#0f172a;/)
+  expect(themeRule?.groups?.body).toMatch(/--chat-muted:\s*#475569;/)
+})
+
+it('uses a vivid gradient for the floating chatbot button', () => {
+  const styles = readFileSync('src/chat/chat.css', 'utf8')
+  const expandRules = [...styles.matchAll(/^\.chat-expand \{(?<body>[\s\S]*?)\n\}/gm)]
+  const expandRule = expandRules.at(-1)
+
+  expect(expandRule?.groups?.body).toMatch(
+    /background:\s*linear-gradient\(135deg, #ffffff, #e0f2fe\);/
+  )
+  expect(expandRule?.groups?.body).toMatch(/color:\s*#0369a1;/)
+  expect(expandRule?.groups?.body).toMatch(/border-color:\s*rgba\(14, 165, 233, 0\.38\);/)
 })
