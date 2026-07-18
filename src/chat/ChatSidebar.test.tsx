@@ -83,7 +83,7 @@ it('floats the expanded assistant over the desktop canvas', () => {
 
   expect(sidebarRule?.groups?.body).toMatch(/position:\s*absolute;/)
   expect(sidebarRule?.groups?.body).toMatch(/top:\s*14px;/)
-  expect(sidebarRule?.groups?.body).toMatch(/right:\s*14px;/)
+  expect(sidebarRule?.groups?.body).toMatch(/left:\s*14px;/)
   expect(sidebarRule?.groups?.body).toMatch(/bottom:\s*14px;/)
   expect(sidebarRule?.groups?.body).toMatch(/width:\s*clamp\(300px, 28vw, 360px\);/)
   expect(sidebarRule?.groups?.body).toMatch(/border-radius:\s*24px;/)
@@ -107,9 +107,9 @@ it('uses a compact floating desktop control when chat is collapsed', () => {
   const expandRule = expandRules.at(-1)
 
   expect(expandRule?.groups?.body).toMatch(/position:\s*absolute;/)
-  expect(expandRule?.groups?.body).toMatch(/top:\s*14px;/)
-  expect(expandRule?.groups?.body).toMatch(/right:\s*14px;/)
-  expect(expandRule?.groups?.body).toMatch(/border-radius:\s*16px;/)
+  expect(expandRule?.groups?.body).toMatch(/left:\s*14px;/)
+  expect(expandRule?.groups?.body).toMatch(/bottom:\s*14px;/)
+  expect(expandRule?.groups?.body).toMatch(/border-radius:\s*50%;/)
 })
 
 it('keeps the collapsed control bottom anchored on mobile', () => {
@@ -118,6 +118,7 @@ it('keeps the collapsed control bottom anchored on mobile', () => {
     /@media \(max-width: 760px\) \{[\s\S]*?  \.chat-expand \{(?<body>[\s\S]*?)\n  \}/
   )
 
-  expect(mobileExpandRule?.groups?.body).toMatch(/top:\s*auto;/)
+  expect(mobileExpandRule?.groups?.body).toMatch(/left:\s*12px;/)
+  expect(mobileExpandRule?.groups?.body).toMatch(/right:\s*auto;/)
   expect(mobileExpandRule?.groups?.body).toMatch(/bottom:\s*max\(74px,/)
 })
