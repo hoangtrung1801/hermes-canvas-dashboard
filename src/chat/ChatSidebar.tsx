@@ -1,40 +1,44 @@
-import { type FormEvent, type KeyboardEvent, useEffect, useState } from 'react'
-import { ConversationMenu } from './ConversationMenu'
-import { MessageList } from './MessageList'
-import { useChatStore } from './chatStore'
-import './chat.css'
+import { type FormEvent, type KeyboardEvent, useEffect, useState } from "react";
+import { ConversationMenu } from "./ConversationMenu";
+import { MessageList } from "./MessageList";
+import { useChatStore } from "./chatStore";
+import "./chat.css";
 
 export function ChatSidebar({ canvasId }: { canvasId: string }) {
-  const [collapsed, setCollapsed] = useState(false)
-  const [draft, setDraft] = useState('')
-  const initialize = useChatStore((state) => state.initialize)
-  const messages = useChatStore((state) => state.messages)
-  const toolActivities = useChatStore((state) => state.toolActivities)
-  const status = useChatStore((state) => state.status)
-  const statusMessage = useChatStore((state) => state.statusMessage)
-  const error = useChatStore((state) => state.error)
-  const sendMessage = useChatStore((state) => state.sendMessage)
-  const stop = useChatStore((state) => state.stop)
-  const clearError = useChatStore((state) => state.clearError)
+  const [collapsed, setCollapsed] = useState(true);
+  const [draft, setDraft] = useState("");
+  const initialize = useChatStore((state) => state.initialize);
+  const messages = useChatStore((state) => state.messages);
+  const toolActivities = useChatStore((state) => state.toolActivities);
+  const status = useChatStore((state) => state.status);
+  const statusMessage = useChatStore((state) => state.statusMessage);
+  const error = useChatStore((state) => state.error);
+  const sendMessage = useChatStore((state) => state.sendMessage);
+  const stop = useChatStore((state) => state.stop);
+  const clearError = useChatStore((state) => state.clearError);
 
   useEffect(() => {
-    void initialize(canvasId)
-  }, [canvasId, initialize])
+    void initialize(canvasId);
+  }, [canvasId, initialize]);
 
   const submit = (event: FormEvent) => {
-    event.preventDefault()
-    const message = draft.trim()
-    if (!message || status === 'streaming') return
-    setDraft('')
-    void sendMessage(message)
-  }
+    event.preventDefault();
+    const message = draft.trim();
+    if (!message || status === "streaming") return;
+    setDraft("");
+    void sendMessage(message);
+  };
 
   const handleComposerKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
-    if (event.key === 'Enter' && !event.shiftKey && !event.nativeEvent.isComposing) {
-      event.preventDefault()
-      event.currentTarget.form?.requestSubmit()
+    if (
+      event.key === "Enter" &&
+      !event.shiftKey &&
+      !event.nativeEvent.isComposing
+    ) {
+      event.preventDefault();
+      event.currentTarget.form?.requestSubmit();
     }
-  }
+  };
 
   if (collapsed) {
     return (
@@ -47,11 +51,11 @@ export function ChatSidebar({ canvasId }: { canvasId: string }) {
         <AssistantIcon />
         <span>AI</span>
       </button>
-    )
+    );
   }
 
-  const isLoading = status === 'loading'
-  const isStreaming = status === 'streaming'
+  const isLoading = status === "loading";
+  const isStreaming = status === "streaming";
 
   return (
     <aside className="chat-sidebar" aria-label="Canvas assistant">
@@ -79,7 +83,11 @@ export function ChatSidebar({ canvasId }: { canvasId: string }) {
       </header>
 
       <ConversationMenu disabled={isStreaming || isLoading} />
-      <MessageList messages={messages} tools={toolActivities} loading={isLoading} />
+      <MessageList
+        messages={messages}
+        tools={toolActivities}
+        loading={isLoading}
+      />
 
       {error && (
         <div className="chat-error" role="alert">
@@ -131,10 +139,12 @@ export function ChatSidebar({ canvasId }: { canvasId: string }) {
             </button>
           )}
         </div>
-        <p className="chat-composer-hint">Enter to send · Shift + Enter for a new line</p>
+        <p className="chat-composer-hint">
+          Enter to send · Shift + Enter for a new line
+        </p>
       </form>
     </aside>
-  )
+  );
 }
 
 function AssistantIcon() {
@@ -142,5 +152,5 @@ function AssistantIcon() {
     <svg viewBox="0 0 24 24" aria-hidden="true">
       <path d="M12 3 14 9l6 2-6 2-2 6-2-6-6-2 6-2 2-6Z" />
     </svg>
-  )
+  );
 }
