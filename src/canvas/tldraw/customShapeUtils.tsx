@@ -20,7 +20,6 @@ import {
   DEFAULT_TODO_BLOCK_COLOR,
   HERMES_CARD_MIN_HEIGHT,
   HERMES_CARD_MIN_WIDTH,
-  fitHermesCardDimensions,
   type LinkCardProps,
   type TodoBlockProps,
   linkCardMigrations,
@@ -80,7 +79,7 @@ function CloseIcon() {
 abstract class BaseHermesCardUtil<Shape extends HermesCardShape> extends ShapeUtil<Shape> {
   override canEdit = () => true
   override canResize = () => true
-  override isAspectRatioLocked = () => true
+  override isAspectRatioLocked = () => false
 
   getGeometry(shape: Shape) {
     const props = shape.props as Record<string, unknown>
@@ -101,12 +100,6 @@ abstract class BaseHermesCardUtil<Shape extends HermesCardShape> extends ShapeUt
       minHeight: HERMES_CARD_MIN_HEIGHT
     })
 
-    if (patch.props) {
-      patch.props = {
-        ...patch.props,
-        ...fitHermesCardDimensions(patch.props.w, patch.props.h)
-      }
-    }
     return patch
   }
 }
@@ -221,6 +214,13 @@ export class TodoBlockShapeUtil extends BaseHermesCardUtil<TodoBlockShape> {
       })
     }
 
+    const deleteTask = (taskId: string, event: MouseEvent<HTMLButtonElement>) => {
+      editor.markEventAsHandled(event)
+      updateShapeProps(editor, shape, {
+        tasks: shape.props.tasks.filter((task) => task.id !== taskId)
+      })
+    }
+
     if (!isEditing) {
       const completedTasks = shape.props.tasks.filter((task) => task.done).length
 
@@ -284,10 +284,11 @@ export class TodoBlockShapeUtil extends BaseHermesCardUtil<TodoBlockShape> {
         </div>
         <div className="hermes-task-list">
           {shape.props.tasks.map((task) => (
-            <label key={task.id} className={`hermes-task-row${task.done ? ' is-done' : ''}`}>
+            <div key={task.id} className={`hermes-task-row${task.done ? ' is-done' : ''}`}>
               <input
                 type="checkbox"
                 checked={task.done}
+                aria-label={task.text}
                 onChange={(event) => updateTaskDone(task.id, event)}
                 {...handlers}
               />
@@ -298,7 +299,17 @@ export class TodoBlockShapeUtil extends BaseHermesCardUtil<TodoBlockShape> {
                 onChange={(event) => updateTaskText(task.id, event)}
                 {...handlers}
               />
-            </label>
+              <button
+                type="button"
+                aria-label={`Delete task: ${task.text}`}
+                title={`Delete task: ${task.text}`}
+                className="hermes-task-delete"
+                onClick={(event) => deleteTask(task.id, event)}
+                {...handlers}
+              >
+                <CloseIcon />
+              </button>
+            </div>
           ))}
         </div>
         <button

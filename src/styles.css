@@ -1393,6 +1393,40 @@ body {
   width: auto;
 }
 
+.hermes-task-delete {
+  display: grid;
+  flex: 0 0 auto;
+  width: 24px;
+  height: 24px;
+  margin: -1px 0 0 auto;
+  place-items: center;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: #718070;
+  cursor: pointer;
+}
+
+.hermes-task-delete svg {
+  width: 15px;
+  height: 15px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.8;
+}
+
+.hermes-task-delete:hover {
+  background: rgba(239, 68, 68, 0.1);
+  color: #b91c1c;
+}
+
+.hermes-task-delete:focus-visible {
+  outline: 2px solid #6c5ce7;
+  outline-offset: 1px;
+}
+
 .hermes-add-task-button {
   display: inline-grid;
   place-items: center;

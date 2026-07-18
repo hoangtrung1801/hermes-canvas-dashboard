@@ -30,14 +30,14 @@
 .chat-sidebar {
   position: absolute;
   z-index: 20;
-  top: 14px;
+  top: 3rem;
   left: 14px;
   bottom: 14px;
   right: auto;
   display: flex;
   width: clamp(300px, 28vw, 360px);
   min-width: 0;
-  height: auto;
+  height: 90%;
   flex-direction: column;
   overflow: hidden;
   border: 1px solid var(--chat-border);
@@ -72,9 +72,13 @@
   flex: 0 0 auto;
   place-items: center;
   border: 1px solid rgba(56, 189, 248, 0.26);
-  background: linear-gradient(145deg, rgba(56, 189, 248, 0.2), rgba(167, 139, 250, 0.1));
+  background: linear-gradient(
+    145deg,
+    rgba(56, 189, 248, 0.2),
+    rgba(167, 139, 250, 0.1)
+  );
   color: #7dd3fc;
-  box-shadow: inset 0 1px rgba(255, 255, 255, 0.08);
+  box-shadow: inset 0 1px rgba(255, 255, 255, 0.9);
 }
 
 .chat-title-icon {
@@ -448,7 +452,7 @@
   gap: 6px;
   padding: 12px 14px max(14px, env(safe-area-inset-bottom));
   border-top: 1px solid var(--chat-border);
-  background: rgba(3, 10, 22, 0.94);
+  background: rgba(241, 245, 249, 0.96);
 }
 
 .chat-composer > label {
@@ -525,8 +529,8 @@
   position: absolute;
   z-index: 20;
   top: auto;
-  bottom: 14px;
-  left: calc(50% - 70px);
+  bottom: 3rem;
+  left: 0;
   right: auto;
   width: 52px;
   height: 52px;

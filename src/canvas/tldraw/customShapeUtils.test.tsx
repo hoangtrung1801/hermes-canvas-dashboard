@@ -28,7 +28,7 @@ const tldrawMock = vi.hoisted(() => ({
     getColorMode: vi.fn(() => 'light')
   },
   editingShapeId: null as string | null,
-  resizeBox: vi.fn((shape: any) => ({ ...shape, props: { ...shape.props, w: 480, h: 260 } }))
+  resizeBox: vi.fn((shape: any) => ({ ...shape, props: { ...shape.props, w: 480, h: 400 } }))
 }))
 
 vi.mock('tldraw', () => {
@@ -262,6 +262,36 @@ describe('custom tldraw ShapeUtils', () => {
           { id: 'task_0001', text: 'Write copy', done: false },
           { id: 'task_0002', text: 'New task', done: false }
         ]
+      }
+    })
+  })
+
+  it('deletes a task from the todo edit controls', () => {
+    tldrawMock.editingShapeId = 'shape:todo_1'
+    const util = new TodoBlockShapeUtil({} as any)
+    render(
+      util.component({
+        id: 'shape:todo_1',
+        type: 'todo_block',
+        props: {
+          w: 320,
+          h: 220,
+          title: 'Launch',
+          tasks: [
+            { id: 'task_copy', text: 'Write copy', done: false },
+            { id: 'task_ship', text: 'Ship', done: true }
+          ]
+        }
+      } as any)
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: 'Delete task: Write copy' }))
+
+    expect(tldrawMock.editor.updateShape).toHaveBeenCalledWith({
+      id: 'shape:todo_1',
+      type: 'todo_block',
+      props: {
+        tasks: [{ id: 'task_ship', text: 'Ship', done: true }]
       }
     })
   })
@@ -524,7 +554,7 @@ describe('custom tldraw ShapeUtils', () => {
     } as any
 
     expect(util.onResize(shape, { scaleX: 2, scaleY: 2 } as any)).toMatchObject({
-      props: { w: 480, h: 270 }
+      props: { w: 480, h: 400 }
     })
     expect(tldrawMock.resizeBox).toHaveBeenCalledWith(shape, { scaleX: 2, scaleY: 2 }, {
       minWidth: 320,
@@ -532,8 +562,8 @@ describe('custom tldraw ShapeUtils', () => {
     })
   })
 
-  it('locks custom cards to their 16:9 aspect ratio', () => {
-    expect(new TodoBlockShapeUtil({} as any).isAspectRatioLocked()).toBe(true)
-    expect(new LinkCardShapeUtil({} as any).isAspectRatioLocked()).toBe(true)
+  it('allows custom cards to resize independently', () => {
+    expect(new TodoBlockShapeUtil({} as any).isAspectRatioLocked()).toBe(false)
+    expect(new LinkCardShapeUtil({} as any).isAspectRatioLocked()).toBe(false)
   })
 })
