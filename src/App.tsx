@@ -5,6 +5,7 @@ import { Simulator } from './canvas/components/Simulator'
 import { Inspector } from './canvas/components/Inspector'
 import { useBridgeStore } from './canvas/state/bridgeStore'
 import { ChatSidebar } from './chat/ChatSidebar'
+import { isChatEnabled } from './chat/chatFeature'
 
 const statusCopy = {
   disconnected: 'Bridge disconnected',
@@ -43,7 +44,7 @@ export default function App() {
           </div>
           <CanvasSurface />
         </section>
-        <ChatSidebar canvasId="canvas_001" />
+        {isChatEnabled() && <ChatSidebar canvasId="canvas_001" />}
       </main>
     )
   }

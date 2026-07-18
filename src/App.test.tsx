@@ -13,6 +13,7 @@ vi.mock('./chat/ChatSidebar', () => ({
 describe('App', () => {
   afterEach(() => {
     window.history.replaceState({}, '', '/')
+    vi.unstubAllEnvs()
   })
 
   it('enters a canvas-only page by default', () => {
@@ -60,5 +61,14 @@ describe('App', () => {
     expect(screen.queryByText('Bridge disconnected')).not.toBeInTheDocument()
     expect(screen.queryByText('Action Simulator')).not.toBeInTheDocument()
     expect(screen.queryByText('Canvas Inspector')).not.toBeInTheDocument()
+  })
+
+  it('hides the chatbot when VITE_CHAT_ENABLED is false', () => {
+    vi.stubEnv('VITE_CHAT_ENABLED', 'false')
+
+    render(<App />)
+
+    expect(screen.getByTestId('canvas-surface-stub')).toBeInTheDocument()
+    expect(screen.queryByTestId('chat-sidebar-stub')).not.toBeInTheDocument()
   })
 })
