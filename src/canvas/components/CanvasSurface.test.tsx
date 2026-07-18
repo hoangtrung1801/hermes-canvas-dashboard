@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs'
 import { useEffect } from 'react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import App from '../../App'
+import { CanvasContextMenu } from './CanvasContextMenu'
 import { useBridgeStore } from '../state/bridgeStore'
 
 const socketSpies = vi.hoisted(() => ({
@@ -273,6 +274,13 @@ describe('CanvasSurface', () => {
     expect(tldrawMock.frameShapeUtil.configure).toHaveBeenCalledWith({ showColors: true })
     expect(tldrawMock.props.shapeUtils).toContain(tldrawMock.coloredFrameShapeUtil)
     expect((syncMock.calls[0] as any).shapeUtils).toContain(tldrawMock.coloredFrameShapeUtil)
+  })
+
+  it('uses the Hermes context menu wrapper', async () => {
+    render(<App />)
+
+    await waitFor(() => expect(tldrawMock.props).toBeTruthy())
+    expect(tldrawMock.props.components.ContextMenu).toBe(CanvasContextMenu)
   })
 
   it('does not connect to the Hermes websocket gateway unless a gateway url is configured', async () => {

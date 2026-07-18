@@ -22,11 +22,13 @@ import { createMemoryTldrawTarget, readTldrawObservation } from '../tldraw/tldra
 import { hermesShapeUtils } from '../tldraw/customShapeUtils'
 import { HERMES_PASTEL_THEME_ID, hermesPastelTheme } from '../tldraw/pastelTheme'
 import { useBridgeStore } from '../state/bridgeStore'
+import { CanvasContextMenu } from './CanvasContextMenu'
 import { useCanvasAutoFrames } from './useCanvasAutoFrames'
 
 const socket = new BridgeWebSocketClient()
 const CANVAS_ID = 'canvas_001'
 const ColoredFrameShapeUtil = FrameShapeUtil.configure({ showColors: true })
+const tldrawComponents = { ContextMenu: CanvasContextMenu }
 
 export function CanvasSurface() {
   const bridge = useBridgeStore((state) => state.bridge)
@@ -144,6 +146,7 @@ export function CanvasSurface() {
     <Tldraw
       store={store}
       shapeUtils={[...hermesShapeUtils, ColoredFrameShapeUtil]}
+      components={tldrawComponents}
       onMount={(mountedEditor: Editor) => {
         mountedEditor.updateTheme(hermesPastelTheme)
         mountedEditor.setCurrentTheme(HERMES_PASTEL_THEME_ID)
