@@ -21,6 +21,7 @@ import {
 import { createMemoryTldrawTarget, readTldrawObservation } from '../tldraw/tldrawActionExecutor'
 import { hermesShapeUtils } from '../tldraw/customShapeUtils'
 import { HERMES_PASTEL_THEME_ID, hermesPastelTheme } from '../tldraw/pastelTheme'
+import { canvasUiOverrides } from '../tldraw/uiOverrides'
 import { useBridgeStore } from '../state/bridgeStore'
 import { CanvasContextMenu } from './CanvasContextMenu'
 import { useCanvasAutoFrames } from './useCanvasAutoFrames'
@@ -147,6 +148,7 @@ export function CanvasSurface() {
       store={store}
       shapeUtils={[...hermesShapeUtils, ColoredFrameShapeUtil]}
       components={tldrawComponents}
+      overrides={canvasUiOverrides}
       onMount={(mountedEditor: Editor) => {
         mountedEditor.updateTheme(hermesPastelTheme)
         mountedEditor.setCurrentTheme(HERMES_PASTEL_THEME_ID)
