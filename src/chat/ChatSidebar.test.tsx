@@ -46,8 +46,17 @@ afterEach(() => {
   useChatStore.getState().abortController?.abort()
 })
 
+/**
+ * The assistant renders collapsed by default (ChatSidebar.tsx:8), so tests that
+ * assert on the panel's contents must open it first.
+ */
+function expandAssistant() {
+  fireEvent.click(screen.getByRole('button', { name: 'Expand assistant' }))
+}
+
 it('submits a message and exposes stop while streaming', async () => {
   render(<ChatSidebar canvasId="canvas_001" />)
+  expandAssistant()
   const messageBox = await screen.findByRole('textbox', { name: 'Message' })
   await waitFor(() => expect(messageBox).toBeEnabled())
 
@@ -60,6 +69,7 @@ it('submits a message and exposes stop while streaming', async () => {
 
 it('collapses to a labeled control and expands again', async () => {
   render(<ChatSidebar canvasId="canvas_001" />)
+  expandAssistant()
   await screen.findByRole('textbox', { name: 'Message' })
 
   fireEvent.click(screen.getByRole('button', { name: 'Collapse assistant' }))
@@ -71,6 +81,7 @@ it('collapses to a labeled control and expands again', async () => {
 
 it('shows the empty state and keeps conversation controls labeled', async () => {
   render(<ChatSidebar canvasId="canvas_001" />)
+  expandAssistant()
 
   expect(await screen.findByText('Ask me to create, update, or arrange your canvas.')).toBeVisible()
   expect(screen.getByRole('combobox', { name: 'Conversation' })).toBeInTheDocument()
