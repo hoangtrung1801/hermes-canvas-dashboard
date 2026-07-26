@@ -24,12 +24,16 @@ import { HERMES_PASTEL_THEME_ID, hermesPastelTheme } from '../tldraw/pastelTheme
 import { canvasUiOverrides } from '../tldraw/uiOverrides'
 import { useBridgeStore } from '../state/bridgeStore'
 import { CanvasContextMenu } from './CanvasContextMenu'
+import { CanvasStylePanel } from './CanvasStylePanel'
 import { useCanvasAutoFrames } from './useCanvasAutoFrames'
 
 const socket = new BridgeWebSocketClient()
 const CANVAS_ID = 'canvas_001'
 const ColoredFrameShapeUtil = FrameShapeUtil.configure({ showColors: true })
-const tldrawComponents = { ContextMenu: CanvasContextMenu }
+const tldrawComponents = {
+  ContextMenu: CanvasContextMenu,
+  StylePanel: CanvasStylePanel
+}
 
 export function CanvasSurface() {
   const bridge = useBridgeStore((state) => state.bridge)
