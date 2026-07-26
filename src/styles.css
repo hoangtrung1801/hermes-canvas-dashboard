@@ -1101,24 +1101,42 @@ body {
 }
 
 .hermes-shape {
+  position: relative;
   box-sizing: border-box;
   width: 100%;
   height: 100%;
   overflow: hidden;
-  border: 1px solid color-mix(in srgb, currentColor 13%, transparent);
-  border-radius: 14px;
-  background: #ffffff;
-  color: #25252d;
-  font: 14px/1.45 var(--hermes-canvas-font);
-  padding: 14px 16px;
+  border: 1px solid var(--hc-line);
+  border-radius: var(--hc-radius);
+  background: var(--hc-tint);
+  color: var(--hc-ink);
+  font: var(--hc-body) / 1.45 var(--hermes-canvas-font);
+  padding: var(--hc-pad);
   pointer-events: all;
   overflow-wrap: anywhere;
-  box-shadow: 0 2px 8px rgba(42, 39, 65, 0.08), 0 12px 28px rgba(42, 39, 65, 0.05);
+  box-shadow: var(--hc-shadow);
+  transition: box-shadow 0.16s ease, border-color 0.16s ease;
+}
+
+/* Accent rail — the one mark that tells the five card kinds apart. */
+.hermes-shape::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: var(--hc-accent);
+  border-radius: var(--hc-radius) var(--hc-radius) 0 0;
+}
+
+.hermes-shape:hover {
+  border-color: color-mix(in srgb, var(--hc-accent) 34%, var(--hc-line));
 }
 
 .hermes-shape:focus-within {
-  border-color: rgba(108, 92, 231, 0.62);
-  box-shadow: 0 0 0 3px rgba(108, 92, 231, 0.12), 0 12px 28px rgba(42, 39, 65, 0.08);
+  border-color: color-mix(in srgb, var(--hc-accent) 62%, transparent);
+  box-shadow: var(--hc-ring), var(--hc-shadow);
 }
 
 .hermes-card-header {
@@ -1132,8 +1150,8 @@ body {
 .hermes-card-header strong {
   flex: 1 1 auto;
   min-width: 0;
-  color: #202027;
-  font-size: 16px;
+  color: var(--hc-ink-strong);
+  font-size: var(--hc-title);
   font-weight: 700;
   line-height: 1.35;
   letter-spacing: -0.015em;
@@ -1148,7 +1166,7 @@ body {
   width: 25px;
   height: 25px;
   place-items: center;
-  color: #6c5ce7;
+  color: var(--hc-accent);
 }
 
 .hermes-card-icon svg,
@@ -1165,11 +1183,11 @@ body {
 .hermes-progress-badge {
   flex: 0 0 auto;
   margin-left: auto;
-  border: 1px solid rgba(46, 125, 50, 0.08);
+  border: 1px solid var(--hc-line);
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.62);
-  color: #376c41;
-  font-size: 12px;
+  background: color-mix(in srgb, var(--hc-surface) 62%, transparent);
+  color: var(--hc-ink-muted);
+  font-size: var(--hc-meta);
   font-variant-numeric: tabular-nums;
   font-weight: 700;
   line-height: 1;
@@ -1324,8 +1342,8 @@ body {
 }
 
 .hermes-card-kicker {
-  color: #4b5563;
-  font-size: 12px;
+  color: var(--hc-ink-muted);
+  font-size: var(--hc-meta);
   text-transform: uppercase;
 }
 

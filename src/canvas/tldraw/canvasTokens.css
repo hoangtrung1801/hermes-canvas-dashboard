@@ -1,0 +1,30 @@
+/*
+ * The canvas token vocabulary.
+ *
+ * Scoped to .tl-container on purpose: the :root tokens in styles.css are a dark
+ * palette serving the debug dashboard, and the light pastel cards cannot use
+ * them. Keeping these separate is what stops the two palettes colliding.
+ */
+.tl-container {
+  --hc-surface: #ffffff;
+  --hc-ink: #25252d;
+  --hc-ink-strong: #202027;
+  --hc-ink-muted: #6b7280;
+  --hc-line: rgba(0, 0, 0, 0.1);
+
+  /* Overridden per shape from the tldraw theme colour. Accent only — the
+     background is derived from it below, never assigned to it. */
+  --hc-accent: #6c5ce7;
+  --hc-tint: color-mix(in srgb, var(--hc-accent) 8%, var(--hc-surface));
+
+  --hc-pad: 16px;
+  --hc-gap: 10px;
+  --hc-radius: 14px;
+
+  --hc-title: 16px;
+  --hc-body: 14px;
+  --hc-meta: 12px;
+
+  --hc-shadow: 0 2px 8px rgba(42, 39, 65, 0.08), 0 12px 28px rgba(42, 39, 65, 0.05);
+  --hc-ring: 0 0 0 3px color-mix(in srgb, var(--hc-accent) 18%, transparent);
+}
