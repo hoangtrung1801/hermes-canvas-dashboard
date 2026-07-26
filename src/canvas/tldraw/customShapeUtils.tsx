@@ -26,8 +26,17 @@ import {
   linkCardMigrations,
   todoBlockMigrations
 } from './customShape.types'
+import {
+  BaseHermesCardUtil,
+  cardStyle,
+  controlHandlers,
+  enterShapeEditMode,
+  markCanvasEventHandled,
+  updateShapeProps
+} from './cardChassis'
 import { ProjectCardShapeUtil } from './projectCardUtils'
 import { DocsCardShapeUtil } from './docsCardUtils'
+import { NoteCardShapeUtil } from './noteCardUtils'
 
 declare module 'tldraw' {
   export interface TLGlobalShapePropsMap {
@@ -75,84 +84,6 @@ function CloseIcon() {
       <path d="m5 5 10 10M15 5 5 15" />
     </svg>
   )
-}
-
-abstract class BaseHermesCardUtil<Shape extends HermesCardShape> extends ShapeUtil<Shape> {
-  override canEdit = () => true
-  override canResize = () => true
-  override isAspectRatioLocked = () => false
-
-  getGeometry(shape: Shape) {
-    const props = shape.props as Record<string, unknown>
-    return new Rectangle2d({
-      width: typeof props.w === 'number' ? props.w : 240,
-      height: typeof props.h === 'number' ? props.h : 140,
-      isFilled: true
-    })
-  }
-
-  getIndicatorPath() {
-    return undefined
-  }
-
-  override onResize(shape: Shape, info: TLResizeInfo<Shape>) {
-    const { id: _id, type: _type, ...patch } = resizeBox(shape as any, info as any, {
-      minWidth: HERMES_CARD_MIN_WIDTH,
-      minHeight: HERMES_CARD_MIN_HEIGHT
-    })
-
-    return patch
-  }
-}
-
-function markCanvasEventHandled(editor: ReturnType<typeof useEditor>, event: PointerEvent<HTMLElement>) {
-  editor.markEventAsHandled(event)
-}
-
-function enterShapeEditMode<Shape extends HermesCardShape>(
-  editor: ReturnType<typeof useEditor>,
-  shape: Shape,
-  event: MouseEvent<HTMLElement>
-) {
-  editor.setEditingShape(shape.id)
-  editor.markEventAsHandled(event)
-}
-
-function controlHandlers(editor: ReturnType<typeof useEditor>) {
-  return {
-    onPointerDown: (event: PointerEvent<HTMLElement>) => markCanvasEventHandled(editor, event),
-    onPointerUp: (event: PointerEvent<HTMLElement>) => markCanvasEventHandled(editor, event)
-  }
-}
-
-function updateShapeProps<Shape extends HermesCardShape>(
-  editor: ReturnType<typeof useEditor>,
-  shape: Shape,
-  props: Partial<Shape['props']>
-) {
-  editor.updateShape({
-    id: shape.id,
-    type: shape.type,
-    props
-  } as any)
-}
-
-function cardStyle(
-  editor: ReturnType<typeof useEditor>,
-  props: { w: number; h: number; color?: string; backgroundColor?: string }
-): CSSProperties {
-  const colors = editor.getCurrentTheme().colors[editor.getColorMode()]
-  const accent = props.color
-    ? getColorValue(colors, props.color, 'noteFill')
-    : props.backgroundColor
-
-  // Accent only. The card background is derived from it in CSS via --hc-tint,
-  // so this must never set backgroundColor directly.
-  return {
-    width: props.w,
-    height: props.h,
-    ...(accent ? { '--hc-accent': accent } : {})
-  } as CSSProperties
 }
 
 function createNextTodoTaskId(tasks: TodoBlockProps['tasks']) {
@@ -483,9 +414,19 @@ export class LinkCardShapeUtil extends BaseHermesCardUtil<LinkCardShape> {
   }
 }
 
+export {
+  BaseHermesCardUtil,
+  cardStyle,
+  controlHandlers,
+  enterShapeEditMode,
+  markCanvasEventHandled,
+  updateShapeProps
+}
+
 export const hermesShapeUtils = [
   TodoBlockShapeUtil,
   LinkCardShapeUtil,
   ProjectCardShapeUtil,
-  DocsCardShapeUtil
+  DocsCardShapeUtil,
+  NoteCardShapeUtil
 ]
