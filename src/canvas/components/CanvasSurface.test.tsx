@@ -394,10 +394,11 @@ describe('CanvasSurface', () => {
           }),
           expect.objectContaining({
             id: 'shape:note_1',
-            type: 'geo',
+            type: 'note_card',
             props: expect.objectContaining({
-              geo: 'rectangle',
-              richText: expect.objectContaining({ type: 'doc' })
+              title: expect.any(String),
+              tag: expect.any(String),
+              content: expect.any(String)
             })
           })
         ])
@@ -468,7 +469,7 @@ describe('CanvasSurface', () => {
     )
   })
 
-  it('inserts a rectangle note card from the floating canvas menu and selects it', async () => {
+  it('inserts a note card from the toolbar and selects it', async () => {
     render(<App />)
 
     act(() => {
@@ -479,10 +480,10 @@ describe('CanvasSurface', () => {
       expect(useBridgeStore.getState().lastObservation?.shapes).toEqual(
         expect.arrayContaining([
           expect.objectContaining({
-            type: 'geo',
+            type: 'note_card',
             props: expect.objectContaining({
-              geo: 'rectangle',
-              richText: expect.objectContaining({ type: 'doc' })
+              title: 'New Note',
+              tag: 'Idea'
             })
           })
         ])

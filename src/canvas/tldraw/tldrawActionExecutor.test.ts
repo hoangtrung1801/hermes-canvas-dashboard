@@ -334,7 +334,7 @@ describe('tldraw action executor', () => {
     })
   })
 
-  it('creates built-in rectangle note cards with formatted rich text', () => {
+  it('creates note cards as note_card shapes', () => {
     const target = createMemoryTldrawTarget('canvas_001')
 
     expect(
@@ -345,7 +345,6 @@ describe('tldraw action executor', () => {
         tag: 'Idea',
         content: 'Queue writes locally\nFlush when online',
         color: 'light-blue',
-        size: 'l',
         x: 240,
         y: 260
       })
@@ -356,38 +355,39 @@ describe('tldraw action executor', () => {
       shapes: [
         {
           id: 'shape:note_1',
-          type: 'geo',
+          type: 'note_card',
           x: 240,
           y: 260,
           props: {
-            geo: 'rectangle',
-            color: 'light-blue',
-            size: 'l',
-            richText: {
-              type: 'doc',
-              content: [
-                {
-                  type: 'paragraph',
-                  content: [{ type: 'text', text: 'Idea' }]
-                },
-                {
-                  type: 'paragraph',
-                  content: [{ type: 'text', text: 'Offline Sync', marks: [{ type: 'bold' }] }]
-                },
-                {
-                  type: 'paragraph',
-                  content: [{ type: 'text', text: 'Queue writes locally' }]
-                },
-                {
-                  type: 'paragraph',
-                  content: [{ type: 'text', text: 'Flush when online' }]
-                }
-              ]
-            }
+            title: 'Offline Sync',
+            tag: 'Idea',
+            content: 'Queue writes locally\nFlush when online',
+            color: 'light-blue'
           }
         }
       ]
     })
+  })
+
+  // `size` used to set the geo shape's font size. note_card has no equivalent,
+  // and the action schema is not .strict(), so the parameter is now accepted
+  // and ignored rather than rejected.
+  it('accepts the legacy size parameter without applying it', () => {
+    const target = createMemoryTldrawTarget('canvas_001')
+
+    executeTldrawAction(target, {
+      type: 'create_note_card',
+      id: 'shape:note_size',
+      title: 'Sized',
+      tag: 'Idea',
+      size: 'l',
+      x: 0,
+      y: 0
+    } as any)
+
+    const shape = target.shapes.get('shape:note_size')
+    expect(shape?.type).toBe('note_card')
+    expect(shape?.props).not.toHaveProperty('size')
   })
 
   it('creates and updates a Docs Card in the memory executor', () => {

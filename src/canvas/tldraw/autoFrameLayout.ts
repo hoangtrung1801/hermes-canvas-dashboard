@@ -1,5 +1,6 @@
 import { LINK_CARD_TYPE, TODO_BLOCK_TYPE } from './customShape.types'
 import { DOCS_CARD_TYPE } from './docsCard.types'
+import { NOTE_CARD_TYPE } from './noteCard.types'
 import { PROJECT_CARD_TYPE } from './projectCard.types'
 
 export type AutoFrameCardKind = 'project' | 'todo' | 'docs' | 'note' | 'link'
@@ -87,6 +88,11 @@ export function getAutoFrameCardKind(shape: Pick<AutoFrameLayoutShape, 'type' | 
   if (shape.type === TODO_BLOCK_TYPE) return 'todo' as const
   if (shape.type === DOCS_CARD_TYPE) return 'docs' as const
   if (shape.type === LINK_CARD_TYPE) return 'link' as const
+  if (shape.type === NOTE_CARD_TYPE) return 'note' as const
+  // Legacy: notes created before the note_card shape existed are plain geo
+  // rectangles. They carry no marker distinguishing them from a hand-drawn
+  // rectangle, so they are matched by shape alone and are deliberately never
+  // migrated. Removing this drops every pre-existing note out of its frame.
   if (shape.type === 'geo' && shape.props.geo === 'rectangle') return 'note' as const
   return null
 }

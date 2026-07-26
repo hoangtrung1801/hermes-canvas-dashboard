@@ -279,9 +279,9 @@ describe('canvas gateway integration', () => {
         shapes: [
           {
             id: 'shape:note_gateway',
-            type: 'geo',
+            type: 'note_card',
             props: {
-              geo: 'rectangle',
+              tag: 'Note',
               color: 'yellow'
             }
           }

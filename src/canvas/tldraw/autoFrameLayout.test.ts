@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   AUTO_FRAME_META_KEY,
+  getAutoFrameCardKind,
   planAutoFrameLayout,
   type AutoFrameLayoutShape,
   type AutoFrameCardKind
@@ -278,5 +279,19 @@ describe('planAutoFrameLayout', () => {
 
     expect(plan.frames[0]).toMatchObject({ x: 100, y: 200 })
     expect(plan.cardUpdates).toEqual([])
+  })
+})
+
+describe('getAutoFrameCardKind note handling', () => {
+  it('groups the new note_card shape under Notes', () => {
+    expect(getAutoFrameCardKind({ type: 'note_card', props: {} } as any)).toBe('note')
+  })
+
+  it('still groups legacy geo rectangles under Notes so existing boards keep working', () => {
+    expect(getAutoFrameCardKind({ type: 'geo', props: { geo: 'rectangle' } } as any)).toBe('note')
+  })
+
+  it('does not claim non-rectangle geo shapes', () => {
+    expect(getAutoFrameCardKind({ type: 'geo', props: { geo: 'ellipse' } } as any)).toBeNull()
   })
 })
