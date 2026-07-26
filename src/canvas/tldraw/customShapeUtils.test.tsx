@@ -63,7 +63,8 @@ describe('custom tldraw ShapeUtils', () => {
       'todo_block',
       'link_card',
       'project_card',
-      'docs_card'
+      'docs_card',
+      'note_card'
     ])
   })
 

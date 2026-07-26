@@ -2204,3 +2204,45 @@ body {
   stroke-linejoin: round;
   stroke-width: 1.8;
 }
+
+.hermes-note-card {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.hermes-note-body {
+  margin-top: 4px;
+  min-height: 0;
+  overflow-y: auto;
+  color: var(--hc-ink);
+  white-space: pre-wrap;
+}
+
+.hermes-note-tag-input,
+.hermes-note-body-input {
+  border: 1px solid var(--hc-line);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--hc-surface) 70%, transparent);
+  color: var(--hc-ink);
+  font: inherit;
+  padding: 6px 8px;
+}
+
+.hermes-note-tag-input {
+  flex: 0 0 auto;
+  font-size: var(--hc-meta);
+}
+
+.hermes-note-body-input {
+  flex: 1 1 auto;
+  min-height: 0;
+  resize: none;
+}
+
+.hermes-note-tag-input:focus-visible,
+.hermes-note-body-input:focus-visible {
+  outline: none;
+  border-color: color-mix(in srgb, var(--hc-accent) 62%, transparent);
+  box-shadow: var(--hc-ring);
+}

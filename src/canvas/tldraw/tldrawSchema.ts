@@ -8,6 +8,7 @@ import {
   todoBlockMigrations
 } from './customShape.types'
 import { projectCardMigrations, projectCardProps } from './projectCard.types'
+import { noteCardMigrations } from './noteCard.types'
 
 const taskValidator = T.object({
   id: T.string,
@@ -56,6 +57,18 @@ export function createHermesTldrawSchema() {
           h: T.number,
           title: T.string,
           content: T.string
+        }
+      },
+      note_card: {
+        migrations: noteCardMigrations,
+        props: {
+          w: T.number,
+          h: T.number,
+          title: T.string,
+          tag: T.string,
+          content: T.string,
+          color: DefaultColorStyle,
+          backgroundColor: T.string.optional()
         }
       }
     },

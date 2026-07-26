@@ -286,7 +286,7 @@ describe('CanvasSurface', () => {
     expect(syncMock.calls[0]).toMatchObject({
       uri: 'ws://localhost:8787/sync/canvas_001'
     })
-    expect(tldrawMock.props.shapeUtils).toHaveLength(5)
+    expect(tldrawMock.props.shapeUtils).toHaveLength(6)
   })
 
   it('enables color rendering for native frames in the canvas and synced schema', async () => {
