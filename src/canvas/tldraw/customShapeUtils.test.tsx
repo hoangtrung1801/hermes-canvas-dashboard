@@ -418,7 +418,7 @@ describe('custom tldraw ShapeUtils', () => {
       } as any)
     )
 
-    expect(screen.getByText('Docs').closest('.hermes-shape')).toHaveStyle({ backgroundColor: '#fecaca' })
+    expect(screen.getByText('Docs').closest('.hermes-shape')).toHaveStyle({ '--hc-accent': '#fecaca' })
   })
 
   it('keeps explicit backgroundColor as a fallback for API-created cards', () => {
@@ -447,7 +447,7 @@ describe('custom tldraw ShapeUtils', () => {
       } as any)
     )
 
-    expect(screen.getByText('Docs').closest('.hermes-shape')).toHaveStyle({ backgroundColor: '#fef3c7' })
+    expect(screen.getByText('Docs').closest('.hermes-shape')).toHaveStyle({ '--hc-accent': '#fef3c7' })
   })
 
   it('does not show custom background color controls in edit mode', () => {

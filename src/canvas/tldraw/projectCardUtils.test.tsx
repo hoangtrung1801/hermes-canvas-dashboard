@@ -130,14 +130,14 @@ describe('ProjectCardShapeUtil', () => {
     expect(tldrawMock.editor.markEventAsHandled).toHaveBeenCalled()
   })
 
-  it('uses the selected tldraw color as the board surface', () => {
+  it('carries the selected tldraw color as the card accent', () => {
     const util = new ProjectCardShapeUtil({} as any)
     const { container } = render(util.component(projectShape()))
 
     expect(container.querySelector('.hermes-project-card')).toHaveStyle({
       width: '960px',
       height: '480px',
-      backgroundColor: '#ddd6fe'
+      '--hc-accent': '#ddd6fe'
     })
   })
 })

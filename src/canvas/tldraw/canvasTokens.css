@@ -1,11 +1,18 @@
 /*
  * The canvas token vocabulary.
  *
- * Scoped to .tl-container on purpose: the :root tokens in styles.css are a dark
- * palette serving the debug dashboard, and the light pastel cards cannot use
- * them. Keeping these separate is what stops the two palettes colliding.
+ * Deliberately NOT on :root — the :root tokens in styles.css are a dark palette
+ * serving the debug dashboard, and the light card surfaces cannot use them.
+ * Keeping these separate is what stops the two palettes colliding.
+ *
+ * The card editors render through createPortal(document.body), so they sit
+ * outside .tl-container and would not inherit these. The backdrop selectors
+ * below are those portal roots — without them the modals could not be
+ * tokenised at all.
  */
-.tl-container {
+.tl-container,
+.hermes-modal-backdrop,
+.hermes-docs-reader-backdrop {
   --hc-surface: #ffffff;
   --hc-ink: #25252d;
   --hc-ink-strong: #202027;
@@ -15,7 +22,26 @@
   /* Overridden per shape from the tldraw theme colour. Accent only — the
      background is derived from it below, never assigned to it. */
   --hc-accent: #6c5ce7;
-  --hc-tint: color-mix(in srgb, var(--hc-accent) 8%, var(--hc-surface));
+
+  /*
+   * A readable ink derived from the accent. Card accents are pale pastels, so
+   * the raw accent is a background colour — using it as text or icon colour is
+   * unreadable. Anything a user has to READ uses this instead.
+   *
+   * Both this and the card background are RE-DECLARED on .hermes-shape. Custom
+   * properties inherit their already-substituted value, so a derivation
+   * declared here would freeze against the default accent above and ignore the
+   * per-shape override entirely.
+   */
+  --hc-accent-ink: color-mix(in srgb, var(--hc-accent) 42%, var(--hc-ink-strong));
+
+  /* Destructive affordances — delete buttons, blocked status. */
+  --hc-danger: #b91c1c;
+
+  /* Identity accent for card kinds that carry no tldraw colour prop of their
+     own. Docs cards have no `color` in their props, so without this they would
+     fall through to the default accent above and read as violet. */
+  --hc-accent-docs: #fcd34d;
 
   --hc-pad: 16px;
   --hc-gap: 10px;

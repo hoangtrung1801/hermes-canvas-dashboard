@@ -31,7 +31,7 @@ export type ProjectCardShape = TLShape<typeof PROJECT_CARD_TYPE>
 
 function ProjectCardView({ shape }: { shape: ProjectCardShape }) {
   const editor = useEditor()
-  const background = getColorValue(
+  const accent = getColorValue(
     editor.getCurrentTheme().colors[editor.getColorMode()],
     shape.props.color,
     'noteFill'
@@ -39,8 +39,7 @@ function ProjectCardView({ shape }: { shape: ProjectCardShape }) {
   const style = {
     width: shape.props.w,
     height: shape.props.h,
-    backgroundColor: background,
-    '--hermes-card-accent': background
+    '--hc-accent': accent
   } as CSSProperties
 
   return (

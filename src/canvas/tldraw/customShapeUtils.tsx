@@ -141,14 +141,16 @@ function cardStyle(
   props: { w: number; h: number; color?: string; backgroundColor?: string }
 ): CSSProperties {
   const colors = editor.getCurrentTheme().colors[editor.getColorMode()]
-  const backgroundColor = props.color
+  const accent = props.color
     ? getColorValue(colors, props.color, 'noteFill')
     : props.backgroundColor
 
+  // Accent only. The card background is derived from it in CSS via --hc-tint,
+  // so this must never set backgroundColor directly.
   return {
     width: props.w,
     height: props.h,
-    ...(backgroundColor ? { backgroundColor, '--hermes-card-accent': backgroundColor } : {})
+    ...(accent ? { '--hc-accent': accent } : {})
   } as CSSProperties
 }
 

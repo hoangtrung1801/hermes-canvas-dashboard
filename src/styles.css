@@ -1101,6 +1101,11 @@ body {
 }
 
 .hermes-shape {
+  /* Re-declared here, not in canvasTokens.css: the per-shape --hc-accent is set
+     as an inline style on this element, so these must resolve at this level.
+     A derivation declared on an ancestor would freeze at the default accent. */
+  --hc-accent-ink: color-mix(in srgb, var(--hc-accent) 42%, var(--hc-ink-strong));
+
   position: relative;
   box-sizing: border-box;
   width: 100%;
@@ -1108,7 +1113,10 @@ body {
   overflow: hidden;
   border: 1px solid var(--hc-line);
   border-radius: var(--hc-radius);
-  background: var(--hc-tint);
+  /* 45%, not a token-level default: the tldraw theme colours these accents come
+     from are already pastel, so a low percentage is indistinguishable from
+     white. This matches the ratios the hand-written card rules used. */
+  background: color-mix(in srgb, var(--hc-accent) 45%, var(--hc-surface));
   color: var(--hc-ink);
   font: var(--hc-body) / 1.45 var(--hermes-canvas-font);
   padding: var(--hc-pad);
@@ -1126,7 +1134,7 @@ body {
   left: 0;
   right: 0;
   height: 3px;
-  background: var(--hc-accent);
+  background: var(--hc-accent-ink);
   border-radius: var(--hc-radius) var(--hc-radius) 0 0;
 }
 
@@ -1166,7 +1174,7 @@ body {
   width: 25px;
   height: 25px;
   place-items: center;
-  color: var(--hc-accent);
+  color: var(--hc-accent-ink);
 }
 
 .hermes-card-icon svg,
@@ -1211,7 +1219,7 @@ body {
 }
 
 .hermes-field span {
-  color: #4b5563;
+  color: var(--hc-ink-muted);
   font-size: 10px;
   font-weight: 700;
   text-transform: uppercase;
@@ -1225,7 +1233,7 @@ body {
   border: 1px solid rgba(75, 68, 105, 0.2);
   border-radius: 7px;
   background: rgba(255, 255, 255, 0.82);
-  color: #111827;
+  color: var(--hc-ink-strong);
   font: inherit;
   padding: 6px 8px;
   outline: none;
@@ -1266,7 +1274,7 @@ body {
 
 .hermes-inline-title-input {
   padding: 1px 3px;
-  color: #202027;
+  color: var(--hc-ink-strong);
   font-size: 16px;
   font-weight: 700;
   letter-spacing: -0.015em;
@@ -1277,7 +1285,7 @@ body {
   margin: -1px 0;
   padding: 0 3px;
   border-radius: 4px;
-  color: #303039;
+  color: var(--hc-ink);
   line-height: 20px;
 }
 
@@ -1294,7 +1302,7 @@ body {
 }
 
 .hermes-task-row.is-done .hermes-inline-task-input {
-  color: #5e7663;
+  color: var(--hc-ink-muted);
   text-decoration: line-through;
   text-decoration-color: rgba(55, 108, 65, 0.55);
   text-decoration-thickness: 1.5px;
@@ -1309,23 +1317,11 @@ body {
 .hermes-todo-block {
   display: flex;
   flex-direction: column;
-  background: #f4fbf4;
-}
-
-.hermes-task-card {
-  background: #dbeafe;
 }
 
 .hermes-link-card {
   display: flex;
   flex-direction: column;
-  background: color-mix(in srgb, var(--hermes-card-accent, #dbeafe) 42%, white) !important;
-  border-color: color-mix(in srgb, var(--hermes-card-accent, #bfdbfe) 52%, #b9c7d8);
-  box-shadow: 0 2px 8px rgba(55, 96, 145, 0.08), 0 10px 24px rgba(55, 96, 145, 0.05);
-}
-
-.hermes-link-card .hermes-card-icon {
-  color: color-mix(in srgb, var(--hermes-card-accent, #bfdbfe) 48%, #2864aa);
 }
 
 .hermes-link-preview {
@@ -1370,17 +1366,17 @@ body {
   width: 18px;
   height: 18px;
   margin: 1px 0 0;
-  accent-color: #2e8b45;
+  accent-color: var(--hc-accent-ink);
   cursor: pointer;
 }
 
 .hermes-task-label {
-  color: #303039;
+  color: var(--hc-ink);
   line-height: 20px;
 }
 
 .hermes-task-row.is-done .hermes-task-label {
-  color: #5e7663;
+  color: var(--hc-ink-muted);
   text-decoration: line-through;
   text-decoration-color: rgba(55, 108, 65, 0.55);
   text-decoration-thickness: 1.5px;
@@ -1401,7 +1397,7 @@ body {
   border: 0;
   border-radius: 6px;
   background: transparent;
-  color: #718070;
+  color: var(--hc-ink-muted);
   cursor: pointer;
 }
 
@@ -1417,11 +1413,11 @@ body {
 
 .hermes-task-delete:hover {
   background: rgba(239, 68, 68, 0.1);
-  color: #b91c1c;
+  color: var(--hc-danger);
 }
 
 .hermes-task-delete:focus-visible {
-  outline: 2px solid #6c5ce7;
+  outline: 2px solid var(--hc-accent);
   outline-offset: 1px;
 }
 
@@ -1434,7 +1430,7 @@ body {
   border: 1px solid rgba(17, 24, 39, 0.24);
   border-radius: 8px;
   background: rgba(255, 255, 255, 0.72);
-  color: #111827;
+  color: var(--hc-ink-strong);
   cursor: pointer;
   font: inherit;
   font-size: 18px;
@@ -1448,7 +1444,6 @@ body {
 
 .hermes-project-card {
   display: block;
-  background: color-mix(in srgb, var(--hermes-card-accent, #ddd6fe) 38%, white) !important;
 }
 
 .hermes-project-board-shell {
@@ -1489,7 +1484,7 @@ body {
 }
 
 .hermes-project-column[data-drop-active='true'] {
-  outline: 2px solid #6c5ce7;
+  outline: 2px solid var(--hc-accent);
   outline-offset: -2px;
   background: rgba(255, 255, 255, 0.68);
 }
@@ -1503,7 +1498,7 @@ body {
   margin: 0;
   padding: 8px 10px;
   border-bottom: 1px solid rgba(75, 68, 105, 0.08);
-  color: #4b5563;
+  color: var(--hc-ink-muted);
   font-size: 11px;
   font-weight: 800;
   letter-spacing: 0.04em;
@@ -1517,7 +1512,7 @@ body {
   place-items: center;
   border-radius: 999px;
   background: rgba(108, 92, 231, 0.1);
-  color: #5b4cc4;
+  color: var(--hc-accent-ink);
   font-size: 10px;
   font-variant-numeric: tabular-nums;
 }
@@ -1537,7 +1532,7 @@ body {
   border: 1px solid rgba(75, 68, 105, 0.1);
   border-radius: 10px;
   background: rgba(255, 255, 255, 0.88);
-  color: #303039;
+  color: var(--hc-ink);
   cursor: grab;
   line-height: 1.35;
   padding: 10px 31px 10px 11px;
@@ -1555,12 +1550,12 @@ body {
 }
 
 .hermes-project-task[data-status='done'] > span {
-  color: #64748b;
+  color: var(--hc-ink-muted);
   text-decoration: line-through;
 }
 
 .hermes-project-task[data-status='blocked'] {
-  border-left: 3px solid #ef4444;
+  border-left: 3px solid var(--hc-danger);
   background: rgba(254, 242, 242, 0.94);
 }
 
@@ -1569,8 +1564,8 @@ body {
   min-width: 0;
   border: 1px solid rgba(75, 68, 105, 0.2);
   border-radius: 7px;
-  background: #ffffff;
-  color: #303039;
+  background: var(--hc-surface);
+  color: var(--hc-ink);
   font: inherit;
   padding: 5px 7px;
   outline: none;
@@ -1588,7 +1583,7 @@ body {
   border: 0;
   border-radius: 6px;
   background: transparent;
-  color: #94a3b8;
+  color: var(--hc-ink-muted);
   cursor: pointer;
   font: inherit;
   font-size: 16px;
@@ -1597,13 +1592,13 @@ body {
 
 .hermes-project-task-delete:hover {
   background: rgba(239, 68, 68, 0.1);
-  color: #b91c1c;
+  color: var(--hc-danger);
 }
 
 .hermes-project-header :focus-visible,
 .hermes-project-task :focus-visible,
 .hermes-project-footer :focus-visible {
-  outline: 2px solid #6c5ce7;
+  outline: 2px solid var(--hc-accent);
   outline-offset: 1px;
 }
 
@@ -1611,7 +1606,7 @@ body {
   height: 3px;
   margin: 3px 0 5px;
   border-radius: 999px;
-  background: #6c5ce7;
+  background: var(--hc-accent);
 }
 
 .hermes-project-drag-preview {
@@ -1621,8 +1616,8 @@ body {
   pointer-events: none;
   border: 1px solid rgba(75, 68, 105, 0.13);
   border-radius: 10px;
-  background: #ffffff;
-  color: #303039;
+  background: var(--hc-surface);
+  color: var(--hc-ink);
   font: 14px/1.35 var(--hermes-canvas-font);
   padding: 9px 12px;
   box-shadow: 0 12px 28px rgba(15, 23, 42, 0.24);
@@ -1644,7 +1639,7 @@ body {
   min-height: 0;
   overflow-y: auto;
   margin: 7px 0 0 34px;
-  color: #424650;
+  color: var(--hc-ink-muted);
   font-size: 13px;
   line-height: 1.42;
   overflow-wrap: anywhere;
@@ -1653,7 +1648,7 @@ body {
 }
 
 .hermes-link-description.is-empty {
-  color: #66758a;
+  color: var(--hc-ink-muted);
   font-style: italic;
   font-weight: 500;
 }
@@ -1665,7 +1660,7 @@ body {
   gap: 8px;
   min-height: 28px;
   margin: auto 0 0 34px;
-  color: #2f527a;
+  color: var(--hc-accent-ink);
   font-size: 13px;
   font-weight: 600;
   text-decoration: none;
@@ -1679,7 +1674,7 @@ body {
 }
 
 .hermes-link-footer:hover {
-  color: #2f6fbf;
+  color: var(--hc-accent-ink);
   text-decoration: underline;
   text-underline-offset: 2px;
 }
@@ -1707,8 +1702,8 @@ body {
   overflow: hidden;
   border: 1px solid rgba(90, 104, 132, 0.2);
   border-radius: 16px;
-  background: #ffffff;
-  color: #202027;
+  background: var(--hc-surface);
+  color: var(--hc-ink-strong);
   font-family: var(--hermes-canvas-font);
   box-shadow: 0 24px 70px rgba(24, 28, 43, 0.24), 0 4px 16px rgba(24, 28, 43, 0.1);
 }
@@ -1718,7 +1713,7 @@ body {
   align-items: flex-start;
   gap: 12px;
   padding: 20px 20px 17px;
-  border-bottom: 1px solid #edf0f5;
+  border-bottom: 1px solid var(--hc-line);
 }
 
 .hermes-link-modal-icon {
@@ -1728,8 +1723,8 @@ body {
   flex: 0 0 auto;
   place-items: center;
   border-radius: 10px;
-  background: #eaf3ff;
-  color: #3f7fc7;
+  background: color-mix(in srgb, var(--hc-accent) 12%, var(--hc-surface));
+  color: var(--hc-accent-ink);
 }
 
 .hermes-link-modal-icon svg,
@@ -1752,7 +1747,7 @@ body {
 
 .hermes-link-modal-header p {
   margin: 3px 0 0;
-  color: #697180;
+  color: var(--hc-ink-muted);
   font-size: 13px;
 }
 
@@ -1765,13 +1760,13 @@ body {
   border: 0;
   border-radius: 9px;
   background: transparent;
-  color: #697180;
+  color: var(--hc-ink-muted);
   cursor: pointer;
 }
 
 .hermes-link-modal-header button:hover {
-  background: #f1f3f7;
-  color: #272b34;
+  background: var(--hc-line);
+  color: var(--hc-ink-strong);
 }
 
 .hermes-link-modal-fields {
@@ -1786,7 +1781,7 @@ body {
 }
 
 .hermes-modal-field > span {
-  color: #4d5563;
+  color: var(--hc-ink-muted);
   font-size: 12px;
   font-weight: 650;
 }
@@ -1794,10 +1789,10 @@ body {
 .hermes-modal-field input,
 .hermes-modal-field textarea {
   width: 100%;
-  border: 1px solid #d7dce5;
+  border: 1px solid var(--hc-line);
   border-radius: 9px;
-  background: #fbfcfe;
-  color: #202027;
+  background: var(--hc-surface);
+  color: var(--hc-ink-strong);
   font: inherit;
   font-size: 14px;
   outline: none;
@@ -1811,8 +1806,8 @@ body {
 
 .hermes-modal-field input:focus,
 .hermes-modal-field textarea:focus {
-  border-color: #6c9ed7;
-  background: #ffffff;
+  border-color: var(--hc-accent);
+  background: var(--hc-surface);
   box-shadow: 0 0 0 3px rgba(76, 142, 217, 0.13);
 }
 
@@ -1822,15 +1817,15 @@ body {
   justify-content: space-between;
   gap: 12px;
   padding: 15px 20px;
-  border-top: 1px solid #edf0f5;
-  background: #fafbfc;
+  border-top: 1px solid var(--hc-line);
+  background: var(--hc-surface);
 }
 
 .hermes-link-modal-footer a {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  color: #4979b3;
+  color: var(--hc-accent-ink);
   font-size: 13px;
   font-weight: 600;
   text-decoration: none;
@@ -1846,8 +1841,8 @@ body {
   min-height: 38px;
   border: 0;
   border-radius: 9px;
-  background: #4b82c2;
-  color: #ffffff;
+  background: var(--hc-accent);
+  color: var(--hc-surface);
   cursor: pointer;
   font: inherit;
   font-size: 13px;
@@ -1856,14 +1851,16 @@ body {
 }
 
 .hermes-link-modal-footer button:hover {
-  background: #3b70ad;
+  background: var(--hc-accent);
 }
 
 .hermes-docs-card {
+  /* Docs cards carry no tldraw colour prop, so their accent comes from here. */
+  --hc-accent: var(--hc-accent-docs);
+
   display: grid;
   grid-template-rows: auto minmax(0, 1fr);
-  gap: 10px;
-  background: #fffdf8;
+  gap: var(--hc-gap);
 }
 
 .hermes-docs-header {
@@ -1875,7 +1872,7 @@ body {
   border: 1px solid rgba(108, 92, 231, 0.24);
   border-radius: 7px;
   background: rgba(255, 255, 255, 0.68);
-  color: #5b4cc4;
+  color: var(--hc-accent-ink);
   cursor: pointer;
   font: inherit;
   font-size: 11px;
@@ -1885,7 +1882,7 @@ body {
 
 .hermes-docs-open-button:hover,
 .hermes-docs-open-button:focus-visible {
-  background: #ffffff;
+  background: var(--hc-surface);
   border-color: rgba(108, 92, 231, 0.52);
   outline: none;
   box-shadow: 0 0 0 3px rgba(108, 92, 231, 0.12);
@@ -1899,13 +1896,13 @@ body {
 }
 
 .hermes-docs-content {
-  color: #303039;
+  color: var(--hc-ink);
   overflow-wrap: anywhere;
 }
 
 .hermes-docs-content :where(h1, h2, h3) {
   margin: 0.55em 0 0.3em;
-  color: #202027;
+  color: var(--hc-ink-strong);
   line-height: 1.2;
 }
 
@@ -1919,12 +1916,12 @@ body {
 
 .hermes-docs-content blockquote {
   border-left: 3px solid rgba(108, 92, 231, 0.3);
-  color: #5e6270;
+  color: var(--hc-ink-muted);
   padding-left: 10px;
 }
 
 .hermes-docs-content a {
-  color: #4e43ad;
+  color: var(--hc-accent-ink);
   text-decoration: underline;
   text-decoration-thickness: 1px;
 }
@@ -1950,7 +1947,7 @@ body {
 }
 
 .hermes-docs-empty {
-  color: #697180;
+  color: var(--hc-ink-muted);
   font-style: italic;
 }
 
@@ -1972,9 +1969,9 @@ body {
   height: 100%;
   overflow: hidden;
   border-left: 1px solid rgba(90, 104, 132, 0.2);
-  background: #ffffff;
+  background: var(--hc-surface);
   box-shadow: -18px 0 48px rgba(24, 28, 43, 0.18);
-  color: #25252d;
+  color: var(--hc-ink);
 }
 
 .hermes-docs-reader-header {
@@ -1996,9 +1993,9 @@ body {
   overflow: hidden;
   border: 1px solid rgba(90, 104, 132, 0.2);
   border-radius: 14px;
-  background: #ffffff;
+  background: var(--hc-surface);
   box-shadow: 0 24px 70px rgba(24, 28, 43, 0.24), 0 4px 16px rgba(24, 28, 43, 0.1);
-  color: #25252d;
+  color: var(--hc-ink);
 }
 
 .hermes-docs-modal-header {
@@ -2007,7 +2004,7 @@ body {
   justify-content: space-between;
   gap: 14px;
   padding: 18px 20px;
-  border-bottom: 1px solid #edf0f5;
+  border-bottom: 1px solid var(--hc-line);
 }
 
 .hermes-docs-modal-header h2 {
@@ -2018,7 +2015,7 @@ body {
 
 .hermes-docs-modal-header p {
   margin: 4px 0 0;
-  color: #697180;
+  color: var(--hc-ink-muted);
   font-size: 13px;
 }
 
@@ -2030,7 +2027,7 @@ body {
   border: 0;
   border-radius: 8px;
   background: transparent;
-  color: #697180;
+  color: var(--hc-ink-muted);
   cursor: pointer;
   font-size: 24px;
   line-height: 1;
@@ -2038,8 +2035,8 @@ body {
 
 .hermes-docs-modal-header button:hover,
 .hermes-docs-modal-header button:focus-visible {
-  background: #f1f3f7;
-  color: #272b34;
+  background: var(--hc-line);
+  color: var(--hc-ink-strong);
   outline: none;
 }
 
@@ -2055,7 +2052,7 @@ body {
 
 .hermes-docs-title-field > span,
 .hermes-docs-modal-pane > span {
-  color: #4d5563;
+  color: var(--hc-ink-muted);
   font-size: 12px;
   font-weight: 650;
 }
@@ -2065,10 +2062,10 @@ body {
   box-sizing: border-box;
   width: 100%;
   min-width: 0;
-  border: 1px solid #d7dce5;
+  border: 1px solid var(--hc-line);
   border-radius: 9px;
-  background: #fbfcfd;
-  color: #202027;
+  background: var(--hc-surface);
+  color: var(--hc-ink-strong);
   font: inherit;
   outline: none;
   padding: 10px 11px;
@@ -2076,8 +2073,8 @@ body {
 
 .hermes-docs-title-field input:focus,
 .hermes-docs-source-pane textarea:focus {
-  border-color: #6c9ed7;
-  background: #ffffff;
+  border-color: var(--hc-accent);
+  background: var(--hc-surface);
   box-shadow: 0 0 0 3px rgba(76, 142, 217, 0.13);
 }
 
