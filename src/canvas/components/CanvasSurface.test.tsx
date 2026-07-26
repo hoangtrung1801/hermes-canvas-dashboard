@@ -211,8 +211,19 @@ vi.mock('tldraw', () => ({
       props.onMount(tldrawMock.editor)
     }, [])
 
-    return <div data-testid="tldraw-root">tldraw mounted</div>
+    // Render the injected Toolbar so the card inserts, which now live inside
+    // tldraw's toolbar rather than the floating pill, are reachable in tests.
+    const Toolbar = props.components?.Toolbar
+
+    return (
+      <div data-testid="tldraw-root">
+        tldraw mounted
+        {Toolbar ? <Toolbar /> : null}
+      </div>
+    )
   },
+  DefaultToolbar: ({ children }: any) => <div data-testid="tldraw-toolbar">{children}</div>,
+  TldrawUiMenuToolItem: ({ toolId }: any) => <button data-testid={`tool-${toolId}`} />,
   defaultShapeUtils: [],
   defaultBindingUtils: [],
   inlineBase64AssetStore: {},
@@ -386,16 +397,19 @@ describe('CanvasSurface', () => {
     )
   })
 
-  it('shows custom component actions in a flat floating toolbar', async () => {
+  it('shows the card inserts inside the tldraw toolbar, not a separate pill', async () => {
     render(<App />)
 
-    const toolbar = await screen.findByRole('toolbar', { name: 'Canvas custom tools' })
-    expect(toolbar.closest('.canvas-container')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Todo Block' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Link Card' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Note Card' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Project Card' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Docs Card' })).toBeInTheDocument()
+    const insertGroup = await screen.findByRole('group', { name: 'Insert card' })
+    expect(insertGroup.closest('[data-testid="tldraw-toolbar"]')).toBeInTheDocument()
+
+    for (const label of ['Todo Block', 'Link Card', 'Note Card', 'Project Card', 'Docs Card']) {
+      expect(screen.getByRole('button', { name: label })).toBeInTheDocument()
+    }
+
+    // The inserts must no longer live in the floating custom toolbar.
+    const pill = screen.getByRole('toolbar', { name: 'Canvas custom tools' })
+    expect(pill.querySelector('.canvas-toolbar-insert')).toBeNull()
     expect(screen.queryByRole('button', { name: 'Insert component' })).not.toBeInTheDocument()
   })
 

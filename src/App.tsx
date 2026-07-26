@@ -1,5 +1,4 @@
 import { CanvasSurface } from './canvas/components/CanvasSurface'
-import { CanvasInsertMenu } from './canvas/components/CanvasInsertMenu'
 import { CanvasTidyButton } from './canvas/components/CanvasTidyButton'
 import { Simulator } from './canvas/components/Simulator'
 import { Inspector } from './canvas/components/Inspector'
@@ -40,7 +39,6 @@ export default function App() {
         <section className="fullscreen-canvas-container" aria-label="Fullscreen canvas surface">
           <div className="canvas-floating-toolbar" role="toolbar" aria-label="Canvas custom tools">
             <CanvasTidyButton />
-            <CanvasInsertMenu />
           </div>
           <CanvasSurface />
         </section>
@@ -86,7 +84,6 @@ export default function App() {
           <div className="canvas-container">
             <div className="canvas-floating-toolbar" role="toolbar" aria-label="Canvas custom tools">
               <CanvasTidyButton />
-              <CanvasInsertMenu />
             </div>
             <CanvasSurface />
           </div>

@@ -2120,3 +2120,54 @@ body {
     transition-duration: 0.01ms !important;
   }
 }
+
+.canvas-toolbar-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.canvas-toolbar-insert {
+  width: 40px;
+  height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: #293241;
+  cursor: pointer;
+  transition: background 0.16s ease, color 0.16s ease;
+}
+
+.canvas-toolbar-insert svg {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.8;
+}
+
+.canvas-toolbar-insert:hover:not(:disabled) {
+  background: rgba(15, 23, 42, 0.07);
+}
+
+.canvas-toolbar-insert:focus-visible {
+  outline: 2px solid rgba(108, 92, 231, 0.62);
+  outline-offset: -2px;
+}
+
+.canvas-toolbar-insert:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+
+.canvas-toolbar-divider {
+  width: 1px;
+  height: 24px;
+  margin: 0 4px;
+  background: rgba(15, 23, 42, 0.14);
+}

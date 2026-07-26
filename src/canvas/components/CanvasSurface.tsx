@@ -25,6 +25,7 @@ import { canvasUiOverrides } from '../tldraw/uiOverrides'
 import { useBridgeStore } from '../state/bridgeStore'
 import { CanvasContextMenu } from './CanvasContextMenu'
 import { CanvasStylePanel } from './CanvasStylePanel'
+import { CanvasToolbar } from './CanvasToolbar'
 import { useCanvasAutoFrames } from './useCanvasAutoFrames'
 
 const socket = new BridgeWebSocketClient()
@@ -32,7 +33,8 @@ const CANVAS_ID = 'canvas_001'
 const ColoredFrameShapeUtil = FrameShapeUtil.configure({ showColors: true })
 const tldrawComponents = {
   ContextMenu: CanvasContextMenu,
-  StylePanel: CanvasStylePanel
+  StylePanel: CanvasStylePanel,
+  Toolbar: CanvasToolbar
 }
 
 export function CanvasSurface() {
