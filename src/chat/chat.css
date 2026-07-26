@@ -31,9 +31,9 @@
   position: absolute;
   z-index: 20;
   top: 3rem;
-  left: 14px;
+  left: auto;
   bottom: 14px;
-  right: auto;
+  right: 14px;
   display: flex;
   width: clamp(300px, 28vw, 360px);
   min-width: 0;
@@ -530,8 +530,8 @@
   z-index: 20;
   top: auto;
   bottom: 3rem;
-  left: 0;
-  right: auto;
+  left: auto;
+  right: 14px;
   width: 52px;
   height: 52px;
   align-content: center;
@@ -577,14 +577,14 @@
   .chat-sidebar {
     position: fixed;
     top: 0;
-    left: 0;
+    left: auto;
     bottom: 0;
-    right: auto;
+    right: 0;
     width: min(92vw, 360px);
     height: 100dvh;
     border-radius: 0;
-    border-right-color: rgba(148, 163, 184, 0.28);
-    box-shadow: 18px 0 50px rgba(2, 8, 23, 0.42);
+    border-left-color: rgba(148, 163, 184, 0.28);
+    box-shadow: -18px 0 50px rgba(2, 8, 23, 0.42);
   }
 
   .chat-header {
@@ -606,8 +606,8 @@
   .chat-expand {
     position: fixed;
     top: auto;
-    left: 12px;
-    right: auto;
+    left: auto;
+    right: 12px;
     bottom: max(74px, calc(env(safe-area-inset-bottom) + 16px));
     width: 52px;
     height: 52px;
