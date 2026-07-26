@@ -1,4 +1,5 @@
 import { fireEvent, render, screen } from '@testing-library/react'
+import { readFileSync } from 'node:fs'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { DefaultColorStyle } from 'tldraw'
 import { LinkCardShapeUtil, TodoBlockShapeUtil, hermesShapeUtils } from './customShapeUtils'
@@ -419,6 +420,44 @@ describe('custom tldraw ShapeUtils', () => {
     )
 
     expect(screen.getByText('Docs').closest('.hermes-shape')).toHaveStyle({ '--hc-accent': '#fecaca' })
+  })
+
+  // Characterization, not TDD: the ellipsis and tooltip already shipped. This
+  // locks them, because the surrounding link-card CSS is being retokenised and
+  // nothing else guards the long-url behaviour.
+  it('ellipsises a long url and exposes the full value as a tooltip', () => {
+    const util = new LinkCardShapeUtil({} as any)
+    const url = 'https://example.com/a/very/long/path/that/will/not/fit/in/the/card'
+
+    render(
+      util.component({
+        id: 'shape:link_long',
+        type: 'link_card',
+        x: 0,
+        y: 0,
+        rotation: 0,
+        index: 'a1',
+        parentId: 'page:page',
+        isLocked: false,
+        opacity: 1,
+        meta: {},
+        props: { w: 300, h: 120, title: 'Long', url, description: '' }
+      } as any)
+    )
+
+    // The full url is reachable even when the rendered text is clipped.
+    expect(screen.getByTitle(url)).toBeInTheDocument()
+    expect(screen.getByText(url).closest('.hermes-link-footer')).toBeInTheDocument()
+
+    // ...and the clipping is real, not just visual overflow.
+    const footerSpanRule = readFileSync('src/styles.css', 'utf8').match(
+      /^\.hermes-link-footer span \{(?<body>[\s\S]*?)\n\}/m
+    )?.groups?.body ?? ''
+
+    expect(footerSpanRule).toMatch(/text-overflow:\s*ellipsis;/)
+    expect(footerSpanRule).toMatch(/overflow:\s*hidden;/)
+    expect(footerSpanRule).toMatch(/white-space:\s*nowrap;/)
+    expect(footerSpanRule).toMatch(/min-width:\s*0;/)
   })
 
   it('keeps explicit backgroundColor as a fallback for API-created cards', () => {
