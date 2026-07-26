@@ -1,15 +1,15 @@
 import type { CanvasAction } from '../actions/canvasAction.types'
 import { useBridgeStore } from '../state/bridgeStore'
 
-type ComponentKind = 'project' | 'todo' | 'link' | 'note' | 'docs'
+export type ComponentKind = 'project' | 'todo' | 'link' | 'note' | 'docs'
 
-type InsertOption = {
+export type InsertOption = {
   kind: ComponentKind
   label: string
-  icon: 'project' | 'todo' | 'link' | 'note' | 'docs'
+  icon: ComponentKind
 }
 
-const INSERT_OPTIONS: InsertOption[] = [
+export const INSERT_OPTIONS: InsertOption[] = [
   { kind: 'project', label: 'Project Card', icon: 'project' },
   { kind: 'todo', label: 'Todo Block', icon: 'todo' },
   { kind: 'link', label: 'Link Card', icon: 'link' },
@@ -89,7 +89,7 @@ function buildCreateAction(kind: ComponentKind, id: string, x: number, y: number
   }
 }
 
-function ComponentIcon({ icon }: { icon: InsertOption['icon'] }) {
+export function ComponentIcon({ icon }: { icon: InsertOption['icon'] }) {
   if (icon === 'project') {
     return (
       <svg viewBox="0 0 20 20" aria-hidden="true">
@@ -136,7 +136,7 @@ function ComponentIcon({ icon }: { icon: InsertOption['icon'] }) {
   )
 }
 
-export function CanvasInsertMenu() {
+export function useCanvasInsert() {
   const bridge = useBridgeStore((state) => state.bridge)
   const adapter = useBridgeStore((state) => state.adapter)
   const editor = useBridgeStore((state) => state.editor)
@@ -144,7 +144,7 @@ export function CanvasInsertMenu() {
   const addLog = useBridgeStore((state) => state.addLog)
   const isReady = Boolean(bridge && adapter && editor)
 
-  const insertComponent = (kind: ComponentKind) => {
+  const insertCard = (kind: ComponentKind) => {
     if (!bridge || !adapter || !editor) return
 
     const point = getInsertPoint(editor, kind)
@@ -171,6 +171,12 @@ export function CanvasInsertMenu() {
     addLog('out', 'canvas.observation (Insert Component)', response.observation)
   }
 
+  return { insertCard, isReady }
+}
+
+export function CanvasInsertMenu() {
+  const { insertCard, isReady } = useCanvasInsert()
+
   return (
     <div className="canvas-insert-actions">
       {INSERT_OPTIONS.map((option) => (
@@ -181,7 +187,7 @@ export function CanvasInsertMenu() {
           aria-label={option.label}
           disabled={!isReady}
           title={isReady ? option.label : 'Canvas is still loading'}
-          onClick={() => insertComponent(option.kind)}
+          onClick={() => insertCard(option.kind)}
         >
           <ComponentIcon icon={option.icon} />
         </button>
