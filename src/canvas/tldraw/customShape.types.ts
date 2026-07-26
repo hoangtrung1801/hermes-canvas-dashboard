@@ -189,3 +189,23 @@ export function createLinkCardProps(input: {
     ...(input.backgroundColor ? { backgroundColor: input.backgroundColor } : {})
   }
 }
+
+/** Chassis padding (top + bottom), header, and the task list's top margin. */
+const TODO_CHROME_HEIGHT = 32 + 28 + 10
+/** One task row plus the gap beneath it — see .hermes-task-row in styles.css. */
+const TODO_ROW_HEIGHT = 24
+const TODO_ROW_GAP = 4
+
+/**
+ * The height a Todo block needs to show `taskCount` tasks without scrolling.
+ * Floors at the shared card minimum so a nearly-empty card keeps its presence.
+ *
+ * Called only on discrete task events (add/remove) — never per-keystroke, since
+ * every height write broadcasts through @tldraw/sync to every peer.
+ */
+export function fitTodoBlockHeight(taskCount: number): number {
+  const count = Number.isFinite(taskCount) ? Math.max(0, Math.floor(taskCount)) : 0
+  const rows = count * (TODO_ROW_HEIGHT + TODO_ROW_GAP)
+
+  return Math.max(HERMES_CARD_MIN_HEIGHT, TODO_CHROME_HEIGHT + rows)
+}

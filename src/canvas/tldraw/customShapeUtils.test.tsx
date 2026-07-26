@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { DefaultColorStyle } from 'tldraw'
 import { LinkCardShapeUtil, TodoBlockShapeUtil, hermesShapeUtils } from './customShapeUtils'
+import { fitTodoBlockHeight } from './customShape.types'
 
 const tldrawMock = vi.hoisted(() => ({
   defaultColorStyle: { id: 'tldraw:color', defaultValue: 'black' },
@@ -262,7 +263,9 @@ describe('custom tldraw ShapeUtils', () => {
         tasks: [
           { id: 'task_0001', text: 'Write copy', done: false },
           { id: 'task_0002', text: 'New task', done: false }
-        ]
+        ],
+        // Two tasks still fit inside the card minimum.
+        h: fitTodoBlockHeight(2)
       }
     })
   })
@@ -292,7 +295,8 @@ describe('custom tldraw ShapeUtils', () => {
       id: 'shape:todo_1',
       type: 'todo_block',
       props: {
-        tasks: [{ id: 'task_ship', text: 'Ship', done: true }]
+        tasks: [{ id: 'task_ship', text: 'Ship', done: true }],
+        h: fitTodoBlockHeight(1)
       }
     })
   })

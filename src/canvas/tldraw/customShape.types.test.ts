@@ -3,6 +3,8 @@ import {
   createLinkCardProps,
   createTodoBlockProps,
   fitHermesCardDimensions,
+  fitTodoBlockHeight,
+  HERMES_CARD_MIN_HEIGHT,
   linkCardMigrations,
   normalizeTodoTasks,
   todoBlockMigrations
@@ -116,5 +118,34 @@ describe('custom tldraw shape types', () => {
     expect(todoProps.w as number).toBeCloseTo(220 * 16 / 9)
     expect(todoProps.h).toBe(220)
     expect(linkProps).toEqual({ w: 320, h: 180 })
+  })
+})
+
+// HERMES_CARD_MIN_HEIGHT is HERMES_CARD_MIN_WIDTH / HERMES_CARD_ASPECT_RATIO
+// = 320 / (16/9) = 180 (customShape.types.ts:9).
+describe('fitTodoBlockHeight', () => {
+  it('never shrinks below the card minimum', () => {
+    expect(fitTodoBlockHeight(0)).toBe(HERMES_CARD_MIN_HEIGHT)
+    expect(fitTodoBlockHeight(1)).toBe(HERMES_CARD_MIN_HEIGHT)
+  })
+
+  it('grows once the tasks no longer fit', () => {
+    expect(fitTodoBlockHeight(12)).toBeGreaterThan(HERMES_CARD_MIN_HEIGHT)
+  })
+
+  it('grows monotonically with task count', () => {
+    const heights = [4, 8, 12, 20].map(fitTodoBlockHeight)
+    for (let i = 1; i < heights.length; i += 1) {
+      expect(heights[i]).toBeGreaterThanOrEqual(heights[i - 1])
+    }
+  })
+
+  it('adds exactly one row of height per task once past the minimum', () => {
+    expect(fitTodoBlockHeight(13) - fitTodoBlockHeight(12)).toBe(28)
+  })
+
+  it('treats a negative or non-finite count as empty', () => {
+    expect(fitTodoBlockHeight(-3)).toBe(HERMES_CARD_MIN_HEIGHT)
+    expect(fitTodoBlockHeight(Number.NaN)).toBe(HERMES_CARD_MIN_HEIGHT)
   })
 })

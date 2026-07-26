@@ -19,6 +19,7 @@ import {
   DEFAULT_LINK_CARD_COLOR,
   DEFAULT_TODO_BLOCK_COLOR,
   HERMES_CARD_MIN_HEIGHT,
+  fitTodoBlockHeight,
   HERMES_CARD_MIN_WIDTH,
   type LinkCardProps,
   type TodoBlockProps,
@@ -208,19 +209,19 @@ export class TodoBlockShapeUtil extends BaseHermesCardUtil<TodoBlockShape> {
 
     const addTask = (event: MouseEvent<HTMLButtonElement>) => {
       editor.markEventAsHandled(event)
-      updateShapeProps(editor, shape, {
-        tasks: [
-          ...shape.props.tasks,
-          { id: createNextTodoTaskId(shape.props.tasks), text: 'New task', done: false }
-        ]
-      })
+      const tasks = [
+        ...shape.props.tasks,
+        { id: createNextTodoTaskId(shape.props.tasks), text: 'New task', done: false }
+      ]
+
+      updateShapeProps(editor, shape, { tasks, h: fitTodoBlockHeight(tasks.length) })
     }
 
     const deleteTask = (taskId: string, event: MouseEvent<HTMLButtonElement>) => {
       editor.markEventAsHandled(event)
-      updateShapeProps(editor, shape, {
-        tasks: shape.props.tasks.filter((task) => task.id !== taskId)
-      })
+      const tasks = shape.props.tasks.filter((task) => task.id !== taskId)
+
+      updateShapeProps(editor, shape, { tasks, h: fitTodoBlockHeight(tasks.length) })
     }
 
     if (!isEditing) {
