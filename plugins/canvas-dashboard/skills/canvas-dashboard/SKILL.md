@@ -142,15 +142,7 @@ Use this for URLs and link-only user requests after fetching browsing metadata w
 
 ### create_note_card
 
-Creates a built-in tldraw rectangle with rich text. Always structure the visible card in this order:
-
-```text
-[TAG (Idea, Note, etc.)]
-[Title]
-[Description]
-```
-
-Map `tag` to the first line, `title` to the second line, and `content` to the description on the remaining line or lines. The square brackets above indicate placeholders; do not include them in the card text.
+Creates a Hermes note card (shape type `note_card`). Pass `tag`, `title` and `content` as separate fields — the card renders them itself, with the tag as a kicker and the title in the header. Do not pre-format them into a single text blob.
 
 ```json
 {"type":"create_note_card","id":"shape:plan","title":"Plan","tag":"Note","content":"Dashboard plan","x":80,"y":80}

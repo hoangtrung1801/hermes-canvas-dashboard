@@ -179,6 +179,8 @@ class CreateNoteCardArgs(ToolArgs):
     id: str | None = None
     content: str | None = None
     color: TldrawColor | None = None
+    # Deprecated: set the font size of the old geo-rectangle note. note_card has
+    # no equivalent, so this is accepted for compatibility and ignored.
     size: Literal["s", "m", "l", "xl"] | None = None
 
 
@@ -634,7 +636,7 @@ def build_canvas_tools(context: CanvasToolContext) -> list[BaseTool]:
         ("set_todo_task_done", "Set a Todo task completion state.", SetTodoTaskDoneArgs, set_todo_done),
         ("remove_todo_task", "Remove a task from a Todo block.", TodoTaskTargetArgs, remove_todo),
         ("create_link_card", "Create a Link card.", CreateLinkCardArgs, create_link),
-        ("create_note_card", "Create a native tldraw note card.", CreateNoteCardArgs, create_note),
+        ("create_note_card", "Create a Hermes note card (shape type note_card).", CreateNoteCardArgs, create_note),
         ("create_docs_card", "Create a Markdown Docs card.", CreateDocsCardArgs, create_docs),
         ("update_docs_card", "Update an observed Docs card.", UpdateDocsCardArgs, update_docs),
         ("create_project_card", "Create a Project task board.", CreateProjectCardArgs, create_project),

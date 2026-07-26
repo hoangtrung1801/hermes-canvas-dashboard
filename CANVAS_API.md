@@ -310,7 +310,7 @@ Project mutations fail at the action level when the target is missing, is not a 
 
 ### create_note_card
 
-Creates a built-in tldraw rectangle with text inside. Hermes sends separate `title`, `tag`, and `content` fields; the bridge converts them into the rectangle shape's rich text in `[TAG]`, `[Title]`, `[Description]` order. The second line (the title) is bold; the tag and content remain normal text.
+Creates a Hermes note card. `title`, `tag`, and `content` are stored as separate props on the card, which renders them on the shared card chassis: the tag as a kicker above the body, the title in the card header.
 
 ```json
 {
@@ -320,13 +320,16 @@ Creates a built-in tldraw rectangle with text inside. Hermes sends separate `tit
   "tag": "Idea",
   "content": "Queue writes locally\nFlush when online",
   "color": "yellow",
-  "size": "m",
   "x": 140,
   "y": 220
 }
 ```
 
-The created shape appears in observations as `type: "geo"` with `props.geo: "rectangle"` and standard tldraw `props.richText`.
+The created shape appears in observations as `type: "note_card"` with `props.title`, `props.tag`, `props.content` and `props.color`.
+
+`size` is **deprecated**: it previously set the font size of the underlying rectangle. Note cards have no equivalent, so the field is still accepted but has no effect.
+
+**Legacy notes.** Boards created before the `note_card` shape existed hold their notes as `type: "geo"` with `props.geo: "rectangle"` and tldraw `props.richText`. Those shapes are still rendered and still group under the Notes frame; they are deliberately not migrated, because nothing distinguishes them from a hand-drawn rectangle.
 
 ### set_camera
 
