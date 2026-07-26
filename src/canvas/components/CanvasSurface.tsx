@@ -24,6 +24,7 @@ import { HERMES_PASTEL_THEME_ID, hermesPastelTheme } from '../tldraw/pastelTheme
 import { canvasUiOverrides } from '../tldraw/uiOverrides'
 import { useBridgeStore } from '../state/bridgeStore'
 import { CanvasContextMenu } from './CanvasContextMenu'
+import { CanvasQuickActions } from './CanvasQuickActions'
 import { CanvasStylePanel } from './CanvasStylePanel'
 import { CanvasToolbar } from './CanvasToolbar'
 import { useCanvasAutoFrames } from './useCanvasAutoFrames'
@@ -34,7 +35,8 @@ const ColoredFrameShapeUtil = FrameShapeUtil.configure({ showColors: true })
 const tldrawComponents = {
   ContextMenu: CanvasContextMenu,
   StylePanel: CanvasStylePanel,
-  Toolbar: CanvasToolbar
+  Toolbar: CanvasToolbar,
+  QuickActions: CanvasQuickActions
 }
 
 export function CanvasSurface() {

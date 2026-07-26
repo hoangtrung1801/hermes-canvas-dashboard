@@ -1,7 +1,7 @@
 import { reconcileAutoFrames } from '../tldraw/autoFrameReconciler'
 import { useBridgeStore } from '../state/bridgeStore'
 
-function TidyIcon() {
+export function TidyIcon() {
   return (
     <svg viewBox="0 0 20 20" aria-hidden="true">
       <rect x="3" y="3" width="5" height="5" rx="1" />
@@ -12,7 +12,7 @@ function TidyIcon() {
   )
 }
 
-export function CanvasTidyButton() {
+export function useCanvasTidy() {
   const editor = useBridgeStore((state) => state.editor)
   const adapter = useBridgeStore((state) => state.adapter)
   const setObservation = useBridgeStore((state) => state.setObservation)
@@ -44,7 +44,11 @@ export function CanvasTidyButton() {
     )
   }
 
-  const isReady = Boolean(editor && adapter)
+  return { tidyCanvas, isReady: Boolean(editor && adapter) }
+}
+
+export function CanvasTidyButton() {
+  const { tidyCanvas, isReady } = useCanvasTidy()
 
   return (
     <button

@@ -211,19 +211,31 @@ vi.mock('tldraw', () => ({
       props.onMount(tldrawMock.editor)
     }, [])
 
-    // Render the injected Toolbar so the card inserts, which now live inside
-    // tldraw's toolbar rather than the floating pill, are reachable in tests.
+    // Render the injected Toolbar and QuickActions so the card inserts and
+    // Tidy, which now live inside tldraw's own chrome rather than the floating
+    // pill, are reachable in tests.
     const Toolbar = props.components?.Toolbar
+    const QuickActions = props.components?.QuickActions
 
     return (
       <div data-testid="tldraw-root">
         tldraw mounted
         {Toolbar ? <Toolbar /> : null}
+        {QuickActions ? <QuickActions /> : null}
       </div>
     )
   },
   DefaultToolbar: ({ children }: any) => <div data-testid="tldraw-toolbar">{children}</div>,
   TldrawUiMenuToolItem: ({ toolId }: any) => <button data-testid={`tool-${toolId}`} />,
+  DefaultQuickActions: ({ children }: any) => (
+    <div data-testid="tldraw-quick-actions">{children}</div>
+  ),
+  DefaultQuickActionsContent: () => null,
+  TldrawUiMenuItem: ({ label, disabled, onSelect }: any) => (
+    <button disabled={disabled} onClick={() => onSelect('quick-actions')}>
+      {label}
+    </button>
+  ),
   defaultShapeUtils: [],
   defaultBindingUtils: [],
   inlineBase64AssetStore: {},
@@ -407,9 +419,8 @@ describe('CanvasSurface', () => {
       expect(screen.getByRole('button', { name: label })).toBeInTheDocument()
     }
 
-    // The inserts must no longer live in the floating custom toolbar.
-    const pill = screen.getByRole('toolbar', { name: 'Canvas custom tools' })
-    expect(pill.querySelector('.canvas-toolbar-insert')).toBeNull()
+    // The floating custom toolbar is gone entirely.
+    expect(screen.queryByRole('toolbar', { name: 'Canvas custom tools' })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Insert component' })).not.toBeInTheDocument()
   })
 
@@ -537,14 +548,14 @@ describe('CanvasSurface', () => {
     expect(tldrawMock.editor.getSelectedShapeIds()).toHaveLength(1)
   })
 
-  it('shows the floating custom toolbar in fullscreen canvas view', async () => {
+  it('puts Tidy in the tldraw quick actions in fullscreen canvas view', async () => {
     window.history.pushState({}, '', '/?view=canvas')
 
     render(<App />)
 
-    const toolbar = await screen.findByRole('toolbar', { name: 'Canvas custom tools' })
-    expect(toolbar).toBeInTheDocument()
-    expect(toolbar.closest('.fullscreen-canvas-container')).toBeInTheDocument()
+    const tidy = await screen.findByRole('button', { name: 'Tidy' })
+    expect(tidy.closest('[data-testid="tldraw-quick-actions"]')).toBeInTheDocument()
+    expect(screen.queryByRole('toolbar', { name: 'Canvas custom tools' })).not.toBeInTheDocument()
   })
 
   it('tidies cards into ordered managed frames', async () => {
@@ -554,7 +565,7 @@ describe('CanvasSurface', () => {
       act(() => screen.getByRole('button', { name: optionName }).click())
     }
 
-    act(() => screen.getByRole('button', { name: 'Tidy cards by type' }).click())
+    act(() => screen.getByRole('button', { name: 'Tidy' }).click())
 
     const frames = tldrawMock.shapes
       .filter((shape) => shape.type === 'frame')
@@ -581,31 +592,17 @@ describe('CanvasSurface', () => {
     ]))
   })
 
-  it('layers the floating custom toolbar above tldraw header and menu panels', () => {
+  it('no longer ships the floating custom toolbar styles', () => {
     const styles = readFileSync('src/styles.css', 'utf8')
-    const floatingRule = styles.match(
-      /\.canvas-container > \.canvas-floating-toolbar,\n\.fullscreen-canvas-container > \.canvas-floating-toolbar \{(?<body>[\s\S]*?)\n\}/
-    )
 
-    expect(floatingRule?.groups?.body).toMatch(/z-index:\s*(?:1\d{3}|[2-9]\d{3});/)
+    expect(styles).not.toMatch(/\.canvas-floating-toolbar/)
   })
 
-  it('anchors the floating custom toolbar to the canvas bottom-right corner', () => {
+  it('sizes the toolbar card inserts to match the tldraw tool buttons', () => {
     const styles = readFileSync('src/styles.css', 'utf8')
-    const floatingRule = styles.match(
-      /\.canvas-container > \.canvas-floating-toolbar,\n\.fullscreen-canvas-container > \.canvas-floating-toolbar \{(?<body>[\s\S]*?)\n\}/
-    )
+    const insertRule = styles.match(/^\.canvas-toolbar-insert \{(?<body>[\s\S]*?)\n\}/m)
 
-    expect(floatingRule?.groups?.body).toMatch(/bottom:\s*14px;/)
-    expect(floatingRule?.groups?.body).toMatch(/right:\s*14px;/)
-    expect(floatingRule?.groups?.body).not.toMatch(/top:\s*14px;/)
-  })
-
-  it('uses a single light panel for all custom canvas actions', () => {
-    const styles = readFileSync('src/styles.css', 'utf8')
-    const toolbarRule = styles.match(/^\.canvas-floating-toolbar \{(?<body>[\s\S]*?)\n\}/m)
-
-    expect(toolbarRule?.groups?.body).toMatch(/display:\s*inline-flex;/)
-    expect(toolbarRule?.groups?.body).toMatch(/background:\s*rgba\(255, 255, 255, 0\.96\);/)
+    expect(insertRule?.groups?.body).toMatch(/width:\s*40px;/)
+    expect(insertRule?.groups?.body).toMatch(/height:\s*40px;/)
   })
 })

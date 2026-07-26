@@ -687,26 +687,6 @@ body {
   min-width: 0;
 }
 
-.canvas-container > .canvas-floating-toolbar,
-.fullscreen-canvas-container > .canvas-floating-toolbar {
-  position: absolute;
-  bottom: 14px;
-  right: 14px;
-  z-index: 1100;
-}
-
-.canvas-floating-toolbar {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 6px;
-  border: 1px solid rgba(15, 23, 42, 0.12);
-  border-radius: 16px;
-  background: rgba(255, 255, 255, 0.96);
-  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.18), 0 2px 6px rgba(15, 23, 42, 0.1);
-  backdrop-filter: blur(12px);
-}
-
 .canvas-insert-actions {
   display: contents;
 }
@@ -2170,4 +2150,14 @@ body {
   height: 24px;
   margin: 0 4px;
   background: rgba(15, 23, 42, 0.14);
+}
+
+.canvas-quick-action-icon svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.8;
 }

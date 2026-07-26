@@ -1,5 +1,4 @@
 import { CanvasSurface } from './canvas/components/CanvasSurface'
-import { CanvasTidyButton } from './canvas/components/CanvasTidyButton'
 import { Simulator } from './canvas/components/Simulator'
 import { Inspector } from './canvas/components/Inspector'
 import { useBridgeStore } from './canvas/state/bridgeStore'
@@ -37,9 +36,6 @@ export default function App() {
     return (
       <main className="fullscreen-canvas-page chat-workspace">
         <section className="fullscreen-canvas-container" aria-label="Fullscreen canvas surface">
-          <div className="canvas-floating-toolbar" role="toolbar" aria-label="Canvas custom tools">
-            <CanvasTidyButton />
-          </div>
           <CanvasSurface />
         </section>
         {isChatEnabled() && <ChatSidebar canvasId="canvas_001" />}
@@ -82,9 +78,6 @@ export default function App() {
             </div>
           </div>
           <div className="canvas-container">
-            <div className="canvas-floating-toolbar" role="toolbar" aria-label="Canvas custom tools">
-              <CanvasTidyButton />
-            </div>
             <CanvasSurface />
           </div>
         </section>
