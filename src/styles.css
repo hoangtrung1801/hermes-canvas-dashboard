@@ -1134,7 +1134,9 @@ body {
   left: 0;
   right: 0;
   height: 3px;
-  background: var(--hc-accent-ink);
+  /* Full-strength accent against the 45% tint behind it — the rail is a colour
+     mark, not text, so it does not need the readable ink. */
+  background: var(--hc-accent);
   border-radius: var(--hc-radius) var(--hc-radius) 0 0;
 }
 
@@ -1900,10 +1902,36 @@ body {
   overflow-wrap: anywhere;
 }
 
-.hermes-docs-content :where(h1, h2, h3) {
+/*
+ * Docs cards are read at canvas zoom, not full width in a document, so
+ * hierarchy comes from weight rather than size. Unstyled headings inherit the
+ * browser defaults, which made an h1 roughly triple the body size.
+ */
+.hermes-docs-content :where(h1, h2, h3, h4, h5, h6) {
   margin: 0.55em 0 0.3em;
   color: var(--hc-ink-strong);
-  line-height: 1.2;
+  line-height: 1.25;
+  font-weight: 700;
+}
+
+.hermes-docs-content h1 {
+  font-size: calc(var(--hc-body) * 1.25);
+  font-weight: 700;
+}
+
+.hermes-docs-content h2 {
+  font-size: calc(var(--hc-body) * 1.12);
+}
+
+.hermes-docs-content h3 {
+  font-size: var(--hc-body);
+}
+
+.hermes-docs-content :where(h4, h5, h6) {
+  font-size: var(--hc-meta);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--hc-ink-muted);
 }
 
 .hermes-docs-content :where(p, ul, ol, blockquote, pre) {
