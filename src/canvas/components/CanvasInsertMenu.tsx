@@ -158,7 +158,7 @@ export function useCanvasInsert() {
     }
 
     addLog('in', 'canvas.action (Insert Component)', envelope)
-    const response = bridge.handleActionEnvelope(envelope)
+    const response = bridge.handleActionEnvelope(envelope, { origin: 'canvas' })
 
     if ('error' in response) {
       addLog('error', 'canvas.error (Insert Component)', response.error)

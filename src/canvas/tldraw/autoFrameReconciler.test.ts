@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { Editor } from 'tldraw'
 import { createMemoryTldrawTarget } from './tldrawActionExecutor'
+import { AUTO_FRAME_MANUAL_SIZE_META_KEY } from './autoFrameLayout'
 import {
   isAutoFrameRelevantChange,
   reconcileAutoFrames,
@@ -18,8 +19,8 @@ function createEditorDouble(initial: any[]) {
     ...shape
   }))
   const listeners = new Set<(entry: any) => void>()
-  const emit = (changes: any) => {
-    for (const listener of listeners) listener({ changes, source: 'user' })
+  const emit = (changes: any, source: string = 'user') => {
+    for (const listener of listeners) listener({ changes, source })
   }
   const get = (id: string) => shapes.find((shape) => shape.id === id)
 
@@ -104,7 +105,8 @@ function todo(id: string, x: number) {
     type: 'todo_block',
     x,
     y: 40,
-    props: { w: 320, h: 180, title: 'Todo', tasks: [] }
+    props: { w: 320, h: 180, title: 'Todo', tasks: [] },
+    meta: { source: 'hermes' }
   }
 }
 
@@ -113,6 +115,18 @@ afterEach(() => {
 })
 
 describe('reconcileAutoFrames', () => {
+  it('does not frame a direct-canvas card', () => {
+    const directCard = { ...todo('shape:todo_canvas', 20), meta: { source: 'canvas' } }
+    const { editor, raw, shapes } = createEditorDouble([directCard])
+    const adapter = createMemoryTldrawTarget('canvas_001')
+
+    const result = reconcileAutoFrames({ editor, adapter })
+
+    expect(result).toMatchObject({ cardCount: 0, frameCount: 0, changed: false })
+    expect(raw.createShapes).not.toHaveBeenCalled()
+    expect(shapes).toEqual([expect.objectContaining({ id: directCard.id, parentId: 'page:page' })])
+  })
+
   it('creates a native frame, reparents cards, and synchronizes the adapter', () => {
     const { editor, raw, shapes } = createEditorDouble([
       todo('shape:todo_1', 20),
@@ -188,12 +202,77 @@ describe('reconcileAutoFrames', () => {
 })
 
 describe('auto-frame change subscription', () => {
+  it('marks a user-resized managed frame as manually sized', () => {
+    vi.useFakeTimers()
+    const frame = {
+      id: 'shape:hermes-auto-frame-page-page-todo',
+      typeName: 'shape',
+      type: 'frame',
+      parentId: 'page:page',
+      x: 0,
+      y: 0,
+      props: { w: 400, h: 276, name: 'Todos', color: 'yellow' },
+      meta: { hermesAutoFrame: { version: 1, kind: 'todo' } }
+    }
+    const { editor, raw, emit, shapes } = createEditorDouble([frame])
+    const unsubscribe = subscribeToAutoFrameChanges({ editor, reconcile: vi.fn() })
+
+    emit({
+      added: {},
+      updated: {
+        [frame.id]: [frame, { ...frame, props: { ...frame.props, w: 520 } }]
+      },
+      removed: {}
+    }, 'user')
+
+    expect(raw.store.update).toHaveBeenCalledWith(frame.id, expect.any(Function))
+    expect(shapes.find((shape) => shape.id === frame.id)?.meta).toMatchObject({
+      [AUTO_FRAME_MANUAL_SIZE_META_KEY]: true
+    })
+    unsubscribe()
+  })
+
+  it('does not mark remotely updated frame dimensions as manually sized', () => {
+    vi.useFakeTimers()
+    const frame = {
+      id: 'shape:hermes-auto-frame-page-page-todo',
+      typeName: 'shape',
+      type: 'frame',
+      parentId: 'page:page',
+      x: 0,
+      y: 0,
+      props: { w: 400, h: 276, name: 'Todos', color: 'yellow' },
+      meta: { hermesAutoFrame: { version: 1, kind: 'todo' } }
+    }
+    const { editor, raw, emit, shapes } = createEditorDouble([frame])
+    const unsubscribe = subscribeToAutoFrameChanges({ editor, reconcile: vi.fn() })
+
+    emit({
+      added: {},
+      updated: {
+        [frame.id]: [frame, { ...frame, props: { ...frame.props, w: 520 } }]
+      },
+      removed: {}
+    }, 'remote')
+
+    expect(raw.store.update).not.toHaveBeenCalled()
+    expect(shapes.find((shape) => shape.id === frame.id)?.meta).not.toHaveProperty(
+      AUTO_FRAME_MANUAL_SIZE_META_KEY
+    )
+    unsubscribe()
+  })
+
   it('recognizes supported cards and managed frames but ignores unrelated records', () => {
     const entry = (record: any) => ({
       changes: { added: { [record.id]: record }, updated: {}, removed: {} },
       source: 'user'
     })
     expect(isAutoFrameRelevantChange(entry({ ...todo('shape:todo', 0), typeName: 'shape' }))).toBe(true)
+    expect(isAutoFrameRelevantChange(entry({
+      ...todo('shape:todo_canvas', 0),
+      typeName: 'shape',
+      meta: { source: 'canvas' }
+    }))).toBe(false)
     expect(isAutoFrameRelevantChange(entry({
       id: 'shape:frame',
       typeName: 'shape',
@@ -210,7 +289,7 @@ describe('auto-frame change subscription', () => {
     const { editor, raw, emit } = createEditorDouble([])
     const reconcile = vi.fn()
     const unsubscribe = subscribeToAutoFrameChanges({ editor, reconcile })
-    const record = { ...todo('shape:todo', 0), typeName: 'shape', parentId: 'page:page', meta: {} }
+    const record = { ...todo('shape:todo', 0), typeName: 'shape', parentId: 'page:page', meta: { source: 'hermes' } }
 
     for (let index = 0; index < 5; index += 1) {
       emit({ added: { [record.id]: record }, updated: {}, removed: {} })
@@ -236,7 +315,7 @@ describe('auto-frame change subscription', () => {
     const adapter = createMemoryTldrawTarget('canvas_001')
     const reconcile = vi.fn(() => reconcileAutoFrames({ editor, adapter }))
     const unsubscribe = subscribeToAutoFrameChanges({ editor, reconcile })
-    const record = { ...todo('shape:todo_2', 400), typeName: 'shape', parentId: 'page:page', meta: {} }
+    const record = { ...todo('shape:todo_2', 400), typeName: 'shape', parentId: 'page:page', meta: { source: 'hermes' } }
 
     emit({ added: { [record.id]: record }, updated: {}, removed: {} })
     vi.runAllTimers()
@@ -268,7 +347,7 @@ describe('auto-frame change subscription', () => {
       parentId: frameId,
       x: 32,
       y: 64,
-      meta: {}
+      meta: { source: 'hermes' }
     }
     const removedArrow = {
       id: 'shape:arrow',

@@ -53,6 +53,7 @@ export type AutoFrameLayoutInput = {
 }
 
 export const AUTO_FRAME_META_KEY = 'hermesAutoFrame'
+export const AUTO_FRAME_MANUAL_SIZE_META_KEY = 'hermesAutoFrameManualSize'
 export const AUTO_FRAME_KIND_ORDER = ['project', 'todo', 'docs', 'note', 'link'] as const
 
 const KIND_CONFIG: Record<AutoFrameCardKind, { title: string; color: string }> = {
@@ -95,6 +96,12 @@ export function getAutoFrameCardKind(shape: Pick<AutoFrameLayoutShape, 'type' | 
   // migrated. Removing this drops every pre-existing note out of its frame.
   if (shape.type === 'geo' && shape.props.geo === 'rectangle') return 'note' as const
   return null
+}
+
+export function isAutoFrameEligibleCard(
+  shape: Pick<AutoFrameLayoutShape, 'type' | 'props' | 'meta'>
+) {
+  return shape.meta.source === 'hermes' && getAutoFrameCardKind(shape) !== null
 }
 
 function preferredFrameId(pageId: string, kind: AutoFrameCardKind) {
@@ -226,6 +233,7 @@ export function planAutoFrameLayout(input: AutoFrameLayoutInput): AutoFramePlan 
     .filter(
       (entry): entry is { shape: AutoFrameLayoutShape; kind: AutoFrameCardKind } =>
         entry.kind !== null &&
+        isAutoFrameEligibleCard(entry.shape) &&
         (entry.shape.parentId === input.pageId || managedFrameIds.has(entry.shape.parentId))
     )
 
@@ -254,7 +262,7 @@ export function planAutoFrameLayout(input: AutoFrameLayoutInput): AutoFramePlan 
     if (kindCards.length === 0) {
       for (const candidate of kindFrames) {
         const unsupportedChildren = (childrenByParent.get(candidate.id) ?? [])
-          .filter((child) => getAutoFrameCardKind(child) === null)
+          .filter((child) => !isAutoFrameEligibleCard(child))
         if (unsupportedChildren.length > 0) demoteFrameIds.push(candidate.id)
         else deleteFrameIds.push(candidate.id)
       }
@@ -272,9 +280,13 @@ export function planAutoFrameLayout(input: AutoFrameLayoutInput): AutoFramePlan 
 
     if (existing) {
       for (const child of (childrenByParent.get(existing.id) ?? [])) {
-        if (getAutoFrameCardKind(child) !== null) continue
+        if (isAutoFrameEligibleCard(child)) continue
         w = Math.max(w, child.x + dimension(child, 'w', CARD_FALLBACK_WIDTH) + FRAME_PADDING)
         h = Math.max(h, child.y + dimension(child, 'h', CARD_FALLBACK_HEIGHT) + FRAME_PADDING)
+      }
+      if (existing.meta[AUTO_FRAME_MANUAL_SIZE_META_KEY] === true) {
+        w = Math.max(w, dimension(existing, 'w', FRAME_MIN_WIDTH))
+        h = Math.max(h, dimension(existing, 'h', FRAME_MIN_HEIGHT))
       }
     } else if (input.mode === 'continuous') {
       const candidate = { x, y, w, h }
@@ -307,7 +319,7 @@ export function planAutoFrameLayout(input: AutoFrameLayoutInput): AutoFramePlan 
 
     for (const duplicate of kindFrames.filter((candidate) => candidate.id !== existing?.id)) {
       const unsupportedChildren = (childrenByParent.get(duplicate.id) ?? [])
-        .filter((child) => getAutoFrameCardKind(child) === null)
+        .filter((child) => !isAutoFrameEligibleCard(child))
       if (unsupportedChildren.length > 0) demoteFrameIds.push(duplicate.id)
       else deleteFrameIds.push(duplicate.id)
     }

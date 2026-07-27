@@ -446,11 +446,45 @@ describe('CanvasSurface', () => {
     })
   })
 
-  it('automatically groups newly inserted cards in a managed native frame', async () => {
+  it('does not automatically frame cards inserted from the canvas toolbar', async () => {
     render(<App />)
 
     act(() => screen.getByRole('button', { name: 'Todo Block' }).click())
     act(() => screen.getByRole('button', { name: 'Todo Block' }).click())
+
+    await waitFor(() => {
+      expect(tldrawMock.shapes.filter((shape) => shape.type === 'todo_block')).toHaveLength(2)
+    })
+
+    expect(tldrawMock.shapes.filter((shape) => shape.type === 'frame')).toHaveLength(0)
+    expect(tldrawMock.shapes.filter((shape) => shape.type === 'todo_block')).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ parentId: 'page:page', meta: { source: 'canvas' } }),
+        expect.objectContaining({ parentId: 'page:page', meta: { source: 'canvas' } })
+      ])
+    )
+  })
+
+  it('automatically frames custom components created through the Canvas API', async () => {
+    gatewayMock.url = 'ws://localhost:8787/canvas?canvasId=canvas_001&role=bridge'
+    render(<App />)
+
+    await waitFor(() => expect(socketSpies.connect).toHaveBeenCalled())
+    const callbacks = socketSpies.connect.mock.calls[0][1]
+
+    act(() => {
+      callbacks.onMessage(
+        JSON.stringify({
+          type: 'canvas.action',
+          requestId: 'req_api_auto_frame',
+          canvasId: 'canvas_001',
+          actions: [
+            { type: 'create_todo_block', id: 'shape:api_todo_1', title: 'API 1', x: 100, y: 100 },
+            { type: 'create_todo_block', id: 'shape:api_todo_2', title: 'API 2', x: 500, y: 100 }
+          ]
+        })
+      )
+    })
 
     await waitFor(() => {
       expect(tldrawMock.shapes.filter((shape) => shape.type === 'frame')).toHaveLength(1)
@@ -458,13 +492,13 @@ describe('CanvasSurface', () => {
 
     const generated = tldrawMock.shapes.find((shape) => shape.type === 'frame')
     expect(generated).toMatchObject({
-      props: { name: 'Todos', color: 'yellow', w: 728, h: 276 },
+      props: { name: 'Todos', color: 'yellow' },
       meta: { hermesAutoFrame: { version: 1, kind: 'todo' } }
     })
     expect(tldrawMock.shapes.filter((shape) => shape.type === 'todo_block')).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({ parentId: generated.id, x: 32, y: 64 }),
-        expect.objectContaining({ parentId: generated.id, x: 376, y: 64 })
+        expect.objectContaining({ parentId: generated?.id, meta: { source: 'hermes' } }),
+        expect.objectContaining({ parentId: generated?.id, meta: { source: 'hermes' } })
       ])
     )
   })
@@ -560,11 +594,28 @@ describe('CanvasSurface', () => {
   })
 
   it('tidies cards into ordered managed frames', async () => {
+    gatewayMock.url = 'ws://localhost:8787/canvas?canvasId=canvas_001&role=bridge'
     render(<App />)
 
-    for (const optionName of [/Link Card/, /Todo Block/, /Note Card/, /Project Card/]) {
-      act(() => screen.getByRole('button', { name: optionName }).click())
-    }
+    await waitFor(() => expect(socketSpies.connect).toHaveBeenCalled())
+    const callbacks = socketSpies.connect.mock.calls[0][1]
+    act(() => {
+      callbacks.onMessage(
+        JSON.stringify({
+          type: 'canvas.action',
+          requestId: 'req_tidy_api_cards',
+          canvasId: 'canvas_001',
+          actions: [
+            { type: 'create_link_card', id: 'shape:tidy_link', title: 'Link', url: 'https://example.com', x: 0, y: 0 },
+            { type: 'create_todo_block', id: 'shape:tidy_todo', title: 'Todo', x: 100, y: 0 },
+            { type: 'create_note_card', id: 'shape:tidy_note', title: 'Note', tag: 'Idea', x: 200, y: 0 },
+            { type: 'create_project_card', id: 'shape:tidy_project', title: 'Project', x: 300, y: 0 }
+          ]
+        })
+      )
+    })
+
+    await waitFor(() => expect(tldrawMock.shapes.filter((shape) => shape.type !== 'frame')).toHaveLength(4))
 
     act(() => screen.getByRole('button', { name: 'Tidy' }).click())
 

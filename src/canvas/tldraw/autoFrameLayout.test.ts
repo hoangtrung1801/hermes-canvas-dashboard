@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import {
   AUTO_FRAME_META_KEY,
+  AUTO_FRAME_MANUAL_SIZE_META_KEY,
   getAutoFrameCardKind,
+  isAutoFrameEligibleCard,
   planAutoFrameLayout,
   type AutoFrameLayoutShape,
   type AutoFrameCardKind
@@ -26,7 +28,7 @@ function shape(
     pageX: input.pageX ?? x,
     pageY: input.pageY ?? y,
     props,
-    meta: input.meta ?? {}
+    meta: input.meta ?? { source: 'hermes' }
   }
 }
 
@@ -43,6 +45,23 @@ function frame(
 }
 
 describe('planAutoFrameLayout', () => {
+  it('frames API-created cards but ignores direct-canvas cards of the same kind', () => {
+    const plan = planAutoFrameLayout({
+      pageId: PAGE_ID,
+      mode: 'continuous',
+      shapes: [
+        shape('shape:todo_api', 'todo_block', 0, 0, { w: 320, h: 180 }, { meta: { source: 'hermes' } }),
+        shape('shape:todo_canvas', 'todo_block', 500, 0, { w: 320, h: 180 }, { meta: { source: 'canvas' } })
+      ]
+    })
+
+    expect(plan.frames).toHaveLength(1)
+    expect(plan.cardUpdates.map(({ id }) => id)).toEqual(['shape:todo_api'])
+    expect(isAutoFrameEligibleCard(shape('shape:todo_canvas', 'todo_block', 0, 0, {}, {
+      meta: { source: 'canvas' }
+    }))).toBe(false)
+  })
+
   it('creates one managed frame for every supported page-level card kind', () => {
     const plan = planAutoFrameLayout({
       pageId: PAGE_ID,
@@ -166,6 +185,86 @@ describe('planAutoFrameLayout', () => {
       expect.objectContaining({ id: generated.id, x: 100, y: 200, w: 400, h: 276, create: false })
     ])
     expect(plan.cardUpdates).toEqual([])
+  })
+
+  it('preserves a manually sized frame larger than its required card grid', () => {
+    const generated = frame(
+      'shape:hermes-auto-frame-page-page-todo',
+      'todo',
+      100,
+      200,
+      { w: 900, h: 700, name: 'Todos', color: 'yellow' }
+    )
+    generated.meta[AUTO_FRAME_MANUAL_SIZE_META_KEY] = true
+    const plan = planAutoFrameLayout({
+      pageId: PAGE_ID,
+      mode: 'continuous',
+      shapes: [
+        generated,
+        shape('shape:todo', 'todo_block', 32, 64, { w: 320, h: 180 }, {
+          parentId: generated.id,
+          pageX: 132,
+          pageY: 264
+        })
+      ]
+    })
+
+    expect(plan.frames[0]).toMatchObject({ w: 900, h: 700 })
+  })
+
+  it('expands a manually sized frame when its required grid no longer fits', () => {
+    const generated = frame(
+      'shape:hermes-auto-frame-page-page-todo',
+      'todo',
+      100,
+      200,
+      { w: 300, h: 200, name: 'Todos', color: 'yellow' }
+    )
+    generated.meta[AUTO_FRAME_MANUAL_SIZE_META_KEY] = true
+    const plan = planAutoFrameLayout({
+      pageId: PAGE_ID,
+      mode: 'continuous',
+      shapes: [
+        generated,
+        shape('shape:todo', 'todo_block', 32, 64, { w: 320, h: 180 }, {
+          parentId: generated.id,
+          pageX: 132,
+          pageY: 264
+        }),
+        shape('shape:todo_2', 'todo_block', 376, 64, { w: 320, h: 180 }, {
+          parentId: generated.id,
+          pageX: 476,
+          pageY: 264
+        })
+      ]
+    })
+
+    expect(plan.frames[0]).toMatchObject({ w: 728, h: 276 })
+  })
+
+  it('does not shrink a manually sized frame when cards are removed', () => {
+    const generated = frame(
+      'shape:hermes-auto-frame-page-page-todo',
+      'todo',
+      100,
+      200,
+      { w: 900, h: 700, name: 'Todos', color: 'yellow' }
+    )
+    generated.meta[AUTO_FRAME_MANUAL_SIZE_META_KEY] = true
+    const plan = planAutoFrameLayout({
+      pageId: PAGE_ID,
+      mode: 'continuous',
+      shapes: [
+        generated,
+        shape('shape:todo_remaining', 'todo_block', 32, 64, { w: 320, h: 180 }, {
+          parentId: generated.id,
+          pageX: 132,
+          pageY: 264
+        })
+      ]
+    })
+
+    expect(plan.frames[0]).toMatchObject({ w: 900, h: 700 })
   })
 
   it('deletes empty and duplicate managed frames without touching manual frames', () => {

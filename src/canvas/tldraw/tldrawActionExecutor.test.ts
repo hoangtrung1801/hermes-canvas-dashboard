@@ -4,6 +4,22 @@ import type { CanvasAction } from '../actions/canvasAction.types'
 import { createMemoryTldrawTarget, executeTldrawAction, readTldrawObservation } from './tldrawActionExecutor'
 
 describe('tldraw action executor', () => {
+  it.each([
+    ['create_todo_block', { type: 'create_todo_block', title: 'Todo', x: 0, y: 0 }],
+    ['create_link_card', { type: 'create_link_card', title: 'Link', url: 'https://example.com', x: 0, y: 0 }],
+    ['create_note_card', { type: 'create_note_card', title: 'Note', tag: 'Idea', x: 0, y: 0 }],
+    ['create_docs_card', { type: 'create_docs_card', title: 'Docs', x: 0, y: 0 }],
+    ['create_project_card', { type: 'create_project_card', title: 'Project', x: 0, y: 0 }]
+  ])('persists %s creation provenance', (_name, action) => {
+    const apiTarget = createMemoryTldrawTarget('canvas_001')
+    executeTldrawAction(apiTarget, { ...action, id: 'shape:api' } as CanvasAction)
+    expect(apiTarget.shapes.get('shape:api')?.meta).toMatchObject({ source: 'hermes' })
+
+    const canvasTarget = createMemoryTldrawTarget('canvas_001')
+    executeTldrawAction(canvasTarget, { ...action, id: 'shape:canvas' } as CanvasAction, { origin: 'canvas' })
+    expect(canvasTarget.shapes.get('shape:canvas')?.meta).toMatchObject({ source: 'canvas' })
+  })
+
   it('normalizes draw segments for the current tldraw schema', () => {
     const target = createMemoryTldrawTarget('canvas_001')
     const encodedPath = b64Vecs.encodePoints([

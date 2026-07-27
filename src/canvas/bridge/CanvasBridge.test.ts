@@ -3,6 +3,33 @@ import { createMemoryTldrawTarget } from '../tldraw/tldrawActionExecutor'
 import { CanvasBridge } from './CanvasBridge'
 
 describe('CanvasBridge', () => {
+  it('tracks API and direct-canvas origins for typed custom components', () => {
+    const apiBridge = new CanvasBridge(createMemoryTldrawTarget('canvas_001'))
+    const apiResponse = apiBridge.handleActionEnvelope({
+      type: 'canvas.action',
+      requestId: 'req_api_origin',
+      canvasId: 'canvas_001',
+      actions: [{ type: 'create_todo_block', id: 'shape:todo_api', title: 'API', x: 0, y: 0 }]
+    })
+
+    if ('error' in apiResponse) throw new Error('expected API bridge response')
+    expect(apiResponse.observation.state.shapes[0].meta).toMatchObject({ source: 'hermes' })
+
+    const canvasBridge = new CanvasBridge(createMemoryTldrawTarget('canvas_001'))
+    const canvasResponse = canvasBridge.handleActionEnvelope(
+      {
+        type: 'canvas.action',
+        requestId: 'req_canvas_origin',
+        canvasId: 'canvas_001',
+        actions: [{ type: 'create_todo_block', id: 'shape:todo_canvas', title: 'Canvas', x: 0, y: 0 }]
+      },
+      { origin: 'canvas' }
+    )
+
+    if ('error' in canvasResponse) throw new Error('expected canvas bridge response')
+    expect(canvasResponse.observation.state.shapes[0].meta).toMatchObject({ source: 'canvas' })
+  })
+
   it('executes a tldraw create_shape request and returns an observation', () => {
     const bridge = new CanvasBridge(createMemoryTldrawTarget('canvas_001'))
 

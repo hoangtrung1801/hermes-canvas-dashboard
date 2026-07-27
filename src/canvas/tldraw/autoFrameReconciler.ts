@@ -2,7 +2,8 @@ import type { Editor } from 'tldraw'
 import type { CanvasObservationState } from '../blocks/block.types'
 import {
   AUTO_FRAME_META_KEY,
-  getAutoFrameCardKind,
+  AUTO_FRAME_MANUAL_SIZE_META_KEY,
+  isAutoFrameEligibleCard,
   planAutoFrameLayout,
   readAutoFrameKind,
   type AutoFrameLayoutShape,
@@ -35,6 +36,7 @@ type StoreRecordLike = {
 }
 
 type StoreChangeEntry = {
+  source?: string
   changes: {
     added: Record<string, StoreRecordLike>
     updated: Record<string, [StoreRecordLike, StoreRecordLike]>
@@ -114,7 +116,7 @@ function countManagedCards(pageId: string, shapes: AutoFrameLayoutShape[]) {
   )
   return shapes.filter(
     (shape) =>
-      getAutoFrameCardKind(shape) !== null &&
+      isAutoFrameEligibleCard(shape) &&
       (shape.parentId === pageId || managedFrameIds.has(shape.parentId))
   ).length
 }
@@ -218,10 +220,57 @@ function isRelevantRecord(record: StoreRecordLike | undefined) {
   if (!record || record.typeName !== 'shape' || !record.type) return false
   const shape = {
     type: record.type,
-    props: record.props ?? {}
-  } as Pick<AutoFrameLayoutShape, 'type' | 'props'>
-  if (getAutoFrameCardKind(shape) !== null) return true
+    props: record.props ?? {},
+    meta: record.meta ?? {}
+  } as Pick<AutoFrameLayoutShape, 'type' | 'props' | 'meta'>
+  if (isAutoFrameEligibleCard(shape)) return true
   return record.type === 'frame' && readAutoFrameKind(record.meta ?? {}) !== null
+}
+
+function isManagedFrame(record: StoreRecordLike | undefined) {
+  return Boolean(
+    record &&
+      record.typeName === 'shape' &&
+      record.type === 'frame' &&
+      readAutoFrameKind(record.meta ?? {}) !== null
+  )
+}
+
+function hasFrameDimensionChange(before: StoreRecordLike, after: StoreRecordLike) {
+  return before.props?.w !== after.props?.w || before.props?.h !== after.props?.h
+}
+
+function markUserResizedManagedFrames(editor: Editor, entry: StoreChangeEntry) {
+  if (entry.source !== 'user') return false
+
+  const frameIds = Object.values(entry.changes.updated)
+    .filter(([before, after]) =>
+      isManagedFrame(before) &&
+      isManagedFrame(after) &&
+      hasFrameDimensionChange(before, after) &&
+      after.meta?.[AUTO_FRAME_MANUAL_SIZE_META_KEY] !== true
+    )
+    .map(([before]) => before.id)
+
+  if (frameIds.length === 0) return false
+
+  applyingEditors.add(editor)
+  try {
+    editor.run(() => {
+      for (const frameId of frameIds) {
+        ;(editor.store as any).update(frameId, (record: StoreRecordLike) => ({
+          ...record,
+          meta: {
+            ...(record.meta ?? {}),
+            [AUTO_FRAME_MANUAL_SIZE_META_KEY]: true
+          }
+        }))
+      }
+    }, { history: 'ignore' })
+  } finally {
+    applyingEditors.delete(editor)
+  }
+  return true
 }
 
 export function isAutoFrameRelevantChange(entry: StoreChangeEntry) {
@@ -293,6 +342,7 @@ export function subscribeToAutoFrameChanges(options: {
   const stop = options.editor.store.listen((entry) => {
     if (applyingEditors.has(options.editor)) return
     const typedEntry = entry as unknown as StoreChangeEntry
+    markUserResizedManagedFrames(options.editor, typedEntry)
     const restoredChildren = restoreChildrenRemovedWithManagedFrame(options.editor, typedEntry)
     if (!restoredChildren && !isAutoFrameRelevantChange(typedEntry)) return
     if (timer) clearTimeout(timer)

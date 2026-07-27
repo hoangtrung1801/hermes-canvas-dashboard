@@ -55,6 +55,10 @@ describe('useCanvasInsert', () => {
     expect(envelope.actions[0].type).toBe('create_todo_block')
     expect(envelope.actions[1].type).toBe('select_shapes')
     expect(envelope.actions[1].shapeIds).toEqual([envelope.actions[0].id])
+    expect(storeMock.bridge!.handleActionEnvelope).toHaveBeenCalledWith(
+      expect.objectContaining({ actions: expect.any(Array) }),
+      { origin: 'canvas' }
+    )
     expect(storeMock.setObservation).toHaveBeenCalledWith({ shapes: [] })
   })
 

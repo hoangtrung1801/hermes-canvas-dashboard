@@ -38,6 +38,12 @@ export type TldrawActionResult = {
   error?: string
 }
 
+export type TldrawActionOrigin = 'api' | 'canvas'
+
+export type TldrawActionContext = {
+  origin?: TldrawActionOrigin
+}
+
 export type ShapeRecord = {
   id: string
   type: string
@@ -69,7 +75,13 @@ export function createMemoryTldrawTarget(canvasId: string): TldrawExecutorTarget
   }
 }
 
-export function executeTldrawAction(target: TldrawExecutorTarget, action: CanvasAction): TldrawActionResult {
+export function executeTldrawAction(
+  target: TldrawExecutorTarget,
+  action: CanvasAction,
+  context: TldrawActionContext = {}
+): TldrawActionResult {
+  const origin = context.origin ?? 'api'
+
   switch (action.type) {
     case 'create_shape':
       return createShape(target, {
@@ -92,7 +104,7 @@ export function executeTldrawAction(target: TldrawExecutorTarget, action: Canvas
         rotation: 0,
         opacity: 1,
         props: createTodoBlockProps(action),
-        meta: { source: 'hermes' },
+        meta: customComponentMeta(origin),
         actionType: action.type
       })
     case 'create_link_card':
@@ -104,7 +116,7 @@ export function executeTldrawAction(target: TldrawExecutorTarget, action: Canvas
         rotation: 0,
         opacity: 1,
         props: createLinkCardProps(action),
-        meta: { source: 'hermes' },
+        meta: customComponentMeta(origin),
         actionType: action.type
       })
     case 'create_note_card':
@@ -116,7 +128,7 @@ export function executeTldrawAction(target: TldrawExecutorTarget, action: Canvas
         rotation: 0,
         opacity: 1,
         props: createNoteCardShapeProps(action as any) as unknown as Record<string, unknown>,
-        meta: { source: 'hermes' },
+        meta: customComponentMeta(origin),
         actionType: action.type
       })
     case 'create_docs_card':
@@ -128,7 +140,7 @@ export function executeTldrawAction(target: TldrawExecutorTarget, action: Canvas
         rotation: 0,
         opacity: 1,
         props: createDocsCardProps(action),
-        meta: { source: 'hermes' },
+        meta: customComponentMeta(origin),
         actionType: action.type
       })
     case 'update_docs_card':
@@ -142,7 +154,7 @@ export function executeTldrawAction(target: TldrawExecutorTarget, action: Canvas
         rotation: 0,
         opacity: 1,
         props: createProjectCardProps(action),
-        meta: { source: 'hermes' },
+        meta: customComponentMeta(origin),
         actionType: action.type
       })
     case 'update_project_card':
@@ -226,6 +238,10 @@ export function executeTldrawAction(target: TldrawExecutorTarget, action: Canvas
     case 'delete_bindings':
       return { actionType: action.type, error: 'delete_bindings is not implemented in the first executor pass' }
   }
+}
+
+function customComponentMeta(origin: TldrawActionOrigin) {
+  return { source: origin === 'canvas' ? 'canvas' : 'hermes' }
 }
 
 function withBuiltinDefaults(

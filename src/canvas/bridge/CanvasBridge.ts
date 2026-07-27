@@ -15,6 +15,8 @@ type ActionEnvelope = {
   actions: CanvasAction[]
 }
 
+export type CanvasActionOrigin = 'api' | 'canvas'
+
 type BridgeResponse = {
   result: {
     type: 'canvas.result'
@@ -41,10 +43,16 @@ type BridgeErrorResponse = {
 export class CanvasBridge {
   constructor(private readonly target: TldrawExecutorTarget) {}
 
-  handleActionEnvelope(envelope: ActionEnvelope): BridgeResponse | BridgeErrorResponse {
+  handleActionEnvelope(
+    envelope: ActionEnvelope,
+    options: { origin?: CanvasActionOrigin } = {}
+  ): BridgeResponse | BridgeErrorResponse {
     try {
       const validated = canvasActionEnvelopeSchema.parse(envelope)
-      const results = validated.actions.map((action) => executeTldrawAction(this.target, action))
+      const origin = options.origin ?? 'api'
+      const results = validated.actions.map((action) =>
+        executeTldrawAction(this.target, action, { origin })
+      )
       const ok = results.every((result) => !result.error)
       const observationState = readTldrawObservation(this.target)
 
